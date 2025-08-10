@@ -6,16 +6,31 @@ class LocationService {
 
   /// Demande service + permission et retourne true si tout OK.
   Future<bool> requestPermissionAndService() async {
+    // service GPS
     bool serviceEnabled = await _location.serviceEnabled();
     if (!serviceEnabled) {
       serviceEnabled = await _location.requestService();
       if (!serviceEnabled) return false;
     }
 
+    // permission
     PermissionStatus permission = await _location.hasPermission();
     if (permission == PermissionStatus.denied) {
       permission = await _location.requestPermission();
-      if (permission != PermissionStatus.granted) return false;
+    }
+    if (permission == PermissionStatus.denied || permission == PermissionStatus.deniedForever) {
+      return false;
+    }
+
+    // settings : précision / interval / distance filter
+    try {
+      await _location.changeSettings(
+        accuracy: LocationAccuracy.high,
+        interval: 5000, // ms
+        distanceFilter: 10, // meters
+      );
+    } catch (e) {
+      // certaines versions peuvent ne pas supporter changeSettings ; on ignore l'erreur
     }
 
     return true;

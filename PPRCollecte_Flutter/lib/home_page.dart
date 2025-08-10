@@ -10,6 +10,7 @@ import 'data_count_widget.dart';
 import 'bottom_status_bar_widget.dart';
 import 'bottom_buttons_widget.dart';
 import 'home_controller.dart';
+import 'point_form_screen.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -31,36 +32,30 @@ class _HomePageState extends State<HomePage> {
   List<Polyline> collectedPolylines = [];
 
   final Completer<GoogleMapController> _controller = Completer();
+  LatLng? _lastCameraPosition;
   late final HomeController homeController;
 
   @override
   void initState() {
     super.initState();
-// instanciation du controller
     homeController = HomeController();
 
-    // écoute simple : quand le controller notifie -> setState pour redessiner
     homeController.addListener(() {
       setState(() {
-        // on synchronise les états locaux si tu veux les garder pour d'autres usages
         userPosition = homeController.userPosition;
         gpsEnabled = homeController.gpsEnabled;
         lineActive = homeController.lineActive;
         linePaused = homeController.linePaused;
         linePoints = List<LatLng>.from(homeController.linePoints);
-        // lineTotalDistance si tu l'utilises ailleurs
       });
+
+      // déplace la caméra à la nouvelle position
+      _moveCameraIfNeeded();
     });
 
-    // initialise (permission + position initiale + load data)
     homeController.initialize();
+
     collectedMarkers.addAll([
-      Marker(
-        markerId: const MarkerId('user'),
-        position: userPosition,
-        infoWindow: const InfoWindow(title: 'Vous êtes ici'),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      ),
       Marker(
         markerId: const MarkerId('poi1'),
         position: const LatLng(34.021, -6.841),
@@ -76,34 +71,88 @@ class _HomePageState extends State<HomePage> {
         LatLng(34.022, -6.842),
         LatLng(34.023, -6.843),
       ],
-      color: Colors.blue.shade700,
+      color: Colors.blue,
       width: 3,
     ));
   }
 
-  void addPointOfInterest() {
-    final newPoint = LatLng(userPosition.latitude + 0.001, userPosition.longitude + 0.001);
-    final markerId = 'poi${collectedMarkers.length + 1}';
-    setState(() {
-      collectedMarkers.add(
-        Marker(
-          markerId: MarkerId(markerId),
-          position: newPoint,
-          infoWindow: InfoWindow(title: 'Nouveau point $markerId'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+  Future<void> _onMapCreated(GoogleMapController controller) async {
+    if (!_controller.isCompleted) {
+      _controller.complete(controller);
+    }
+
+    // 📍 Centrer immédiatement si la position utilisateur est déjà connue
+    if (userPosition.latitude != 34.020882 || userPosition.longitude != -6.841650) {
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: userPosition, zoom: 17),
         ),
       );
-    });
+      _lastCameraPosition = userPosition;
+    }
+  }
+
+  Future<void> _moveCameraIfNeeded() async {
+    if (!_controller.isCompleted) return;
+    try {
+      final controller = await _controller.future;
+      final shouldMove = _lastCameraPosition == null ||
+          _coordinateDistance(
+                _lastCameraPosition!.latitude,
+                _lastCameraPosition!.longitude,
+                userPosition.latitude,
+                userPosition.longitude,
+              ) >
+              20;
+      if (shouldMove) {
+        await controller.animateCamera(CameraUpdate.newCameraPosition(
+          CameraPosition(target: userPosition, zoom: 17),
+        ));
+        _lastCameraPosition = userPosition;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> addPointOfInterest() async {
+    // Récupérer la position actuelle
+    final current = homeController.userPosition;
+
+    // Naviguer vers l'écran du formulaire et attendre le résultat
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PointFormScreen(
+          pointData: {
+            'latitude': current.latitude,
+            'longitude': current.longitude,
+            'accuracy': 10.0, // ou récupère la vraie précision
+            'timestamp': DateTime.now().toIso8601String(),
+          },
+        ),
+      ),
+    );
+
+    // Si on reçoit des données, on ajoute un marker sur la carte
+    if (result != null && result is Map<String, dynamic>) {
+      setState(() {
+        collectedMarkers.add(
+          Marker(
+            markerId: MarkerId('poi${collectedMarkers.length + 1}'),
+            position: LatLng(result['latitude'], result['longitude']),
+            infoWindow: InfoWindow(title: result['nom'] ?? 'Nouveau point'),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+          ),
+        );
+      });
+    }
   }
 
   void startLineCollection() {
-    // vérification GPS locale (optionnelle) :
     if (!homeController.gpsEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Veuillez activer le GPS")));
       return;
     }
     homeController.startLine();
-    // plus besoin de setState() : la listener du controller s'en charge
   }
 
   void toggleLineCollection() {
@@ -117,7 +166,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // ajouter la polyline dans ta collection locale pour l'affichage
     setState(() {
       collectedPolylines.add(Polyline(
         polylineId: PolylineId('line${collectedPolylines.length + 1}'),
@@ -132,13 +180,10 @@ class _HomePageState extends State<HomePage> {
             : <PatternItem>[],
       ));
     });
-
-    // la controller a déjà remis linePoints à [] et notifié.
   }
 
   void simulateAddPointToLine() {
     homeController.simulateAddPointToLine();
-    // listener mettra à jour UI
   }
 
   void handleSave() {
@@ -180,6 +225,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final Set<Marker> markersSet = Set<Marker>.from(collectedMarkers);
+    markersSet.removeWhere((m) => m.markerId.value == 'user');
+    markersSet.add(Marker(
+      markerId: const MarkerId('user'),
+      position: userPosition,
+      infoWindow: const InfoWindow(title: 'Vous êtes ici'),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+    ));
+
     final allPolylines = Set<Polyline>.from(collectedPolylines);
     if (lineActive && linePoints.length > 1) {
       allPolylines.add(Polyline(
@@ -208,9 +262,9 @@ class _HomePageState extends State<HomePage> {
                   MapWidget(
                     userPosition: userPosition,
                     gpsEnabled: gpsEnabled,
-                    markers: Set<Marker>.from(collectedMarkers),
+                    markers: markersSet,
                     polylines: allPolylines,
-                    onMapCreated: (controller) => _controller.complete(controller),
+                    onMapCreated: _onMapCreated,
                   ),
                   MapControlsWidget(
                     lineActive: lineActive,
@@ -243,7 +297,7 @@ class _HomePageState extends State<HomePage> {
           ? FloatingActionButton(
               onPressed: simulateAddPointToLine,
               tooltip: "Ajouter un point à la ligne",
-              child: Icon(Icons.add),
+              child: const Icon(Icons.add),
             )
           : null,
     );

@@ -52,19 +52,28 @@ class HomeController extends ChangeNotifier {
       notifyListeners();
     }
 
+    // Start a light tracking to keep the userPosition updated on the map (not the same as line collection)
+    startLocationTracking();
+
     updateStatus();
-    // loadCollectedData() -> à implémenter si besoin
   }
 
   void startLocationTracking() {
+    // stop previous if any
     stopLocationTracking();
     _locationSub = _locationService.onLocationChanged().listen((loc) {
       if (loc.latitude == null || loc.longitude == null) return;
 
-      userPosition = LatLng(loc.latitude!, loc.longitude!);
+      // filtrer coordonnées impossibles ou mock importantes
+      final lat = loc.latitude!;
+      final lon = loc.longitude!;
+      if (lat.abs() > 90 || lon.abs() > 180) return;
+
+      userPosition = LatLng(lat, lon);
       gpsAccuracy = loc.accuracy != null ? loc.accuracy!.round() : gpsAccuracy;
       lastSync = _formatTimeNow();
 
+      // si on est en collecte active, ajouter un point à la ligne
       if (lineActive && !linePaused) {
         _addPointToLineFromLocation(loc);
       }

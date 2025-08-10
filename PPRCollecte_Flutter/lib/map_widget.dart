@@ -25,7 +25,9 @@ class MapWidget extends StatelessWidget {
       markers: markers,
       polylines: polylines,
       myLocationEnabled: gpsEnabled,
-      onMapCreated: onMapCreated,
+      myLocationButtonEnabled: true,
+      compassEnabled: true,
+      onMapCreated: (controller) => onMapCreated(controller),
     );
   }
 }
