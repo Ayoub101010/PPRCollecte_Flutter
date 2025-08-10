@@ -10,13 +10,13 @@ class MapWidget extends StatelessWidget {
   final Function(GoogleMapController) onMapCreated;
 
   const MapWidget({
-    Key? key,
+    super.key,
     required this.userPosition,
     required this.gpsEnabled,
     required this.markers,
     required this.polylines,
     required this.onMapCreated,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

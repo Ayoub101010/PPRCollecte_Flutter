@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 class BottomStatusBarWidget extends StatelessWidget {
   final bool gpsEnabled;
 
-  const BottomStatusBarWidget({Key? key, required this.gpsEnabled}) : super(key: key);
+  const BottomStatusBarWidget({super.key, required this.gpsEnabled});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFFE3F2FD),
+      color: const Color(0xFFE3F2FD),
       alignment: Alignment.center,
-      padding: EdgeInsets.all(6),
+      padding: const EdgeInsets.all(6),
       child: Text(
         "📡 GPS: ${gpsEnabled ? 'Activé' : 'Désactivé'} | 🔄 Sync: 11h30 | 🌐 En ligne",
-        style: TextStyle(fontSize: 14),
+        style: const TextStyle(fontSize: 14),
       ),
     );
   }

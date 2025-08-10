@@ -6,11 +6,11 @@ class LineStatusWidget extends StatelessWidget {
   final double distance;
 
   const LineStatusWidget({
-    Key? key,
+    super.key,
     required this.linePaused,
     required this.linePointsCount,
     required this.distance,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +19,14 @@ class LineStatusWidget extends StatelessWidget {
       left: 16,
       right: 16,
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
               blurRadius: 4,
             )
           ],
@@ -35,14 +35,14 @@ class LineStatusWidget extends StatelessWidget {
           children: [
             Icon(
               linePaused ? Icons.pause_circle_filled : Icons.radio_button_checked,
-              color: linePaused ? Color(0xFFFF9800) : Color(0xFF4CAF50),
+              color: linePaused ? const Color(0xFFFF9800) : const Color(0xFF4CAF50),
               size: 16,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 linePaused ? "En pause" : "Collecte piste",
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
               ),
             ),
             Text(

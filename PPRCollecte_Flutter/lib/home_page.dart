@@ -9,17 +9,18 @@ import 'line_status_widget.dart';
 import 'data_count_widget.dart';
 import 'bottom_status_bar_widget.dart';
 import 'bottom_buttons_widget.dart';
+import 'home_controller.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
-  const HomePage({Key? key, required this.onLogout}) : super(key: key);
+  const HomePage({super.key, required this.onLogout});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  LatLng userPosition = LatLng(34.020882, -6.841650);
+  LatLng userPosition = const LatLng(34.020882, -6.841650);
   bool gpsEnabled = true;
 
   bool lineActive = false;
@@ -29,30 +30,48 @@ class _HomePageState extends State<HomePage> {
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
 
-  Completer<GoogleMapController> _controller = Completer();
+  final Completer<GoogleMapController> _controller = Completer();
+  late final HomeController homeController;
 
   @override
   void initState() {
     super.initState();
+// instanciation du controller
+    homeController = HomeController();
 
+    // écoute simple : quand le controller notifie -> setState pour redessiner
+    homeController.addListener(() {
+      setState(() {
+        // on synchronise les états locaux si tu veux les garder pour d'autres usages
+        userPosition = homeController.userPosition;
+        gpsEnabled = homeController.gpsEnabled;
+        lineActive = homeController.lineActive;
+        linePaused = homeController.linePaused;
+        linePoints = List<LatLng>.from(homeController.linePoints);
+        // lineTotalDistance si tu l'utilises ailleurs
+      });
+    });
+
+    // initialise (permission + position initiale + load data)
+    homeController.initialize();
     collectedMarkers.addAll([
       Marker(
-        markerId: MarkerId('user'),
+        markerId: const MarkerId('user'),
         position: userPosition,
-        infoWindow: InfoWindow(title: 'Vous êtes ici'),
+        infoWindow: const InfoWindow(title: 'Vous êtes ici'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ),
       Marker(
-        markerId: MarkerId('poi1'),
-        position: LatLng(34.021, -6.841),
-        infoWindow: InfoWindow(title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
+        markerId: const MarkerId('poi1'),
+        position: const LatLng(34.021, -6.841),
+        infoWindow: const InfoWindow(title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       ),
     ]);
 
     collectedPolylines.add(Polyline(
-      polylineId: PolylineId('piste1'),
-      points: [
+      polylineId: const PolylineId('piste1'),
+      points: const [
         LatLng(34.020, -6.840),
         LatLng(34.022, -6.842),
         LatLng(34.023, -6.843),
@@ -78,62 +97,60 @@ class _HomePageState extends State<HomePage> {
   }
 
   void startLineCollection() {
-    setState(() {
-      lineActive = true;
-      linePaused = false;
-      linePoints = [
-        userPosition
-      ];
-    });
+    // vérification GPS locale (optionnelle) :
+    if (!homeController.gpsEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Veuillez activer le GPS")));
+      return;
+    }
+    homeController.startLine();
+    // plus besoin de setState() : la listener du controller s'en charge
   }
 
   void toggleLineCollection() {
-    setState(() {
-      linePaused = !linePaused;
-    });
+    homeController.toggleLine();
   }
 
   void finishLineCollection() {
+    final finished = homeController.finishLine();
+    if (finished == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une piste doit contenir au moins 2 points.")));
+      return;
+    }
+
+    // ajouter la polyline dans ta collection locale pour l'affichage
     setState(() {
-      if (linePoints.length > 1) {
-        collectedPolylines.add(Polyline(
-          polylineId: PolylineId('line${collectedPolylines.length + 1}'),
-          points: List.from(linePoints),
-          color: linePaused ? Colors.orange : Colors.green,
-          width: 4,
-          patterns: linePaused
-              ? <PatternItem>[
-                  PatternItem.dash(10),
-                  PatternItem.gap(5)
-                ]
-              : <PatternItem>[],
-        ));
-      }
-      lineActive = false;
-      linePaused = false;
-      linePoints = [];
+      collectedPolylines.add(Polyline(
+        polylineId: PolylineId('line${collectedPolylines.length + 1}'),
+        points: finished,
+        color: linePaused ? Colors.orange : Colors.green,
+        width: 4,
+        patterns: linePaused
+            ? <PatternItem>[
+                PatternItem.dash(10),
+                PatternItem.gap(5)
+              ]
+            : <PatternItem>[],
+      ));
     });
+
+    // la controller a déjà remis linePoints à [] et notifié.
   }
 
   void simulateAddPointToLine() {
-    if (lineActive && !linePaused) {
-      setState(() {
-        final last = linePoints.last;
-        linePoints.add(LatLng(last.latitude + 0.0005, last.longitude + 0.0005));
-      });
-    }
+    homeController.simulateAddPointToLine();
+    // listener mettra à jour UI
   }
 
   void handleSave() {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sauvegardé !')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sauvegardé !')));
   }
 
   void handleSync() {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Synchronisation lancée !')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Synchronisation lancée !')));
   }
 
   void handleMenuPress() {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Menu ouvert')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Menu ouvert')));
   }
 
   double _calculateDistance(List<LatLng> points) {
@@ -156,11 +173,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    homeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final allPolylines = Set<Polyline>.from(collectedPolylines);
     if (lineActive && linePoints.length > 1) {
       allPolylines.add(Polyline(
-        polylineId: PolylineId('currentLine'),
+        polylineId: const PolylineId('currentLine'),
         points: linePoints,
         color: linePaused ? Colors.orange : Colors.green,
         width: 4,
@@ -174,7 +197,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Scaffold(
-      backgroundColor: Color(0xFFF0F8FF),
+      backgroundColor: const Color(0xFFF0F8FF),
       body: SafeArea(
         child: Column(
           children: [
@@ -218,9 +241,9 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: lineActive && !linePaused
           ? FloatingActionButton(
-              child: Icon(Icons.add),
               onPressed: simulateAddPointToLine,
               tooltip: "Ajouter un point à la ligne",
+              child: Icon(Icons.add),
             )
           : null,
     );

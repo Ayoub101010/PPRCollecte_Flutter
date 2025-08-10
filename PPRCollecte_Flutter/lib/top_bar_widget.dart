@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 class TopBarWidget extends StatelessWidget {
   final Function onLogout;
-  const TopBarWidget({Key? key, required this.onLogout}) : super(key: key);
+  const TopBarWidget({super.key, required this.onLogout});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xFF1976D2),
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      color: const Color(0xFF1976D2),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -17,13 +17,13 @@ class TopBarWidget extends StatelessWidget {
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
                 ),
               ),
-              SizedBox(width: 10),
-              Text(
+              const SizedBox(width: 10),
+              const Text(
                 "Agent",
                 style: TextStyle(
                   color: Colors.white,
@@ -35,14 +35,14 @@ class TopBarWidget extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF64B5F6),
+              backgroundColor: const Color(0xFF64B5F6),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             ),
             onPressed: () {
               onLogout();
             },
-            child: Text(
+            child: const Text(
               "Se déconnecter",
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
