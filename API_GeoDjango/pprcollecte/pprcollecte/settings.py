@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.gis',    # Pour GeoDjango
     'rest_framework',
+    'rest_framework_gis',
     'api',
 ]
 

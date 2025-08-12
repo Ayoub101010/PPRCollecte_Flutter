@@ -11,6 +11,7 @@ import 'bottom_status_bar_widget.dart';
 import 'bottom_buttons_widget.dart';
 import 'home_controller.dart';
 import 'point_form_screen.dart';
+import 'formulaire_ligne_page.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -159,27 +160,40 @@ class _HomePageState extends State<HomePage> {
     homeController.toggleLine();
   }
 
-  void finishLineCollection() {
+  Future<void> finishLineCollection() async {
     final finished = homeController.finishLine();
     if (finished == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une piste doit contenir au moins 2 points.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Une piste doit contenir au moins 2 points.")),
+      );
       return;
     }
 
-    setState(() {
-      collectedPolylines.add(Polyline(
-        polylineId: PolylineId('line${collectedPolylines.length + 1}'),
-        points: finished,
-        color: linePaused ? Colors.orange : Colors.green,
-        width: 4,
-        patterns: linePaused
-            ? <PatternItem>[
-                PatternItem.dash(10),
-                PatternItem.gap(5)
-              ]
-            : <PatternItem>[],
-      ));
-    });
+    // Ouvre le formulaire ligne et récupère le résultat
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FormulaireLignePage(linePoints: finished),
+      ),
+    );
+
+    // Si le formulaire renvoie un résultat, on ajoute la polyline
+    if (result != null) {
+      setState(() {
+        collectedPolylines.add(Polyline(
+          polylineId: PolylineId('line${collectedPolylines.length + 1}'),
+          points: finished,
+          color: linePaused ? Colors.orange : Colors.green,
+          width: 4,
+          patterns: linePaused
+              ? <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(5)
+                ]
+              : <PatternItem>[],
+        ));
+      });
+    }
   }
 
   void simulateAddPointToLine() {

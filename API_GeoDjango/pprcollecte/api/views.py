@@ -4,8 +4,14 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
+
 from .models import Login
-from .serializers import LoginSerializer
+from .serializers import LoginSerializer, PisteSerializer
+from .models import Piste
+
+
+
 
 class LoginAPIView(APIView):
     def post(self, request):
@@ -25,3 +31,8 @@ class LoginAPIView(APIView):
 
         serializer = LoginSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PisteListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Piste.objects.all()
+    serializer_class = PisteSerializer
