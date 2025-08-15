@@ -29,10 +29,8 @@ class DBHelper {
         ''');
 
         // Insert a default user for testing
-        await db.insert('users', {
-          'email': 'test@ppr.com',
-          'password': '12345678'
-        });
+        await db
+            .insert('users', {'email': 'test@ppr.com', 'password': '12345678'});
       },
     );
   }
@@ -42,19 +40,13 @@ class DBHelper {
     final result = await db.query(
       'users',
       where: 'email = ? AND password = ?',
-      whereArgs: [
-        email,
-        password
-      ],
+      whereArgs: [email, password],
     );
     return result.isNotEmpty;
   }
 
   Future<int> insertUser(String email, String password) async {
     final db = await database;
-    return await db.insert('users', {
-      'email': email,
-      'password': password
-    });
+    return await db.insert('users', {'email': email, 'password': password});
   }
 }

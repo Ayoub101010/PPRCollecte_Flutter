@@ -5,13 +5,13 @@ import 'dart:math';
 import 'top_bar_widget.dart';
 import 'map_widget.dart';
 import 'map_controls_widget.dart';
-import 'line_status_widget.dart';
 import 'data_count_widget.dart';
 import 'bottom_status_bar_widget.dart';
 import 'bottom_buttons_widget.dart';
 import 'home_controller.dart';
-import 'point_form_screen.dart';
-import 'formulaire_ligne_page.dart';
+import 'Point_form_screen.dart';
+// Nouveaux imports pour le système de collecte
+import 'collection_exports.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -24,10 +24,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   LatLng userPosition = const LatLng(34.020882, -6.841650);
   bool gpsEnabled = true;
-
-  bool lineActive = false;
-  bool linePaused = false;
-  List<LatLng> linePoints = [];
 
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
@@ -45,22 +41,20 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         userPosition = homeController.userPosition;
         gpsEnabled = homeController.gpsEnabled;
-        lineActive = homeController.lineActive;
-        linePaused = homeController.linePaused;
-        linePoints = List<LatLng>.from(homeController.linePoints);
       });
 
-      // déplace la caméra à la nouvelle position
       _moveCameraIfNeeded();
     });
 
     homeController.initialize();
 
+    // Données de test initiales
     collectedMarkers.addAll([
       Marker(
         markerId: const MarkerId('poi1'),
         position: const LatLng(34.021, -6.841),
-        infoWindow: const InfoWindow(title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
+        infoWindow: const InfoWindow(
+            title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       ),
     ]);
@@ -82,8 +76,8 @@ class _HomePageState extends State<HomePage> {
       _controller.complete(controller);
     }
 
-    // 📍 Centrer immédiatement si la position utilisateur est déjà connue
-    if (userPosition.latitude != 34.020882 || userPosition.longitude != -6.841650) {
+    if (userPosition.latitude != 34.020882 ||
+        userPosition.longitude != -6.841650) {
       await controller.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: userPosition, zoom: 17),
@@ -114,11 +108,21 @@ class _HomePageState extends State<HomePage> {
     } catch (_) {}
   }
 
+  // === GESTION DES POINTS D'INTÉRÊT ===
   Future<void> addPointOfInterest() async {
-    // Récupérer la position actuelle
-    final current = homeController.userPosition;
+    // Vérifier si une collecte est active
+    final activeType = homeController.getActiveCollectionType();
+    if (activeType != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-    // Naviguer vers l'écran du formulaire et attendre le résultat
+    final current = homeController.userPosition;
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -126,14 +130,13 @@ class _HomePageState extends State<HomePage> {
           pointData: {
             'latitude': current.latitude,
             'longitude': current.longitude,
-            'accuracy': 10.0, // ou récupère la vraie précision
+            'accuracy': 10.0,
             'timestamp': DateTime.now().toIso8601String(),
           },
         ),
       ),
     );
 
-    // Si on reçoit des données, on ajoute un marker sur la carte
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         collectedMarkers.add(
@@ -148,86 +151,232 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void startLineCollection() {
+  // === GESTION DE LA COLLECTE LIGNE/PISTE ===
+  Future<void> startLigneCollection() async {
     if (!homeController.gpsEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Veuillez activer le GPS")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez activer le GPS")),
+      );
       return;
     }
-    homeController.startLine();
+
+    // Vérifier si une collecte est active
+    final activeType = homeController.getActiveCollectionType();
+    if (activeType != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Afficher le formulaire provisoire
+    final provisionalData = await ProvisionalFormDialog.show(
+      context: context,
+      type: CollectionType.ligne,
+    );
+    if (provisionalData == null) return;
+
+    try {
+      await homeController.startLigneCollection(
+        provisionalData['id']!,
+        provisionalData['name']!,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Collecte de piste démarrée'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void toggleLineCollection() {
-    homeController.toggleLine();
+  void toggleLigneCollection() {
+    try {
+      homeController.toggleLigneCollection();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  Future<void> finishLineCollection() async {
-    final finished = homeController.finishLine();
-    if (finished == null) {
+  Future<void> finishLigneCollection() async {
+    final result = homeController.finishLigneCollection();
+    if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Une piste doit contenir au moins 2 points.")),
       );
       return;
     }
 
-    // Ouvre le formulaire ligne et récupère le résultat
-    final result = await Navigator.push(
+    // Ouvrir le formulaire principal avec les données provisoires
+    final formResult = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FormulaireLignePage(linePoints: finished),
+        builder: (_) => FormulaireLignePage(
+          linePoints: result['points'],
+          provisionalId: result['provisionalId'],
+          provisionalName: result['provisionalName'],
+        ),
       ),
     );
 
-    // Si le formulaire renvoie un résultat, on ajoute la polyline
-    if (result != null) {
+    if (formResult != null) {
       setState(() {
         collectedPolylines.add(Polyline(
-          polylineId: PolylineId('line${collectedPolylines.length + 1}'),
-          points: finished,
-          color: linePaused ? Colors.orange : Colors.green,
+          polylineId: PolylineId('piste_${collectedPolylines.length + 1}'),
+          points: result['points'],
+          color: Colors.blue,
           width: 4,
-          patterns: linePaused
-              ? <PatternItem>[
-                  PatternItem.dash(10),
-                  PatternItem.gap(5)
-                ]
-              : <PatternItem>[],
         ));
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Piste enregistrée avec succès'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
-  void simulateAddPointToLine() {
-    homeController.simulateAddPointToLine();
+  // === GESTION DE LA COLLECTE CHAUSSÉE ===
+  Future<void> startChausseeCollection() async {
+    if (!homeController.gpsEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez activer le GPS")),
+      );
+      return;
+    }
+
+    // Vérifier si une collecte est active
+    final activeType = homeController.getActiveCollectionType();
+    if (activeType != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Afficher le formulaire provisoire
+    final provisionalData = await ProvisionalFormDialog.show(
+      context: context,
+      type: CollectionType.chaussee,
+    );
+    if (provisionalData == null) return;
+
+    try {
+      await homeController.startChausseeCollection(
+        provisionalData['id']!,
+        provisionalData['name']!,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Collecte de chaussée démarrée'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void toggleChausseeCollection() {
+    try {
+      homeController.toggleChausseeCollection();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> finishChausseeCollection() async {
+    final result = homeController.finishChausseeCollection();
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Une chaussée doit contenir au moins 2 points.")),
+      );
+      return;
+    }
+
+    // Ouvrir le formulaire principal avec les données provisoires
+    final formResult = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FormulaireChausseePage(
+          chausseePoints: result['points'],
+          provisionalId: result['provisionalId'],
+          provisionalName: result['provisionalName'],
+        ),
+      ),
+    );
+
+    if (formResult != null) {
+      setState(() {
+        collectedPolylines.add(Polyline(
+          polylineId: PolylineId('chaussee_${collectedPolylines.length + 1}'),
+          points: result['points'],
+          color: const Color(0xFFFF9800),
+          width: 4,
+        ));
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chaussée enregistrée avec succès'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   void handleSave() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sauvegardé !')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Sauvegardé !')));
   }
 
   void handleSync() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Synchronisation lancée !')));
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Synchronisation lancée !')));
   }
 
   void handleMenuPress() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Menu ouvert')));
-  }
-
-  double _calculateDistance(List<LatLng> points) {
-    double distance = 0.0;
-    for (int i = 0; i < points.length - 1; i++) {
-      distance += _coordinateDistance(
-        points[i].latitude,
-        points[i].longitude,
-        points[i + 1].latitude,
-        points[i + 1].longitude,
-      );
-    }
-    return distance;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Menu ouvert')));
   }
 
   double _coordinateDistance(lat1, lon1, lat2, lon2) {
     const p = 0.017453292519943295;
-    final a = 0.5 - (cos((lat2 - lat1) * p) / 2) + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
+    final a = 0.5 -
+        (cos((lat2 - lat1) * p) / 2) +
+        cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
     return 12742000 * asin(sqrt(a));
   }
 
@@ -239,6 +388,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Préparer les markers
     final Set<Marker> markersSet = Set<Marker>.from(collectedMarkers);
     markersSet.removeWhere((m) => m.markerId.value == 'user');
     markersSet.add(Marker(
@@ -248,20 +398,43 @@ class _HomePageState extends State<HomePage> {
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
     ));
 
+    // Préparer les polylines
     final allPolylines = Set<Polyline>.from(collectedPolylines);
-    if (lineActive && linePoints.length > 1) {
-      allPolylines.add(Polyline(
-        polylineId: const PolylineId('currentLine'),
-        points: linePoints,
-        color: linePaused ? Colors.orange : Colors.green,
-        width: 4,
-        patterns: linePaused
-            ? <PatternItem>[
-                PatternItem.dash(10),
-                PatternItem.gap(5)
-              ]
-            : <PatternItem>[],
-      ));
+
+    // Ajouter la ligne en cours si active (nouveau système)
+    if (homeController.ligneCollection != null) {
+      final lignePoints = homeController.ligneCollection!.points;
+      if (lignePoints.length > 1) {
+        allPolylines.add(Polyline(
+          polylineId: const PolylineId('currentLigne'),
+          points: lignePoints,
+          color: homeController.ligneCollection!.isPaused
+              ? Colors.orange
+              : Colors.green,
+          width: 4,
+          patterns: homeController.ligneCollection!.isPaused
+              ? <PatternItem>[PatternItem.dash(10), PatternItem.gap(5)]
+              : <PatternItem>[],
+        ));
+      }
+    }
+
+    // Ajouter la chaussée en cours si active (nouveau système)
+    if (homeController.chausseeCollection != null) {
+      final chausseePoints = homeController.chausseeCollection!.points;
+      if (chausseePoints.length > 1) {
+        allPolylines.add(Polyline(
+          polylineId: const PolylineId('currentChaussee'),
+          points: chausseePoints,
+          color: homeController.chausseeCollection!.isPaused
+              ? Colors.deepOrange
+              : const Color(0xFFFF9800),
+          width: 5,
+          patterns: homeController.chausseeCollection!.isPaused
+              ? <PatternItem>[PatternItem.dash(15), PatternItem.gap(5)]
+              : <PatternItem>[],
+        ));
+      }
     }
 
     return Scaffold(
@@ -280,21 +453,37 @@ class _HomePageState extends State<HomePage> {
                     polylines: allPolylines,
                     onMapCreated: _onMapCreated,
                   ),
+
+                  // Contrôles de carte
                   MapControlsWidget(
-                    lineActive: lineActive,
-                    linePaused: linePaused,
-                    addPointOfInterest: addPointOfInterest,
-                    startLineCollection: startLineCollection,
-                    toggleLineCollection: toggleLineCollection,
-                    finishLineCollection: finishLineCollection,
+                    controller: homeController,
+                    onAddPoint: addPointOfInterest,
+                    onStartLigne: startLigneCollection,
+                    onStartChaussee: startChausseeCollection,
+                    onToggleLigne: toggleLigneCollection,
+                    onToggleChaussee: toggleChausseeCollection,
+                    onFinishLigne: finishLigneCollection,
+                    onFinishChaussee: finishChausseeCollection,
                   ),
-                  if (lineActive)
-                    LineStatusWidget(
-                      linePaused: linePaused,
-                      linePointsCount: linePoints.length,
-                      distance: _calculateDistance(linePoints),
+
+                  // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
+                  
+                  // Afficher le statut de ligne si active
+                  if (homeController.ligneCollection != null)
+                    LigneStatusWidget(
+                      collection: homeController.ligneCollection!,
+                      topOffset: 16,
                     ),
-                  DataCountWidget(count: collectedMarkers.length + collectedPolylines.length),
+
+                  // Afficher le statut de chaussée si active
+                  if (homeController.chausseeCollection != null)
+                    ChausseeStatusWidget(
+                      collection: homeController.chausseeCollection!,
+                      topOffset: homeController.ligneCollection != null ? 70 : 16,
+                    ),
+
+                  DataCountWidget(
+                      count: collectedMarkers.length + collectedPolylines.length),
                 ],
               ),
             ),
@@ -307,13 +496,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton: lineActive && !linePaused
-          ? FloatingActionButton(
-              onPressed: simulateAddPointToLine,
-              tooltip: "Ajouter un point à la ligne",
-              child: const Icon(Icons.add),
-            )
-          : null,
     );
   }
 }

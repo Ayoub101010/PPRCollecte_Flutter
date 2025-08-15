@@ -1,4 +1,4 @@
-// lib/home/home_controller.dart
+// lib/home_controller.dart - Version mise à jour
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -6,19 +6,21 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 
 import 'location_service.dart';
+import 'collection_models.dart';
+import 'collection_manager.dart';
 
 class HomeController extends ChangeNotifier {
   final LocationService _locationService;
+  final CollectionManager _collectionManager = CollectionManager();
 
-  // états exposés
+  // États exposés (existants)
   bool gpsEnabled = false;
   int? gpsAccuracy;
   String? lastSync;
   bool isOnline = true;
-
   LatLng userPosition = const LatLng(7.5, 10.5);
 
-  // ligne en cours
+  // Anciens états ligne pour compatibilité (dépréciés)
   bool lineActive = false;
   bool linePaused = false;
   List<LatLng> linePoints = [];
@@ -26,7 +28,39 @@ class HomeController extends ChangeNotifier {
 
   StreamSubscription<LocationData>? _locationSub;
 
-  HomeController({LocationService? locationService}) : _locationService = locationService ?? LocationService();
+  HomeController({LocationService? locationService})
+      : _locationService = locationService ?? LocationService() {
+    // Écouter les changements du CollectionManager
+    _collectionManager.addListener(_onCollectionChanged);
+  }
+
+  // Getters pour les nouvelles collectes
+  LigneCollection? get ligneCollection => _collectionManager.ligneCollection;
+  ChausseeCollection? get chausseeCollection =>
+      _collectionManager.chausseeCollection;
+
+  bool get hasActiveCollection => _collectionManager.hasActiveCollection;
+  bool get hasPausedCollection => _collectionManager.hasPausedCollection;
+  String? get activeCollectionType => _collectionManager.activeCollectionType;
+
+  /// Appelé lorsque les collectes changent
+  void _onCollectionChanged() {
+    // Mettre à jour les anciens états pour compatibilité
+    final ligne = _collectionManager.ligneCollection;
+    if (ligne != null) {
+      lineActive = ligne.isActive;
+      linePaused = ligne.isPaused;
+      linePoints = List<LatLng>.from(ligne.points);
+      lineTotalDistance = ligne.totalDistance;
+    } else {
+      lineActive = false;
+      linePaused = false;
+      linePoints = [];
+      lineTotalDistance = 0.0;
+    }
+
+    notifyListeners();
+  }
 
   /// Appel depuis initState()
   Future<void> initialize() async {
@@ -52,19 +86,15 @@ class HomeController extends ChangeNotifier {
       notifyListeners();
     }
 
-    // Start a light tracking to keep the userPosition updated on the map (not the same as line collection)
     startLocationTracking();
-
     updateStatus();
   }
 
   void startLocationTracking() {
-    // stop previous if any
     stopLocationTracking();
     _locationSub = _locationService.onLocationChanged().listen((loc) {
       if (loc.latitude == null || loc.longitude == null) return;
 
-      // filtrer coordonnées impossibles ou mock importantes
       final lat = loc.latitude!;
       final lon = loc.longitude!;
       if (lat.abs() > 90 || lon.abs() > 180) return;
@@ -72,11 +102,6 @@ class HomeController extends ChangeNotifier {
       userPosition = LatLng(lat, lon);
       gpsAccuracy = loc.accuracy != null ? loc.accuracy!.round() : gpsAccuracy;
       lastSync = _formatTimeNow();
-
-      // si on est en collecte active, ajouter un point à la ligne
-      if (lineActive && !linePaused) {
-        _addPointToLineFromLocation(loc);
-      }
 
       notifyListeners();
     });
@@ -87,18 +112,128 @@ class HomeController extends ChangeNotifier {
     _locationSub = null;
   }
 
-  // --- API utilisée par l'UI ---
+  // === NOUVELLES MÉTHODES POUR LES COLLECTES ===
+
+  /// Démarre une collecte de ligne/piste
+  Future<void> startLigneCollection(
+      String provisionalId, String provisionalName) async {
+    if (!gpsEnabled) {
+      throw Exception('Le GPS doit être activé pour commencer la collecte');
+    }
+
+    try {
+      _collectionManager.startLigneCollection(
+        provisionalName: provisionalName,
+        initialPosition: userPosition,
+        locationStream: _locationService.onLocationChanged(),
+      );
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  /// Démarre une collecte de chaussée
+  Future<void> startChausseeCollection(
+      String provisionalId, String provisionalName) async {
+    if (!gpsEnabled) {
+      throw Exception('Le GPS doit être activé pour commencer la collecte');
+    }
+
+    try {
+      _collectionManager.startChausseeCollection(
+        provisionalName: provisionalName,
+        initialPosition: userPosition,
+        locationStream: _locationService.onLocationChanged(),
+      );
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  /// Met en pause/reprend une collecte de ligne
+  void toggleLigneCollection() {
+    final ligne = _collectionManager.ligneCollection;
+    if (ligne == null) return;
+
+    if (ligne.isActive) {
+      _collectionManager.pauseLigneCollection();
+    } else if (ligne.isPaused) {
+      try {
+        _collectionManager
+            .resumeLigneCollection(_locationService.onLocationChanged());
+      } catch (e) {
+        // Gérer l'erreur si une autre collecte est active
+        rethrow;
+      }
+    }
+  }
+
+  /// Met en pause/reprend une collecte de chaussée
+  void toggleChausseeCollection() {
+    final chaussee = _collectionManager.chausseeCollection;
+    if (chaussee == null) return;
+
+    if (chaussee.isActive) {
+      _collectionManager.pauseChausseeCollection();
+    } else if (chaussee.isPaused) {
+      try {
+        _collectionManager
+            .resumeChausseeCollection(_locationService.onLocationChanged());
+      } catch (e) {
+        // Gérer l'erreur si une autre collecte est active
+        rethrow;
+      }
+    }
+  }
+
+  /// Termine une collecte de ligne
+  Map<String, dynamic>? finishLigneCollection() {
+    final result = _collectionManager.finishLigneCollection();
+    if (result == null) return null;
+
+    return {
+      'points': result.points,
+      'provisionalId': result.id,
+      'provisionalName': result.provisionalName,
+      'totalDistance': result.totalDistance,
+      'startTime': result.startTime,
+      'endTime': result.endTime,
+    };
+  }
+
+  /// Termine une collecte de chaussée
+  Map<String, dynamic>? finishChausseeCollection() {
+    final result = _collectionManager.finishChausseeCollection();
+    if (result == null) return null;
+
+    return {
+      'points': result.points,
+      'provisionalId': result.id,
+      'provisionalName': result.provisionalName,
+      'totalDistance': result.totalDistance,
+      'startTime': result.startTime,
+      'endTime': result.endTime,
+    };
+  }
+
+  /// Retourne le type de collecte active (pour les messages d'erreur)
+  String? getActiveCollectionType() {
+    return activeCollectionType;
+  }
+
+  // === MÉTHODES HÉRITÉES (pour compatibilité) ===
+
+  /// @deprecated Utiliser startLigneCollection à la place
   void startLine() {
     lineActive = true;
     linePaused = false;
-    linePoints = [
-      userPosition
-    ];
+    linePoints = [userPosition];
     lineTotalDistance = 0.0;
     startLocationTracking();
     notifyListeners();
   }
 
+  /// @deprecated Utiliser toggleLigneCollection à la place
   void toggleLine() {
     linePaused = !linePaused;
     if (linePaused) {
@@ -109,7 +244,7 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Termine et retourne la liste de points si ok, sinon null
+  /// @deprecated Utiliser finishLigneCollection à la place
   List<LatLng>? finishLine() {
     if (linePoints.length < 2) {
       return null;
@@ -124,49 +259,30 @@ class HomeController extends ChangeNotifier {
     return finished;
   }
 
-  // simulation (pour debug / bouton +)
+  /// Pour simulation/debug
   void simulateAddPointToLine() {
     if (lineActive && !linePaused) {
       final last = linePoints.isNotEmpty ? linePoints.last : userPosition;
       final newPt = LatLng(last.latitude + 0.0005, last.longitude + 0.0005);
       linePoints.add(newPt);
-      lineTotalDistance += _haversineDistance(last.latitude, last.longitude, newPt.latitude, newPt.longitude);
+      lineTotalDistance += _haversineDistance(
+          last.latitude, last.longitude, newPt.latitude, newPt.longitude);
       notifyListeners();
     }
   }
 
-  // logique interne d'ajout de point depuis LocationData
-  void _addPointToLineFromLocation(LocationData coords) {
-    if (!lineActive || linePaused) return;
-
-    final lat = coords.latitude!;
-    final lon = coords.longitude!;
-    final currentAccuracy = coords.accuracy ?? 999.0;
-
-    if (currentAccuracy > 30) return;
-
-    if (linePoints.isEmpty) {
-      linePoints.add(LatLng(lat, lon));
-      lineTotalDistance = 0.0;
-      notifyListeners();
-      return;
-    }
-
-    final last = linePoints.last;
-    final distanceFromLast = _haversineDistance(last.latitude, last.longitude, lat, lon);
-
-    if (distanceFromLast < 5 && currentAccuracy > 15) {
-      return;
-    }
-
-    if (distanceFromLast >= 20) {
-      linePoints.add(LatLng(lat, lon));
-      lineTotalDistance += distanceFromLast;
-      notifyListeners();
-    }
+  /// Ajoute un point manuel pour debug
+  void addManualPointToCollection(CollectionType type) {
+    final offset = Random().nextDouble() * 0.001;
+    final point = LatLng(
+      userPosition.latitude + offset,
+      userPosition.longitude + offset,
+    );
+    _collectionManager.addManualPoint(type, point);
   }
 
-  // utilitaires
+  // === MÉTHODES UTILITAIRES ===
+
   String _formatTimeNow() {
     final now = DateTime.now();
     final hh = now.hour.toString().padLeft(2, '0');
@@ -176,11 +292,16 @@ class HomeController extends ChangeNotifier {
 
   double _deg2rad(double deg) => deg * (pi / 180.0);
 
-  double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _haversineDistance(
+      double lat1, double lon1, double lat2, double lon2) {
     const R = 6371000.0;
     final dLat = _deg2rad(lat2 - lat1);
     final dLon = _deg2rad(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) + cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_deg2rad(lat1)) *
+            cos(_deg2rad(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return R * c;
   }
@@ -194,6 +315,8 @@ class HomeController extends ChangeNotifier {
   @override
   void dispose() {
     stopLocationTracking();
+    _collectionManager.removeListener(_onCollectionChanged);
+    _collectionManager.dispose();
     super.dispose();
   }
 }
