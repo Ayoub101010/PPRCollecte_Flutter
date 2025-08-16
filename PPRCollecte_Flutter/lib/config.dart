@@ -7,7 +7,15 @@ class InfrastructureConfig {
       "entities": {
         "Localité": {
           "tableName": "localites",
-          "fields": ["piste_id", "x_localite", "y_localite", "nom", "type"],
+          "fields": [
+            "piste_id",
+            "x_localite",
+            "y_localite",
+            "nom",
+            "type",
+            "date_creation",
+            "enqueteur"
+          ],
           "typeOptions": [
             "village",
             "chef-lieu de district",
@@ -24,14 +32,30 @@ class InfrastructureConfig {
             "y_ecole",
             "nom",
             "type",
-            "date_creation"
+            "date_creation",
+            "enqueteur"
           ],
-          "typeOptions": ["primaire", "secondaire", "universitaire"]
+          "typeOptions": [
+            "primaire",
+            "secondaire",
+            "universitaire"
+          ]
         },
         "Marché": {
           "tableName": "marches",
-          "fields": ["piste_id", "x_marche", "y_marche", "nom", "type"],
-          "typeOptions": ["quotidien", "hebdomadaire"]
+          "fields": [
+            "piste_id",
+            "x_marche",
+            "y_marche",
+            "nom",
+            "type",
+            "date_creation",
+            "enqueteur"
+          ],
+          "typeOptions": [
+            "quotidien",
+            "hebdomadaire"
+          ]
         },
         "Service de Santé": {
           "tableName": "services_santes",
@@ -41,9 +65,14 @@ class InfrastructureConfig {
             "y_sante",
             "nom",
             "type",
-            "date_creation"
+            "date_creation",
+            "enqueteur"
           ],
-          "typeOptions": ["dispensaire", "centre de santé", "hôpital"]
+          "typeOptions": [
+            "dispensaire",
+            "centre de santé",
+            "hôpital"
+          ]
         },
         "Bâtiment Administratif": {
           "tableName": "batiments_administratifs",
@@ -53,7 +82,8 @@ class InfrastructureConfig {
             "y_batiment_administratif",
             "nom",
             "type",
-            "date_creation"
+            "date_creation",
+            "enqueteur"
           ],
           "typeOptions": [
             "mairie",
@@ -70,9 +100,14 @@ class InfrastructureConfig {
             "y_infrastructure_hydraulique_2",
             "nom",
             "type",
-            "date_creation"
+            "date_creation",
+            "enqueteur"
           ],
-          "typeOptions": ["forage", "source améliorée", "autre"]
+          "typeOptions": [
+            "forage",
+            "source améliorée",
+            "autre"
+          ]
         },
         "Autre Infrastructure": {
           "tableName": "autres_infrastructures",
@@ -82,7 +117,8 @@ class InfrastructureConfig {
             "y_autre_infrastructure",
             "nom",
             "type",
-            "date_creation"
+            "date_creation",
+            "enqueteur"
           ],
           "typeOptions": [
             "Église",
@@ -110,7 +146,9 @@ class InfrastructureConfig {
             "y_pont",
             "situation_pont",
             "type_pont",
-            "nom_cours_eau"
+            "nom_cours_eau",
+            "date_creation",
+            "enqueteur"
           ],
           "situationOptions": [
             "à réaliser",
@@ -120,7 +158,12 @@ class InfrastructureConfig {
             "nouveau",
             "nouveau (1ans)"
           ],
-          "typePontOptions": ["béton", "bois", "métallique", "autre"]
+          "typePontOptions": [
+            "béton",
+            "bois",
+            "métallique",
+            "autre"
+          ]
         },
         "Bac": {
           "tableName": "bacs",
@@ -131,18 +174,40 @@ class InfrastructureConfig {
             "x_fin_traversee_bac",
             "y_fin_traversee_bac",
             "type_bac",
-            "nom_cours_eau"
+            "nom_cours_eau",
+            "date_creation",
+            "enqueteur"
           ],
-          "typeBacOptions": ["Manuel", "Motorisé"]
+          "typeBacOptions": [
+            "Manuel",
+            "Motorisé"
+          ]
         },
         "Buse": {
           "tableName": "buses",
-          "fields": ["piste_id", "x_buse", "y_buse"]
+          "fields": [
+            "piste_id",
+            "x_buse",
+            "y_buse",
+            "date_creation",
+            "enqueteur"
+          ]
         },
         "Dalot": {
           "tableName": "dalots",
-          "fields": ["piste_id", "x_dalot", "y_dalot", "situation_dalot"],
-          "situationOptions": ["à réaliser", "en cours", "existant"]
+          "fields": [
+            "piste_id",
+            "x_dalot",
+            "y_dalot",
+            "situation_dalot",
+            "date_creation",
+            "enqueteur"
+          ],
+          "situationOptions": [
+            "à réaliser",
+            "en cours",
+            "existant"
+          ]
         },
         "Passage Submersible": {
           "tableName": "passages_submersibles",
@@ -152,9 +217,16 @@ class InfrastructureConfig {
             "y_debut_passage_submersible",
             "x_fin_passage_submersible",
             "y_fin_passage_submersible",
-            "type_materiau"
+            "type_materiau",
+            "date_creation",
+            "enqueteur"
           ],
-          "typeOptions": ["béton", "bloc de pierre", "gabion", "autre"]
+          "typeOptions": [
+            "béton",
+            "bloc de pierre",
+            "gabion",
+            "autre"
+          ]
         }
       }
     },
@@ -168,9 +240,14 @@ class InfrastructureConfig {
             "piste_id",
             "x_point_critique",
             "y_point_critique",
-            "type_point_critique"
+            "type_point_critique",
+            "date_creation",
+            "enqueteur"
           ],
-          "typeOptions": ["nid de poule", "trou"]
+          "typeOptions": [
+            "nid de poule",
+            "trou"
+          ]
         },
         "Point de Coupure": {
           "parentTable": "chaussees",
@@ -178,9 +255,14 @@ class InfrastructureConfig {
             "piste_id",
             "x_point_coupure",
             "y_point_coupure",
-            "causes_coupures"
+            "causes_coupures",
+            "date_creation",
+            "enqueteur"
           ],
-          "causesOptions": ["Détruit (permanent)", "Inondé (temporaire)"]
+          "causesOptions": [
+            "Détruit (permanent)",
+            "Inondé (temporaire)"
+          ]
         }
       }
     }

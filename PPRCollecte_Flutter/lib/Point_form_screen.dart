@@ -6,8 +6,8 @@ import 'point_form_widget.dart';
 
 class PointFormScreen extends StatefulWidget {
   final Map<String, dynamic>? pointData;
-
-  const PointFormScreen({Key? key, this.pointData}) : super(key: key);
+  final String? agentName;
+  const PointFormScreen({Key? key, this.pointData, this.agentName}) : super(key: key);
 
   @override
   State<PointFormScreen> createState() => _PointFormScreenState();
@@ -144,6 +144,7 @@ class _PointFormScreenState extends State<PointFormScreen> {
         onSaved: () {
           Navigator.of(context).pop();
         },
+        agentName: widget.agentName,
       );
     }
   }

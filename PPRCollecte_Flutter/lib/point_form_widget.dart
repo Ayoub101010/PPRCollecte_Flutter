@@ -1,6 +1,8 @@
 // lib/point_form_widget.dart
 import 'package:flutter/material.dart';
 import 'config.dart';
+import 'localite_model.dart';
+import 'database_helper.dart';
 
 class PointFormWidget extends StatefulWidget {
   final String category;
@@ -8,6 +10,7 @@ class PointFormWidget extends StatefulWidget {
   final Map<String, dynamic>? pointData;
   final VoidCallback onBack;
   final VoidCallback onSaved;
+  final String? agentName; // ← nouveau
 
   const PointFormWidget({
     Key? key,
@@ -16,6 +19,7 @@ class PointFormWidget extends StatefulWidget {
     this.pointData,
     required this.onBack,
     required this.onSaved,
+    this.agentName, // ← nouveau
   }) : super(key: key);
 
   @override
@@ -26,11 +30,21 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   final _formKey = GlobalKey<FormState>();
   Map<String, dynamic> _formData = {};
   bool _isLoading = false;
+  late TextEditingController agentController;
 
   @override
   void initState() {
     super.initState();
+    print('PointFormWidget.agentName = ${widget.agentName}');
+    agentController = TextEditingController(text: widget.agentName ?? 'N/A');
+
     _initializeFormData();
+  }
+
+  @override
+  void dispose() {
+    agentController.dispose();
+    super.dispose();
   }
 
   void _initializeFormData() {
@@ -40,21 +54,31 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'longitude': widget.pointData!['longitude'],
         'accuracy': widget.pointData!['accuracy'],
         'timestamp': widget.pointData!['timestamp'],
-        'enqueteur': 'Agent PPR', // À récupérer depuis les prefs
+        'enqueteur': widget.agentName ?? 'N/A', // À récupérer depuis les prefs
+        'date_creation': widget.pointData!['date_creation'],
       };
+    } else {
+      _formData['date_creation'] = null; // Initialisation
+      _formData['enqueteur'] = widget.agentName ?? 'N/A'; // <-- et ici
     }
   }
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Simuler sauvegarde
-      await Future.delayed(const Duration(seconds: 1));
+      final localite = Localite(
+        xLocalite: _formData['latitude'] ?? 0.0,
+        yLocalite: _formData['longitude'] ?? 0.0,
+        nom: _formData['nom'] ?? 'Sans nom',
+        type: _formData['type'] ?? 'Non spécifié',
+        enqueteur: widget.agentName ?? 'Anonyme',
+        dateCreation: _formData['date_creation'] ?? DateTime.now().toString(),
+      );
+
+      await DatabaseHelper().insertLocalite(localite);
 
       if (mounted) {
         showDialog(
@@ -64,18 +88,20 @@ class _PointFormWidgetState extends State<PointFormWidget> {
               children: [
                 Icon(Icons.check_circle, color: Colors.green),
                 SizedBox(width: 8),
-                Text('Infrastructure sauvegardée'),
+                Text('Succès'),
               ],
             ),
             content: Text(
-              '${widget.type} enregistré.\n\n'
-              'Coordonnées: ${_formData['latitude']?.toStringAsFixed(6)}, ${_formData['longitude']?.toStringAsFixed(6)}',
+              '${localite.type} "${localite.nom}" enregistrée\n'
+              'Coordonnées: ${localite.xLocalite.toStringAsFixed(6)}, '
+              '${localite.yLocalite.toStringAsFixed(6)}\n'
+              'Enquêteur: ${localite.enqueteur}',
             ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  widget.onSaved();
+                  widget.onSaved?.call();
                 },
                 child: const Text('OK'),
               ),
@@ -87,16 +113,14 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $error'),
+            content: Text('Erreur: ${error.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -183,6 +207,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                         key: 'type',
                         required: true,
                       ),
+
                     if (config?['fields']?.contains('nom_cours_eau') == true)
                       _buildTextField(
                         label: 'Nom du cours d\'eau *',
@@ -190,6 +215,12 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                         key: 'nom_cours_eau',
                         required: true,
                       ),
+                    // Champ date de création
+                    _buildDateField(
+                      label: 'Date de création *',
+                      key: 'date_creation',
+                      required: true,
+                    ),
                   ],
                 ),
 
@@ -207,7 +238,6 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                     _buildGpsInfo(),
                     _buildReadOnlyField(
                       label: 'Agent enquêteur',
-                      value: _formData['enqueteur'] ?? 'Non connecté',
                       icon: Icons.person,
                     ),
                   ],
@@ -273,6 +303,78 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required String key,
+    bool required = false,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () async {
+              DateTime initialDate = DateTime.now();
+              if (_formData[key] != null) {
+                initialDate = DateTime.tryParse(_formData[key]) ?? DateTime.now();
+              }
+
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: initialDate,
+                firstDate: DateTime(1900),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                setState(() {
+                  _formData[key] = picked.toIso8601String();
+                });
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _formData[key] != null
+                          ? DateTime.tryParse(_formData[key]) != null
+                              ? "${DateTime.parse(_formData[key]).day.toString().padLeft(2, '0')}/"
+                                  "${DateTime.parse(_formData[key]).month.toString().padLeft(2, '0')}/"
+                                  "${DateTime.parse(_formData[key]).year}"
+                              : _formData[key]
+                          : "Sélectionner une date",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _formData[key] != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -518,39 +620,45 @@ class _PointFormWidgetState extends State<PointFormWidget> {
 
   Widget _buildReadOnlyField({
     required String label,
-    required String value,
     required IconData icon,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
-            ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
           ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            padding: const EdgeInsets.all(12),
-            child: Row(
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, size: 16, color: const Color(0xFF666666)),
-                const SizedBox(width: 12),
                 Text(
-                  value,
+                  label,
                   style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF666666),
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.agentName ?? 'Non spécifié',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
                   ),
                 ),
               ],

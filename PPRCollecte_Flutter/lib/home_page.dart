@@ -15,7 +15,12 @@ import 'collection_exports.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
-  const HomePage({super.key, required this.onLogout});
+  final String agentName;
+  const HomePage({
+    super.key,
+    required this.onLogout,
+    required this.agentName,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -53,8 +58,7 @@ class _HomePageState extends State<HomePage> {
       Marker(
         markerId: const MarkerId('poi1'),
         position: const LatLng(34.021, -6.841),
-        infoWindow: const InfoWindow(
-            title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
+        infoWindow: const InfoWindow(title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       ),
     ]);
@@ -76,8 +80,7 @@ class _HomePageState extends State<HomePage> {
       _controller.complete(controller);
     }
 
-    if (userPosition.latitude != 34.020882 ||
-        userPosition.longitude != -6.841650) {
+    if (userPosition.latitude != 34.020882 || userPosition.longitude != -6.841650) {
       await controller.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: userPosition, zoom: 17),
@@ -133,6 +136,7 @@ class _HomePageState extends State<HomePage> {
             'accuracy': 10.0,
             'timestamp': DateTime.now().toIso8601String(),
           },
+          agentName: widget.agentName,
         ),
       ),
     );
@@ -358,25 +362,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   void handleSave() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Sauvegardé !')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sauvegardé !')));
   }
 
   void handleSync() {
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Synchronisation lancée !')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Synchronisation lancée !')));
   }
 
   void handleMenuPress() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Menu ouvert')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Menu ouvert')));
   }
 
   double _coordinateDistance(lat1, lon1, lat2, lon2) {
     const p = 0.017453292519943295;
-    final a = 0.5 -
-        (cos((lat2 - lat1) * p) / 2) +
-        cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
+    final a = 0.5 - (cos((lat2 - lat1) * p) / 2) + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
     return 12742000 * asin(sqrt(a));
   }
 
@@ -408,12 +407,13 @@ class _HomePageState extends State<HomePage> {
         allPolylines.add(Polyline(
           polylineId: const PolylineId('currentLigne'),
           points: lignePoints,
-          color: homeController.ligneCollection!.isPaused
-              ? Colors.orange
-              : Colors.green,
+          color: homeController.ligneCollection!.isPaused ? Colors.orange : Colors.green,
           width: 4,
           patterns: homeController.ligneCollection!.isPaused
-              ? <PatternItem>[PatternItem.dash(10), PatternItem.gap(5)]
+              ? <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(5)
+                ]
               : <PatternItem>[],
         ));
       }
@@ -426,12 +426,13 @@ class _HomePageState extends State<HomePage> {
         allPolylines.add(Polyline(
           polylineId: const PolylineId('currentChaussee'),
           points: chausseePoints,
-          color: homeController.chausseeCollection!.isPaused
-              ? Colors.deepOrange
-              : const Color(0xFFFF9800),
+          color: homeController.chausseeCollection!.isPaused ? Colors.deepOrange : const Color(0xFFFF9800),
           width: 5,
           patterns: homeController.chausseeCollection!.isPaused
-              ? <PatternItem>[PatternItem.dash(15), PatternItem.gap(5)]
+              ? <PatternItem>[
+                  PatternItem.dash(15),
+                  PatternItem.gap(5)
+                ]
               : <PatternItem>[],
         ));
       }
@@ -467,7 +468,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
-                  
+
                   // Afficher le statut de ligne si active
                   if (homeController.ligneCollection != null)
                     LigneStatusWidget(
@@ -482,8 +483,7 @@ class _HomePageState extends State<HomePage> {
                       topOffset: homeController.ligneCollection != null ? 70 : 16,
                     ),
 
-                  DataCountWidget(
-                      count: collectedMarkers.length + collectedPolylines.length),
+                  DataCountWidget(count: collectedMarkers.length + collectedPolylines.length),
                 ],
               ),
             ),
