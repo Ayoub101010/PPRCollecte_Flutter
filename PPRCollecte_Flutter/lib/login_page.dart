@@ -200,20 +200,27 @@ class _LoginPageState extends State<LoginPage> {
                         return;
                       }
 
+                      final db = DBHelper();
+
                       try {
                         print('Tentative connexion API...');
                         final userData =
                             await ApiService.login(email, password);
                         print('Connexion API réussie: $userData');
 
-                        final db = DBHelper();
-                        await db.insertUser(email, password);
+                        final nom = userData['nom'] ?? '';
+                        final prenom = userData['prenom'] ?? '';
+                        final fullName = '$prenom $nom';
+
+                        await db.insertUser(prenom, nom, email, password);
+
                         print('Utilisateur sauvegardé localement.');
 
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (_) => HomePage(
+                              agentName: fullName,
                               onLogout: () {
                                 Navigator.pushReplacement(
                                   context,
@@ -227,14 +234,19 @@ class _LoginPageState extends State<LoginPage> {
                       } catch (e) {
                         print('Connexion API échouée, essai base locale...');
                         bool isValidLocal =
-                            await DBHelper().validateUser(email, password);
+                            await db.validateUser(email, password);
 
                         if (isValidLocal) {
                           print('Connexion locale réussie.');
+                          final fullName = await db.getAgentFullName(email) ??
+                              'Utilisateur Local';
+                          // Ici on ne peut pas utiliser fullName, donc on met juste un fallback
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                               builder: (_) => HomePage(
+                                agentName:
+                                    fullName, // ou autre valeur par défaut
                                 onLogout: () {
                                   Navigator.pushReplacement(
                                     context,

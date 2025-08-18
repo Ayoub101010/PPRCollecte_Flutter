@@ -116,14 +116,13 @@ class HomeController extends ChangeNotifier {
 
   /// Démarre une collecte de ligne/piste
   Future<void> startLigneCollection(String codePiste) async {
-    // ✅ Un seul paramètre
     if (!gpsEnabled) {
       throw Exception('Le GPS doit être activé pour commencer la collecte');
     }
 
     try {
       _collectionManager.startLigneCollection(
-        codePiste: codePiste, // ✅ Passer le code piste
+        codePiste: codePiste, // ✅ Un seul paramètre requis
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
@@ -134,7 +133,6 @@ class HomeController extends ChangeNotifier {
 
   /// Démarre une collecte de chaussée
   Future<void> startChausseeCollection() async {
-    // ✅ Pas de paramètres
     if (!gpsEnabled) {
       throw Exception('Le GPS doit être activé pour commencer la collecte');
     }
@@ -192,8 +190,8 @@ class HomeController extends ChangeNotifier {
 
     return {
       'points': result.points,
-      'id_piste': result.id, // ✅ ID auto-généré
-      'code_piste': result.codePiste, // ✅ Code piste saisi
+      'id': result.id,
+      'codePiste': result.codePiste,
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,
@@ -207,7 +205,7 @@ class HomeController extends ChangeNotifier {
 
     return {
       'points': result.points,
-      'id_chaussee': result.id, // ✅ ID auto-généré
+      'id': result.id,
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,

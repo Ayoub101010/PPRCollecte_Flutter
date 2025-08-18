@@ -1,5 +1,4 @@
 // lib/collection_models.dart - VERSION CORRIGÉE
-import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 enum CollectionType { ligne, chaussee }

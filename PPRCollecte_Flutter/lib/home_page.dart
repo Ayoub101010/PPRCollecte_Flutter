@@ -10,12 +10,17 @@ import 'bottom_status_bar_widget.dart';
 import 'bottom_buttons_widget.dart';
 import 'home_controller.dart';
 import 'Point_form_screen.dart';
-// Nouveaux imports pour le système de collecte
 import 'collection_exports.dart';
+import 'provisional_form_dialog.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
-  const HomePage({super.key, required this.onLogout});
+  final String agentName;
+  const HomePage({
+    super.key,
+    required this.onLogout,
+    required this.agentName,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -134,6 +139,7 @@ class _HomePageState extends State<HomePage> {
             'accuracy': 10.0,
             'timestamp': DateTime.now().toIso8601String(),
           },
+          agentName: widget.agentName,
         ),
       ),
     );
@@ -163,8 +169,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Vérifier si une collecte est active
-    final activeType = homeController.getActiveCollectionType();
-    if (activeType != null) {
+    if (homeController.hasActiveCollection) {
+      final activeType = homeController.activeCollectionType;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -174,16 +180,13 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
-
     // Afficher le formulaire provisoire
-    final provisionalData = await ProvisionalFormDialog.show(
-      context: context,
-    );
+    final provisionalData = await ProvisionalFormDialog.show(context: context);
     if (provisionalData == null) return;
 
     try {
       await homeController.startLigneCollection(
-        provisionalData['code_piste']!, // ✅ Passer seulement le code piste
+        provisionalData['code_piste']!, // ✅ Un seul paramètre
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -225,13 +228,15 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // ✅ Passer le code piste au formulaire principal
+    // Ouvrir le formulaire principal avec les données provisoires
     final formResult = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FormulaireLignePage(
           linePoints: result['points'],
-          provisionalCode: result['code_piste'], // ✅ Code piste saisi
+          provisionalCode: result['codePiste'], // ✅ Nom correct du paramètre
+          startTime: result['startTime'],
+          endTime: result['endTime'],
         ),
       ),
     );
@@ -265,8 +270,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Vérifier si une collecte est active
-    final activeType = homeController.getActiveCollectionType();
-    if (activeType != null) {
+    if (homeController.hasActiveCollection) {
+      final activeType = homeController.activeCollectionType;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -277,9 +282,9 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // ✅ PAS de formulaire provisoire pour chaussée
     try {
-      await homeController.startChausseeCollection(); // ✅ Pas de paramètres
+      await homeController
+          .startChausseeCollection(); // ✅ Aucun paramètre requis
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -325,8 +330,8 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(
         builder: (_) => FormulaireChausseePage(
-          // ✅ CORRECT - Formulaire chaussée
-          chausseePoints: result['points'], // ✅ CORRECT - Bon paramètre
+          chausseePoints: result['points'],
+          provisionalId: result['id'], // ✅ Utiliser l'ID correct
         ),
       ),
     );

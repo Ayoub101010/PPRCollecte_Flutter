@@ -1,4 +1,3 @@
-# Create your models here.
 from django.contrib.gis.db import models
 
 class Login(models.Model):
@@ -8,10 +7,9 @@ class Login(models.Model):
     mdp = models.TextField()
     role = models.TextField()
 
-
     class Meta:
-        db_table = 'login'  # Nom exact de ta table dans PostgreSQL
-        managed = False     # Empêche Django de gérer la création/modification de cette table
+        db_table = 'login'
+        managed = False
 
     def __str__(self):
         return self.mail
@@ -47,7 +45,255 @@ class Piste(models.Model):
 
     class Meta:
         db_table = 'pistes'
-        managed = False  # Si la table est déjà créée dans la base
+        managed = False
 
     def __str__(self):
         return f"Piste {self.id} - Code {self.code_piste}"
+
+
+class ServicesSantes(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_sante = models.FloatField(null=True, blank=True)
+    y_sante = models.FloatField(null=True, blank=True)
+    nom = models.CharField(max_length=254, null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    date_creat = models.DateField(null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'services_santes'
+        managed = False
+
+    def __str__(self):
+        return f"{self.nom} ({self.fid})"
+
+
+class AutresInfrastructures(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_autre_in = models.FloatField(null=True, blank=True)
+    y_autre_in = models.FloatField(null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    date_creat = models.DateField(null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'autres_infrastructures'
+        managed = False
+
+    def __str__(self):
+        return f"Autre infrastructure ({self.fid})"
+
+
+class Bacs(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_debut_tr = models.FloatField(null=True, blank=True)
+    y_debut_tr = models.FloatField(null=True, blank=True)
+    x_fin_trav = models.FloatField(null=True, blank=True)
+    y_fin_trav = models.FloatField(null=True, blank=True)
+    type_bac = models.CharField(max_length=254, null=True, blank=True)
+    nom_cours = models.CharField(max_length=254, null=True, blank=True, db_column='nom_cours_')
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+    endroit = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'bacs'
+        managed = False
+
+    def __str__(self):
+        return f"Bac {self.fid}"
+
+
+class BatimentsAdministratifs(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_batiment = models.FloatField(null=True, blank=True)
+    y_batiment = models.FloatField(null=True, blank=True)
+    nom = models.CharField(max_length=254, null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    date_creat = models.DateField(null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'batiments_administratifs'
+        managed = False
+
+    def __str__(self):
+        return f"{self.nom} ({self.fid})"
+
+
+class Buses(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_buse = models.FloatField(null=True, blank=True)
+    y_buse = models.FloatField(null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'buses'
+        managed = False
+
+    def __str__(self):
+        return f"Buse {self.fid}"
+
+
+class Dalots(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_dalot = models.FloatField(null=True, blank=True)
+    y_dalot = models.FloatField(null=True, blank=True)
+    situation = models.CharField(max_length=254, null=True, blank=True, db_column='situation_')
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'dalots'
+        managed = False
+
+    def __str__(self):
+        return f"Dalot {self.fid}"
+
+
+class Ecoles(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_ecole = models.FloatField(null=True, blank=True)
+    y_ecole = models.FloatField(null=True, blank=True)
+    nom = models.CharField(max_length=254, null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    date_creat = models.DateField(null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ecoles'
+        managed = False
+
+    def __str__(self):
+        return f"{self.nom} ({self.fid})"
+
+
+class InfrastructuresHydrauliques(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_infrastr = models.FloatField(null=True, blank=True)
+    y_infrastr = models.FloatField(null=True, blank=True)
+    nom = models.CharField(max_length=254, null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    date_creat = models.DateField(null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'infrastructures_hydrauliques'
+        managed = False
+
+    def __str__(self):
+        return f"{self.nom} ({self.fid})"
+
+
+class Localites(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_localite = models.FloatField(null=True, blank=True)
+    y_localite = models.FloatField(null=True, blank=True)
+    nom = models.CharField(max_length=254, null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'localites'
+        managed = False
+
+    def __str__(self):
+        return f"{self.nom} ({self.fid})"
+
+
+class Marches(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_marche = models.FloatField(null=True, blank=True)
+    y_marche = models.FloatField(null=True, blank=True)
+    nom = models.CharField(max_length=254, null=True, blank=True)
+    type = models.CharField(max_length=254, null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'marches'
+        managed = False
+
+    def __str__(self):
+        return f"{self.nom} ({self.fid})"
+
+
+class PassagesSubmersibles(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_debut_pa = models.FloatField(null=True, blank=True)
+    y_debut_pa = models.FloatField(null=True, blank=True)
+    x_fin_pass = models.FloatField(null=True, blank=True)
+    y_fin_pass = models.FloatField(null=True, blank=True)
+    type_mater = models.CharField(max_length=254, null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+    endroit = models.CharField(max_length=32, null=True, blank=True)
+
+    class Meta:
+        db_table = 'passages_submersibles'
+        managed = False
+
+    def __str__(self):
+        return f"Passage {self.fid}"
+
+
+class Ponts(models.Model):
+    fid = models.BigIntegerField(primary_key=True)
+    geom = models.PointField(srid=4326)
+    id = models.FloatField(null=True, blank=True)
+    x_pont = models.FloatField(null=True, blank=True)
+    y_pont = models.FloatField(null=True, blank=True)
+    situation = models.CharField(max_length=254, null=True, blank=True, db_column='situation_')
+    type_pont = models.CharField(max_length=254, null=True, blank=True)
+    nom_cours = models.CharField(max_length=254, null=True, blank=True, db_column='nom_cours_')
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    class Meta:
+        db_table = 'ponts'
+        managed = False
+
+    def __str__(self):
+        return f"Pont {self.fid} - {self.nom_cours or ''}"
+

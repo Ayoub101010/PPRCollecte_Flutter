@@ -9,6 +9,66 @@ from rest_framework import generics
 from .models import Login
 from .serializers import LoginSerializer, PisteSerializer
 from .models import Piste
+from .models import (
+    ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
+    Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
+    Marches, PassagesSubmersibles, Ponts
+)
+from .serializers import (
+    ServicesSantesSerializer, AutresInfrastructuresSerializer, BacsSerializer,
+    BatimentsAdministratifsSerializer, BusesSerializer, DalotsSerializer,
+    EcolesSerializer, InfrastructuresHydrauliquesSerializer, LocalitesSerializer,
+    MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer
+)
+
+
+class ServicesSantesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = ServicesSantes.objects.all()
+    serializer_class = ServicesSantesSerializer
+
+class AutresInfrastructuresListCreateAPIView(generics.ListCreateAPIView):
+    queryset = AutresInfrastructures.objects.all()
+    serializer_class = AutresInfrastructuresSerializer
+
+class BacsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Bacs.objects.all()
+    serializer_class = BacsSerializer
+
+class BatimentsAdministratifsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = BatimentsAdministratifs.objects.all()
+    serializer_class = BatimentsAdministratifsSerializer
+
+class BusesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Buses.objects.all()
+    serializer_class = BusesSerializer
+
+class DalotsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Dalots.objects.all()
+    serializer_class = DalotsSerializer
+
+class EcolesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Ecoles.objects.all()
+    serializer_class = EcolesSerializer
+
+class InfrastructuresHydrauliquesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = InfrastructuresHydrauliques.objects.all()
+    serializer_class = InfrastructuresHydrauliquesSerializer
+
+class LocalitesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Localites.objects.all()
+    serializer_class = LocalitesSerializer
+
+class MarchesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Marches.objects.all()
+    serializer_class = MarchesSerializer
+
+class PassagesSubmersiblesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = PassagesSubmersibles.objects.all()
+    serializer_class = PassagesSubmersiblesSerializer
+
+class PontsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Ponts.objects.all()
+    serializer_class = PontsSerializer
 
 
 
