@@ -1,17 +1,16 @@
+// lib/formulaire_chaussee_page.dart - VERSION FINALE CORRIGÉE
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 
 class FormulaireChausseePage extends StatefulWidget {
   final List<LatLng> chausseePoints;
-  final String? provisionalId;
-  final String? provisionalName;
+  final int? provisionalId;
 
   const FormulaireChausseePage({
     super.key,
     required this.chausseePoints,
     this.provisionalId,
-    this.provisionalName,
   });
 
   @override
@@ -22,44 +21,27 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  // Champs du formulaire selon le MCD pour les chaussées
-  final _idController = TextEditingController();
-  final _longueurController = TextEditingController();
-  final _largeurController = TextEditingController();
-  final _observationsController = TextEditingController();
+  // ✅ CHAMPS SELON VOS SPÉCIFICATIONS
+  final _codePisteController = TextEditingController();
+  final _codeGpsController = TextEditingController();
+  final _endroitController = TextEditingController();
 
-  String? _pisteId;
-  String? _revetement; // Corrigé : sans caractères spéciaux
-  String? _etatChaussee;
-  String? _typeDefaut;
-  DateTime? _dateConstructionChaussee;
-  DateTime? _dateDernierEntretien;
+  String? _typeChaussee; // Radio buttons
+  String? _etatPiste; // Radio buttons
 
-  // Options pour les dropdowns
-  final List<String> _revetementOptions = [
+  // ✅ OPTIONS SELON LA DOCUMENTATION OFFICIELLE
+  final List<String> _typeChausseeOptions = [
     "Bitume",
-    "Béton",
-    "Pavés",
-    "Gravier",
+    "Latérite",
     "Terre",
+    "Bouwal",
     "Autre"
   ];
 
-  final List<String> _etatOptions = [
-    "Très bon",
-    "Bon",
-    "Moyen",
-    "Mauvais",
-    "Très mauvais"
-  ];
-
-  final List<String> _defautOptions = [
-    "Aucun",
-    "Nids de poule",
-    "Fissures",
-    "Affaissement",
-    "Déformation",
-    "Usure"
+  final List<String> _etatPisteOptions = [
+    "Bon état",
+    "Moyennement dégradée",
+    "Fortement dégradée"
   ];
 
   @override
@@ -69,13 +51,8 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   }
 
   void _initializeForm() {
-    if (widget.provisionalId != null) {
-      _idController.text = widget.provisionalId!;
-    }
-
-    // Calculer la longueur automatiquement
-    final distance = _calculateTotalDistance(widget.chausseePoints);
-    _longueurController.text = (distance / 1000).toStringAsFixed(2); // en km
+    // Initialisation si nécessaire
+    // Les coordonnées seront calculées automatiquement depuis chausseePoints
   }
 
   double _calculateTotalDistance(List<LatLng> points) {
@@ -89,7 +66,6 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   }
 
   double _distanceBetween(LatLng point1, LatLng point2) {
-    // Formule de Haversine simplifiée
     const double p = 0.017453292519943295;
     final a = 0.5 -
         (cos((point2.latitude - point1.latitude) * p) / 2) +
@@ -100,26 +76,6 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     return 12742000 * asin(sqrt(a));
   }
 
-  Future<void> _selectDate(
-      BuildContext context, bool isConstructionDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked != null) {
-      setState(() {
-        if (isConstructionDate) {
-          _dateConstructionChaussee = picked;
-        } else {
-          _dateDernierEntretien = picked;
-        }
-      });
-    }
-  }
-
   Future<void> _saveChaussee() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -128,30 +84,41 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     });
 
     try {
-      // Simuler sauvegarde
       await Future.delayed(const Duration(seconds: 1));
 
-      // Données à sauvegarder selon le MCD
+      // ✅ DONNÉES SELON VOS SPÉCIFICATIONS
       final chausseeData = {
-        'id': _idController.text,
-        'piste_id': _pisteId,
-        'longueur_chaussee_km': double.tryParse(_longueurController.text),
-        'largeur_chaussee_m': double.tryParse(_largeurController.text),
-        'revetement': _revetement,
-        'etat_chaussee': _etatChaussee,
-        'type_defaut': _typeDefaut,
-        'date_construction_chaussee':
-            _dateConstructionChaussee?.toIso8601String(),
-        'date_dernier_entretien': _dateDernierEntretien?.toIso8601String(),
-        'observations': _observationsController.text,
-        'points': widget.chausseePoints
+        // Champs saisis par l'utilisateur
+        'code_piste': _codePisteController.text,
+        'code_gps': _codeGpsController.text,
+        'endroit': _endroitController.text,
+        'type_chaussee': _typeChaussee,
+        'etat_piste': _etatPiste,
+
+        // ✅ Coordonnées auto-gérées (les 4)
+        'x_debut_chaussee': widget.chausseePoints.isNotEmpty
+            ? widget.chausseePoints.first.longitude
+            : null,
+        'y_debut_chaussee': widget.chausseePoints.isNotEmpty
+            ? widget.chausseePoints.first.latitude
+            : null,
+        'x_fin_chaussee': widget.chausseePoints.isNotEmpty
+            ? widget.chausseePoints.last.longitude
+            : null,
+        'y_fin_chaussee': widget.chausseePoints.isNotEmpty
+            ? widget.chausseePoints.last.latitude
+            : null,
+
+        // Métadonnées de collecte
+        'points_collectes': widget.chausseePoints
             .map((p) => {
                   'latitude': p.latitude,
                   'longitude': p.longitude,
                 })
             .toList(),
+        'distance_totale_m': _calculateTotalDistance(widget.chausseePoints),
+        'nombre_points': widget.chausseePoints.length,
         'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 'pending',
       };
 
@@ -232,104 +199,106 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                       title: '🏷️ Identification',
                       children: [
                         _buildTextField(
-                          controller: _idController,
-                          label: 'ID Chaussée *',
-                          hint: 'Identifiant unique de la chaussée',
+                          controller: _codePisteController,
+                          label: 'Code Piste *',
+                          hint: 'Ex: 1B-02CR03P01',
                           required: true,
                         ),
                         _buildTextField(
-                          controller:
-                              TextEditingController(text: _pisteId ?? ''),
-                          label: 'Piste Associée',
-                          hint: 'ID de la piste associée',
-                          onChanged: (value) => _pisteId = value,
+                          controller: _codeGpsController,
+                          label: 'Code GPS *',
+                          hint: 'Identifiant GPS terrain',
+                          required: true,
+                        ),
+                        _buildTextField(
+                          controller: _endroitController,
+                          label: 'Endroit *',
+                          hint: 'Lieu/localisation',
+                          required: true,
                         ),
                       ],
                     ),
 
-                    // Section Caractéristiques Physiques
+                    // ✅ Section Coordonnées (AFFICHAGE SEULEMENT)
                     _buildFormSection(
-                      title: '📏 Caractéristiques Physiques',
+                      title: '📍 Coordonnées (Auto-calculées)',
                       children: [
-                        _buildTextField(
-                          controller: _longueurController,
-                          label: 'Longueur (km) *',
-                          hint: 'Longueur calculée automatiquement',
-                          keyboardType: TextInputType.number,
-                          required: true,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildCoordinateDisplay(
+                                label: 'X Début chaussée',
+                                value: widget.chausseePoints.isNotEmpty
+                                    ? widget.chausseePoints.first.longitude
+                                        .toStringAsFixed(8)
+                                    : 'N/A',
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildCoordinateDisplay(
+                                label: 'Y Début chaussée',
+                                value: widget.chausseePoints.isNotEmpty
+                                    ? widget.chausseePoints.first.latitude
+                                        .toStringAsFixed(8)
+                                    : 'N/A',
+                              ),
+                            ),
+                          ],
                         ),
-                        _buildTextField(
-                          controller: _largeurController,
-                          label: 'Largeur (m)',
-                          hint: 'Largeur moyenne de la chaussée',
-                          keyboardType: TextInputType.number,
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildCoordinateDisplay(
+                                label: 'X Fin chaussée',
+                                value: widget.chausseePoints.isNotEmpty
+                                    ? widget.chausseePoints.last.longitude
+                                        .toStringAsFixed(8)
+                                    : 'N/A',
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildCoordinateDisplay(
+                                label: 'Y Fin chaussée',
+                                value: widget.chausseePoints.isNotEmpty
+                                    ? widget.chausseePoints.last.latitude
+                                        .toStringAsFixed(8)
+                                    : 'N/A',
+                              ),
+                            ),
+                          ],
                         ),
-                        _buildDropdownField(
-                          label: 'Revêtement *',
-                          value: _revetement,
-                          options: _revetementOptions,
+                      ],
+                    ),
+
+                    // ✅ Section Caractéristiques (RADIO BUTTONS)
+                    _buildFormSection(
+                      title: '🛣️ Caractéristiques',
+                      children: [
+                        _buildRadioGroupField(
+                          label: 'Type de chaussée *',
+                          value: _typeChaussee,
+                          options: _typeChausseeOptions,
                           onChanged: (value) =>
-                              setState(() => _revetement = value),
+                              setState(() => _typeChaussee = value),
+                          required: true,
+                        ),
+                        _buildRadioGroupField(
+                          label: 'État de la piste *',
+                          value: _etatPiste,
+                          options: _etatPisteOptions,
+                          onChanged: (value) =>
+                              setState(() => _etatPiste = value),
                           required: true,
                         ),
                       ],
                     ),
 
-                    // Section État et Défauts
+                    // Section GPS (info collecte)
                     _buildFormSection(
-                      title: '⚠️ État et Défauts',
-                      children: [
-                        _buildDropdownField(
-                          label: 'État de la Chaussée *',
-                          value: _etatChaussee,
-                          options: _etatOptions,
-                          onChanged: (value) =>
-                              setState(() => _etatChaussee = value),
-                          required: true,
-                        ),
-                        _buildDropdownField(
-                          label: 'Type de Défaut',
-                          value: _typeDefaut,
-                          options: _defautOptions,
-                          onChanged: (value) =>
-                              setState(() => _typeDefaut = value),
-                        ),
-                      ],
-                    ),
-
-                    // Section Historique
-                    _buildFormSection(
-                      title: '📅 Historique',
-                      children: [
-                        _buildDateField(
-                          label: 'Date de Construction',
-                          value: _dateConstructionChaussee,
-                          onTap: () => _selectDate(context, true),
-                        ),
-                        _buildDateField(
-                          label: 'Date Dernier Entretien',
-                          value: _dateDernierEntretien,
-                          onTap: () => _selectDate(context, false),
-                        ),
-                      ],
-                    ),
-
-                    // Section Observations
-                    _buildFormSection(
-                      title: '📝 Observations',
-                      children: [
-                        _buildTextField(
-                          controller: _observationsController,
-                          label: 'Observations',
-                          hint: 'Remarques générales sur la chaussée',
-                          maxLines: 3,
-                        ),
-                      ],
-                    ),
-
-                    // Section GPS
-                    _buildFormSection(
-                      title: '📍 Géolocalisation',
+                      title: '📱 Données de collecte',
                       children: [
                         _buildGpsInfo(),
                       ],
@@ -383,7 +352,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                             Icon(Icons.save, size: 20),
                             SizedBox(width: 8),
                             Text(
-                              'Enregistrer la Chaussée',
+                              'Enregistrer la chaussée',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -442,13 +411,10 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   }
 
   Widget _buildTextField({
-    TextEditingController? controller,
+    required TextEditingController controller,
     required String label,
     required String hint,
     bool required = false,
-    int maxLines = 1,
-    TextInputType? keyboardType,
-    Function(String)? onChanged,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -466,9 +432,6 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            onChanged: onChanged,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
@@ -487,7 +450,6 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                 borderSide: const BorderSide(color: Color(0xFFFF9800)),
               ),
             ),
-            textAlignVertical: maxLines > 1 ? TextAlignVertical.top : null,
             validator: required
                 ? (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -502,7 +464,57 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     );
   }
 
-  Widget _buildDropdownField({
+  // ✅ WIDGET POUR AFFICHAGE DES COORDONNÉES (LECTURE SEULE)
+  Widget _buildCoordinateDisplay({
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF374151),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.gps_fixed,
+                size: 16,
+                color: Color(0xFF6B7280),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF374151),
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ WIDGET POUR RADIO BUTTONS
+  Widget _buildRadioGroupField({
     required String label,
     required String? value,
     required List<String> options,
@@ -523,93 +535,41 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
             ),
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: value,
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFFF9FAFB),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFFF9800)),
-              ),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
-            items: options.map((String option) {
-              return DropdownMenuItem<String>(
-                value: option,
-                child: Text(option),
-              );
-            }).toList(),
-            onChanged: onChanged,
-            validator: required
-                ? (value) {
-                    if (value == null || value.isEmpty) {
-                      return '$label est obligatoire';
-                    }
-                    return null;
-                  }
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDateField({
-    required String label,
-    required DateTime? value,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
-            ),
-          ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: onTap,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today,
-                      size: 20, color: Color(0xFF666666)),
-                  const SizedBox(width: 12),
-                  Text(
-                    value != null
-                        ? "${value.day}/${value.month}/${value.year}"
-                        : "Sélectionner une date",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: value != null
-                          ? const Color(0xFF374151)
-                          : const Color(0xFF9CA3AF),
-                    ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: options.map((option) {
+                return RadioListTile<String>(
+                  title: Text(
+                    option,
+                    style: const TextStyle(fontSize: 14),
                   ),
-                ],
-              ),
+                  value: option,
+                  groupValue: value,
+                  onChanged: onChanged,
+                  activeColor: const Color(0xFFFF9800),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                );
+              }).toList(),
             ),
           ),
+          if (required && (value == null || value.isEmpty))
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 12),
+              child: Text(
+                '$label est obligatoire',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+            ),
         ],
       ),
     );

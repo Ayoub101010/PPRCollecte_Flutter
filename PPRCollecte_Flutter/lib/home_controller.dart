@@ -115,15 +115,15 @@ class HomeController extends ChangeNotifier {
   // === NOUVELLES MÉTHODES POUR LES COLLECTES ===
 
   /// Démarre une collecte de ligne/piste
-  Future<void> startLigneCollection(
-      String provisionalId, String provisionalName) async {
+  Future<void> startLigneCollection(String codePiste) async {
+    // ✅ Un seul paramètre
     if (!gpsEnabled) {
       throw Exception('Le GPS doit être activé pour commencer la collecte');
     }
 
     try {
       _collectionManager.startLigneCollection(
-        provisionalName: provisionalName,
+        codePiste: codePiste, // ✅ Passer le code piste
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
@@ -133,15 +133,14 @@ class HomeController extends ChangeNotifier {
   }
 
   /// Démarre une collecte de chaussée
-  Future<void> startChausseeCollection(
-      String provisionalId, String provisionalName) async {
+  Future<void> startChausseeCollection() async {
+    // ✅ Pas de paramètres
     if (!gpsEnabled) {
       throw Exception('Le GPS doit être activé pour commencer la collecte');
     }
 
     try {
       _collectionManager.startChausseeCollection(
-        provisionalName: provisionalName,
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
@@ -193,8 +192,8 @@ class HomeController extends ChangeNotifier {
 
     return {
       'points': result.points,
-      'provisionalId': result.id,
-      'provisionalName': result.provisionalName,
+      'id_piste': result.id, // ✅ ID auto-généré
+      'code_piste': result.codePiste, // ✅ Code piste saisi
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,
@@ -208,8 +207,7 @@ class HomeController extends ChangeNotifier {
 
     return {
       'points': result.points,
-      'provisionalId': result.id,
-      'provisionalName': result.provisionalName,
+      'id_chaussee': result.id, // ✅ ID auto-généré
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,

@@ -103,9 +103,12 @@ class _PointFormWidgetState extends State<PointFormWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = Color(InfrastructureConfig.getCategoryColor(widget.category));
-    final config = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
-    final typeOptions = InfrastructureConfig.getTypeOptions(widget.category, widget.type);
+    final categoryColor =
+        Color(InfrastructureConfig.getCategoryColor(widget.category));
+    final config =
+        InfrastructureConfig.getEntityConfig(widget.category, widget.type);
+    final typeOptions =
+        InfrastructureConfig.getTypeOptions(widget.category, widget.type);
 
     return Column(
       children: [
@@ -119,7 +122,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             children: [
               IconButton(
                 onPressed: widget.onBack,
-                icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                icon:
+                    const Icon(Icons.arrow_back, color: Colors.white, size: 24),
               ),
               Expanded(
                 child: Column(
@@ -276,7 +280,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     );
   }
 
-  Widget _buildFormSection({required String title, required List<Widget> children}) {
+  Widget _buildFormSection(
+      {required String title, required List<Widget> children}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -412,7 +417,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     child: Row(
                       children: [
                         Container(
@@ -420,7 +426,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                           height: 20,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFD1D5DB), width: 2),
+                            border: Border.all(
+                                color: const Color(0xFFD1D5DB), width: 2),
                           ),
                           child: _formData[key] == option
                               ? const Center(
@@ -481,9 +488,13 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildGpsInfoRow('Latitude:', '${_formData['latitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
-          _buildGpsInfoRow('Longitude:', '${_formData['longitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
-          if (_formData['accuracy'] != null) _buildGpsInfoRow('Précision:', '±${_formData['accuracy']?.round()}m'),
+          _buildGpsInfoRow('Latitude:',
+              '${_formData['latitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
+          _buildGpsInfoRow('Longitude:',
+              '${_formData['longitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
+          if (_formData['accuracy'] != null)
+            _buildGpsInfoRow(
+                'Précision:', '±${_formData['accuracy']?.round()}m'),
         ],
       ),
     );
@@ -590,10 +601,14 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   bool _hasSpecificFields(Map<String, dynamic>? config) {
-    return config?.containsKey('situationOptions') == true || config?.containsKey('typePontOptions') == true || config?.containsKey('typeBacOptions') == true || config?.containsKey('causesOptions') == true;
+    return config?.containsKey('situationOptions') == true ||
+        config?.containsKey('typePontOptions') == true ||
+        config?.containsKey('typeBacOptions') == true ||
+        config?.containsKey('causesOptions') == true;
   }
 
-  List<Widget> _buildSpecificFields(Map<String, dynamic>? config, Color categoryColor) {
+  List<Widget> _buildSpecificFields(
+      Map<String, dynamic>? config, Color categoryColor) {
     List<Widget> fields = [];
 
     // Champs spécifiques selon l'entité

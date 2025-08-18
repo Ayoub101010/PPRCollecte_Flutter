@@ -95,7 +95,8 @@ class _PointFormScreenState extends State<PointFormScreen> {
                 children: [
                   IconButton(
                     onPressed: _handleBack,
-                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                    icon: const Icon(Icons.arrow_back,
+                        color: Colors.white, size: 28),
                     padding: const EdgeInsets.all(8),
                   ),
                   const Expanded(

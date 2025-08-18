@@ -115,7 +115,8 @@ class _HomePageState extends State<HomePage> {
     if (activeType != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          content: Text(
+              'Veuillez mettre en pause la collecte de $activeType en cours'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -144,7 +145,8 @@ class _HomePageState extends State<HomePage> {
             markerId: MarkerId('poi${collectedMarkers.length + 1}'),
             position: LatLng(result['latitude'], result['longitude']),
             infoWindow: InfoWindow(title: result['nom'] ?? 'Nouveau point'),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            icon:
+                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           ),
         );
       });
@@ -165,7 +167,8 @@ class _HomePageState extends State<HomePage> {
     if (activeType != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          content: Text(
+              'Veuillez mettre en pause la collecte de $activeType en cours'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -175,14 +178,12 @@ class _HomePageState extends State<HomePage> {
     // Afficher le formulaire provisoire
     final provisionalData = await ProvisionalFormDialog.show(
       context: context,
-      type: CollectionType.ligne,
     );
     if (provisionalData == null) return;
 
     try {
       await homeController.startLigneCollection(
-        provisionalData['id']!,
-        provisionalData['name']!,
+        provisionalData['code_piste']!, // ✅ Passer seulement le code piste
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -218,19 +219,19 @@ class _HomePageState extends State<HomePage> {
     final result = homeController.finishLigneCollection();
     if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Une piste doit contenir au moins 2 points.")),
+        const SnackBar(
+            content: Text("Une piste doit contenir au moins 2 points.")),
       );
       return;
     }
 
-    // Ouvrir le formulaire principal avec les données provisoires
+    // ✅ Passer le code piste au formulaire principal
     final formResult = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FormulaireLignePage(
           linePoints: result['points'],
-          provisionalId: result['provisionalId'],
-          provisionalName: result['provisionalName'],
+          provisionalCode: result['code_piste'], // ✅ Code piste saisi
         ),
       ),
     );
@@ -268,25 +269,17 @@ class _HomePageState extends State<HomePage> {
     if (activeType != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          content: Text(
+              'Veuillez mettre en pause la collecte de $activeType en cours'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
 
-    // Afficher le formulaire provisoire
-    final provisionalData = await ProvisionalFormDialog.show(
-      context: context,
-      type: CollectionType.chaussee,
-    );
-    if (provisionalData == null) return;
-
+    // ✅ PAS de formulaire provisoire pour chaussée
     try {
-      await homeController.startChausseeCollection(
-        provisionalData['id']!,
-        provisionalData['name']!,
-      );
+      await homeController.startChausseeCollection(); // ✅ Pas de paramètres
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -321,7 +314,8 @@ class _HomePageState extends State<HomePage> {
     final result = homeController.finishChausseeCollection();
     if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Une chaussée doit contenir au moins 2 points.")),
+        const SnackBar(
+            content: Text("Une chaussée doit contenir au moins 2 points.")),
       );
       return;
     }
@@ -331,9 +325,8 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(
         builder: (_) => FormulaireChausseePage(
-          chausseePoints: result['points'],
-          provisionalId: result['provisionalId'],
-          provisionalName: result['provisionalName'],
+          // ✅ CORRECT - Formulaire chaussée
+          chausseePoints: result['points'], // ✅ CORRECT - Bon paramètre
         ),
       ),
     );
@@ -467,7 +460,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
-                  
+
                   // Afficher le statut de ligne si active
                   if (homeController.ligneCollection != null)
                     LigneStatusWidget(
@@ -479,11 +472,13 @@ class _HomePageState extends State<HomePage> {
                   if (homeController.chausseeCollection != null)
                     ChausseeStatusWidget(
                       collection: homeController.chausseeCollection!,
-                      topOffset: homeController.ligneCollection != null ? 70 : 16,
+                      topOffset:
+                          homeController.ligneCollection != null ? 70 : 16,
                     ),
 
                   DataCountWidget(
-                      count: collectedMarkers.length + collectedPolylines.length),
+                      count:
+                          collectedMarkers.length + collectedPolylines.length),
                 ],
               ),
             ),

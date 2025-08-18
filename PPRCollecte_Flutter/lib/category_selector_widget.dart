@@ -5,7 +5,8 @@ import 'config.dart';
 class CategorySelectorWidget extends StatelessWidget {
   final Function(String) onCategorySelected;
 
-  const CategorySelectorWidget({Key? key, required this.onCategorySelected}) : super(key: key);
+  const CategorySelectorWidget({Key? key, required this.onCategorySelected})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +34,10 @@ class CategorySelectorWidget extends StatelessWidget {
               itemCount: InfrastructureConfig.getCategories().length,
               itemBuilder: (context, index) {
                 final category = InfrastructureConfig.getCategories()[index];
-                final color = Color(InfrastructureConfig.getCategoryColor(category));
-                final entities = InfrastructureConfig.getEntitiesForCategory(category);
+                final color =
+                    Color(InfrastructureConfig.getCategoryColor(category));
+                final entities =
+                    InfrastructureConfig.getEntitiesForCategory(category);
 
                 return GestureDetector(
                   onTap: () => onCategorySelected(category),

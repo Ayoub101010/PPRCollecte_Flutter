@@ -1,4 +1,4 @@
-// lib/collection_manager.dart
+// lib/collection_manager.dart - VERSION CORRIGÉE
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
@@ -7,6 +7,8 @@ import 'collection_service.dart';
 
 class CollectionManager extends ChangeNotifier {
   final CollectionService _collectionService = CollectionService();
+  static int _nextPisteId = 1;
+  static int _nextChausseeId = 1;
 
   LigneCollection? _ligneCollection;
   ChausseeCollection? _chausseeCollection;
@@ -31,7 +33,7 @@ class CollectionManager extends ChangeNotifier {
 
   /// Démarre une collecte de ligne
   void startLigneCollection({
-    required String provisionalName,
+    required String codePiste, // ✅ Code piste saisi par l'utilisateur
     required LatLng initialPosition,
     required Stream<LocationData> locationStream,
   }) {
@@ -40,11 +42,9 @@ class CollectionManager extends ChangeNotifier {
           'Une collecte est déjà en cours. Veuillez la mettre en pause d\'abord.');
     }
 
-    final id = _collectionService.generateCollectionId(CollectionType.ligne);
-
     _ligneCollection = LigneCollection(
-      id: id,
-      provisionalName: provisionalName,
+      id: _nextPisteId++, // ✅ Générer ID automatiquement
+      codePiste: codePiste, // ✅ Utiliser le code piste fourni
       status: CollectionStatus.active,
       points: [initialPosition],
       startTime: DateTime.now(),
@@ -57,7 +57,6 @@ class CollectionManager extends ChangeNotifier {
 
   /// Démarre une collecte de chaussée
   void startChausseeCollection({
-    required String provisionalName,
     required LatLng initialPosition,
     required Stream<LocationData> locationStream,
   }) {
@@ -66,11 +65,8 @@ class CollectionManager extends ChangeNotifier {
           'Une collecte est déjà en cours. Veuillez la mettre en pause d\'abord.');
     }
 
-    final id = _collectionService.generateCollectionId(CollectionType.chaussee);
-
     _chausseeCollection = ChausseeCollection(
-      id: id,
-      provisionalName: provisionalName,
+      id: _nextChausseeId++, // ✅ Générer ID automatiquement
       status: CollectionStatus.active,
       points: [initialPosition],
       startTime: DateTime.now(),
@@ -185,7 +181,7 @@ class CollectionManager extends ChangeNotifier {
 
     final result = CollectionResult(
       id: _ligneCollection!.id,
-      provisionalName: _ligneCollection!.provisionalName,
+      codePiste: _ligneCollection!.codePiste, // ✅ Inclure le code piste
       type: CollectionType.ligne,
       points: List<LatLng>.from(_ligneCollection!.points),
       totalDistance: _ligneCollection!.totalDistance,
@@ -210,7 +206,7 @@ class CollectionManager extends ChangeNotifier {
 
     final result = CollectionResult(
       id: _chausseeCollection!.id,
-      provisionalName: _chausseeCollection!.provisionalName,
+      codePiste: null, // ✅ Pas de code piste pour chaussée
       type: CollectionType.chaussee,
       points: List<LatLng>.from(_chausseeCollection!.points),
       totalDistance: _chausseeCollection!.totalDistance,
@@ -225,25 +221,7 @@ class CollectionManager extends ChangeNotifier {
     return result;
   }
 
-  /// Annule une collecte de ligne
-  void cancelLigneCollection() {
-    if (_ligneCollection != null) {
-      _ligneCollection = null;
-      _collectionService.stopCollection();
-      notifyListeners();
-    }
-  }
-
-  /// Annule une collecte de chaussée
-  void cancelChausseeCollection() {
-    if (_chausseeCollection != null) {
-      _chausseeCollection = null;
-      _collectionService.stopCollection();
-      notifyListeners();
-    }
-  }
-
-  /// Ajoute un point manuellement pour débug/simulation
+  /// ✅ MÉTHODE MANQUANTE AJOUTÉE - Ajoute un point manuellement pour debug/simulation
   void addManualPoint(CollectionType type, LatLng point) {
     if (type == CollectionType.ligne && (_ligneCollection?.isActive ?? false)) {
       final lastPoint = _ligneCollection!.points.isNotEmpty

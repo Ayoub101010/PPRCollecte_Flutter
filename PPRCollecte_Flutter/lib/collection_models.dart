@@ -1,3 +1,4 @@
+// lib/collection_models.dart - VERSION CORRIGÉE
 import 'dart:math';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -6,8 +7,8 @@ enum CollectionType { ligne, chaussee }
 enum CollectionStatus { inactive, active, paused }
 
 class CollectionBase {
-  final String id;
-  final String provisionalName;
+  final int id; // ✅ ID auto-généré (entier)
+  final String? codePiste; // ✅ Code piste (uniquement pour ligne)
   final CollectionType type;
   final CollectionStatus status;
   final List<LatLng> points;
@@ -17,7 +18,7 @@ class CollectionBase {
 
   CollectionBase({
     required this.id,
-    required this.provisionalName,
+    this.codePiste, // ✅ Optionnel (null pour chaussée)
     required this.type,
     required this.status,
     required this.points,
@@ -27,8 +28,8 @@ class CollectionBase {
   });
 
   CollectionBase copyWith({
-    String? id,
-    String? provisionalName,
+    int? id,
+    String? codePiste,
     CollectionType? type,
     CollectionStatus? status,
     List<LatLng>? points,
@@ -38,7 +39,7 @@ class CollectionBase {
   }) {
     return CollectionBase(
       id: id ?? this.id,
-      provisionalName: provisionalName ?? this.provisionalName,
+      codePiste: codePiste ?? this.codePiste,
       type: type ?? this.type,
       status: status ?? this.status,
       points: points ?? this.points,
@@ -55,19 +56,28 @@ class CollectionBase {
 
 class LigneCollection extends CollectionBase {
   LigneCollection({
-    required super.id,
-    required super.provisionalName,
-    required super.status,
-    required super.points,
-    required super.startTime,
-    super.lastPointTime,
-    super.totalDistance,
-  }) : super(type: CollectionType.ligne);
+    required int id,
+    required String codePiste, // ✅ Obligatoire pour ligne
+    required CollectionStatus status,
+    required List<LatLng> points,
+    required DateTime startTime,
+    DateTime? lastPointTime,
+    double totalDistance = 0.0,
+  }) : super(
+          id: id,
+          codePiste: codePiste, // ✅ Passer le code piste
+          type: CollectionType.ligne,
+          status: status,
+          points: points,
+          startTime: startTime,
+          lastPointTime: lastPointTime,
+          totalDistance: totalDistance,
+        );
 
   @override
   LigneCollection copyWith({
-    String? id,
-    String? provisionalName,
+    int? id,
+    String? codePiste,
     CollectionType? type,
     CollectionStatus? status,
     List<LatLng>? points,
@@ -77,7 +87,7 @@ class LigneCollection extends CollectionBase {
   }) {
     return LigneCollection(
       id: id ?? this.id,
-      provisionalName: provisionalName ?? this.provisionalName,
+      codePiste: codePiste ?? this.codePiste!,
       status: status ?? this.status,
       points: points ?? this.points,
       startTime: startTime ?? this.startTime,
@@ -89,7 +99,7 @@ class LigneCollection extends CollectionBase {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'provisionalName': provisionalName,
+      'codePiste': codePiste,
       'type': 'ligne',
       'status': status.toString(),
       'points':
@@ -103,7 +113,7 @@ class LigneCollection extends CollectionBase {
   factory LigneCollection.fromJson(Map<String, dynamic> json) {
     return LigneCollection(
       id: json['id'],
-      provisionalName: json['provisionalName'],
+      codePiste: json['codePiste'],
       status: CollectionStatus.values.firstWhere(
         (e) => e.toString() == json['status'],
       ),
@@ -121,19 +131,27 @@ class LigneCollection extends CollectionBase {
 
 class ChausseeCollection extends CollectionBase {
   ChausseeCollection({
-    required super.id,
-    required super.provisionalName,
-    required super.status,
-    required super.points,
-    required super.startTime,
-    super.lastPointTime,
-    super.totalDistance,
-  }) : super(type: CollectionType.chaussee);
+    required int id,
+    required CollectionStatus status,
+    required List<LatLng> points,
+    required DateTime startTime,
+    DateTime? lastPointTime,
+    double totalDistance = 0.0,
+  }) : super(
+          id: id,
+          codePiste: null, // ✅ Pas de code piste pour chaussée
+          type: CollectionType.chaussee,
+          status: status,
+          points: points,
+          startTime: startTime,
+          lastPointTime: lastPointTime,
+          totalDistance: totalDistance,
+        );
 
   @override
   ChausseeCollection copyWith({
-    String? id,
-    String? provisionalName,
+    int? id,
+    String? codePiste,
     CollectionType? type,
     CollectionStatus? status,
     List<LatLng>? points,
@@ -143,7 +161,6 @@ class ChausseeCollection extends CollectionBase {
   }) {
     return ChausseeCollection(
       id: id ?? this.id,
-      provisionalName: provisionalName ?? this.provisionalName,
       status: status ?? this.status,
       points: points ?? this.points,
       startTime: startTime ?? this.startTime,
@@ -155,7 +172,6 @@ class ChausseeCollection extends CollectionBase {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'provisionalName': provisionalName,
       'type': 'chaussee',
       'status': status.toString(),
       'points':
@@ -169,7 +185,6 @@ class ChausseeCollection extends CollectionBase {
   factory ChausseeCollection.fromJson(Map<String, dynamic> json) {
     return ChausseeCollection(
       id: json['id'],
-      provisionalName: json['provisionalName'],
       status: CollectionStatus.values.firstWhere(
         (e) => e.toString() == json['status'],
       ),
@@ -186,8 +201,8 @@ class ChausseeCollection extends CollectionBase {
 }
 
 class CollectionResult {
-  final String id;
-  final String provisionalName;
+  final int id;
+  final String? codePiste; // ✅ Optionnel
   final CollectionType type;
   final List<LatLng> points;
   final double totalDistance;
@@ -196,7 +211,7 @@ class CollectionResult {
 
   CollectionResult({
     required this.id,
-    required this.provisionalName,
+    this.codePiste,
     required this.type,
     required this.points,
     required this.totalDistance,
@@ -207,7 +222,7 @@ class CollectionResult {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'provisionalName': provisionalName,
+      'codePiste': codePiste,
       'type': type.toString(),
       'points': points,
       'totalDistance': totalDistance,

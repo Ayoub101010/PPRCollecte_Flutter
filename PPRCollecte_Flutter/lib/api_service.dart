@@ -10,13 +10,8 @@ class ApiService {
     final url = Uri.parse('$baseUrl/api/login/');
     final response = await http.post(
       url,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: jsonEncode({
-        'mail': mail,
-        'mdp': mdp
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'mail': mail, 'mdp': mdp}),
     );
 
     if (response.statusCode == 200) {

@@ -18,7 +18,8 @@ class LocationService {
     if (permission == PermissionStatus.denied) {
       permission = await _location.requestPermission();
     }
-    if (permission == PermissionStatus.denied || permission == PermissionStatus.deniedForever) {
+    if (permission == PermissionStatus.denied ||
+        permission == PermissionStatus.deniedForever) {
       return false;
     }
 
