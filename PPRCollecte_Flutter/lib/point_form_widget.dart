@@ -75,10 +75,14 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         nom: _formData['nom'] ?? 'Sans nom',
         type: _formData['type'] ?? 'Non spécifié',
         enqueteur: widget.agentName ?? 'Anonyme',
-        dateCreation: _formData['date_creation'] ?? DateTime.now().toString(),
+        dateCreation: _formData['date_creation'] ?? DateTime.now().toIso8601String(),
       );
 
+      // 1️⃣ Enregistrement SQLite
       await DatabaseHelper().insertLocalite(localite);
+
+      // 2️⃣ Afficher toutes les localités dans la console
+      await DatabaseHelper().getLocalites();
 
       if (mounted) {
         showDialog(
@@ -95,7 +99,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
               '${localite.type} "${localite.nom}" enregistrée\n'
               'Coordonnées: ${localite.xLocalite.toStringAsFixed(6)}, '
               '${localite.yLocalite.toStringAsFixed(6)}\n'
-              'Enquêteur: ${localite.enqueteur}',
+              'Enquêteur: ${localite.enqueteur}\n'
+              '📁 Sauvegardée en base et en JSON',
             ),
             actions: [
               TextButton(
@@ -113,7 +118,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${error.toString()}'),
+            content: Text('❌ Erreur: ${error.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

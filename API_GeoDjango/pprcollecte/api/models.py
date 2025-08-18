@@ -12,14 +12,69 @@ class Login(models.Model):
         managed = False
 
     def __str__(self):
-        return self.mail
+        return f"{self.nom} {self.prenom} ({self.mail})"
 
 
+from django.contrib.gis.db import models
+
+
+class Region(models.Model):
+    nom = models.TextField()
+    geom = models.GeometryField(null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'regions'
+        managed = False
+
+    def __str__(self):
+        return self.nom
+
+
+class Prefecture(models.Model):
+    regions_id = models.ForeignKey(
+        Region,
+        db_column='regions_id',
+        on_delete=models.CASCADE
+    )    
+    nom = models.TextField()
+    geom = models.GeometryField(null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'prefectures'
+        managed = False
+
+    def __str__(self):
+        return self.nom
+
+
+class CommuneRurale(models.Model):
+    prefectures_id = models.ForeignKey(Prefecture, on_delete=models.SET_NULL, null=True, blank=True, db_column='prefectures_id')
+    nom = models.TextField()
+    geom = models.GeometryField(null=True, blank=True)
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'communes_rurales'
+        managed = False
+
+    def __str__(self):
+        return self.nom
+    
 class Piste(models.Model):
-    geom = models.LineStringField(srid=4326)
-    communes_rurales_id = models.IntegerField()
-    code_piste = models.IntegerField(null=True, blank=True)
-    user_login = models.TextField(null=True, blank=True)
+    communes_rurales_id = models.ForeignKey(
+        CommuneRurale, 
+        on_delete=models.SET_NULL,  # ou CASCADE si tu veux supprimer les pistes avec la commune
+        null=True, 
+        blank=True, 
+        db_column='communes_rurales_id'
+    )
+    code_piste = models.IntegerField(unique=True, null=True, blank=True)
+    geom = models.LineStringField(srid=4326, null=True, blank=True)
     heure_debut = models.DateTimeField(null=True, blank=True)
     heure_fin = models.DateTimeField(null=True, blank=True)
     nom_origine_piste = models.TextField(null=True, blank=True)
@@ -42,13 +97,20 @@ class Piste(models.Model):
     entreprise = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(null=True, blank=True)
+    login_id = models.ForeignKey(
+        'Login',  # suppose que tu as un modèle Login
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='login_id'
+    )
 
     class Meta:
         db_table = 'pistes'
-        managed = False
+        managed = False  # mettre True si tu veux que Django gère la table
 
     def __str__(self):
-        return f"Piste {self.id} - Code {self.code_piste}"
+        return f"Piste {self.code_piste} - {self.nom_origine_piste} → {self.nom_destination_piste}"
 
 
 class ServicesSantes(models.Model):
@@ -63,6 +125,24 @@ class ServicesSantes(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'services_santes'
@@ -83,6 +163,24 @@ class AutresInfrastructures(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'autres_infrastructures'
@@ -106,6 +204,24 @@ class Bacs(models.Model):
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
     endroit = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'bacs'
@@ -127,6 +243,24 @@ class BatimentsAdministratifs(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'batiments_administratifs'
@@ -145,6 +279,24 @@ class Buses(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'buses'
@@ -164,6 +316,24 @@ class Dalots(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'dalots'
@@ -185,6 +355,24 @@ class Ecoles(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'ecoles'
@@ -206,6 +394,24 @@ class InfrastructuresHydrauliques(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'infrastructures_hydrauliques'
@@ -226,6 +432,24 @@ class Localites(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'localites'
@@ -246,6 +470,24 @@ class Marches(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'marches'
@@ -268,6 +510,24 @@ class PassagesSubmersibles(models.Model):
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
     endroit = models.CharField(max_length=32, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'passages_submersibles'
@@ -289,6 +549,24 @@ class Ponts(models.Model):
     created_at = models.CharField(max_length=24, null=True, blank=True)
     updated_at = models.CharField(max_length=24, null=True, blank=True)
     code_gps = models.CharField(max_length=254, null=True, blank=True)
+    code_piste = models.ForeignKey(
+    Piste,
+    to_field='code_piste',
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='code_piste'
+)
+
+    login_id = models.ForeignKey(
+    Login,
+    on_delete=models.SET_NULL,
+    null=True,
+    blank=True,
+    db_column='login_id'
+)
+
+
 
     class Meta:
         db_table = 'ponts'

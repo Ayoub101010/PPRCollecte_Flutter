@@ -12,15 +12,26 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
 )
 from .serializers import (
     ServicesSantesSerializer, AutresInfrastructuresSerializer, BacsSerializer,
     BatimentsAdministratifsSerializer, BusesSerializer, DalotsSerializer,
     EcolesSerializer, InfrastructuresHydrauliquesSerializer, LocalitesSerializer,
-    MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer
+    MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer, CommuneRuraleSerializer, PrefectureSerializer, RegionSerializer
 )
 
+class RegionsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Region.objects.all()
+    serializer_class = RegionSerializer
+
+class PrefecturesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Prefecture.objects.all()
+    serializer_class = PrefectureSerializer
+
+class CommunesRuralesListCreateAPIView(generics.ListCreateAPIView):
+    queryset = CommuneRurale.objects.all()
+    serializer_class = CommuneRuraleSerializer
 
 class ServicesSantesListCreateAPIView(generics.ListCreateAPIView):
     queryset = ServicesSantes.objects.all()
@@ -74,6 +85,13 @@ class PontsListCreateAPIView(generics.ListCreateAPIView):
 
 
 class LoginAPIView(APIView):
+     # GET pour récupérer tous les utilisateurs
+    def get(self, request):
+        users = Login.objects.all()
+        serializer = LoginSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
     def post(self, request):
         mail = request.data.get('mail')
         mdp = request.data.get('mdp')

@@ -6,7 +6,7 @@ from .views import (
     ServicesSantesListCreateAPIView, AutresInfrastructuresListCreateAPIView, BacsListCreateAPIView,
     BatimentsAdministratifsListCreateAPIView, BusesListCreateAPIView, DalotsListCreateAPIView,
     EcolesListCreateAPIView, InfrastructuresHydrauliquesListCreateAPIView, LocalitesListCreateAPIView,
-    MarchesListCreateAPIView, PassagesSubmersiblesListCreateAPIView, PontsListCreateAPIView
+    MarchesListCreateAPIView, PassagesSubmersiblesListCreateAPIView, PontsListCreateAPIView, CommunesRuralesListCreateAPIView, PrefecturesListCreateAPIView, RegionsListCreateAPIView
 )
 
 urlpatterns = [
@@ -24,4 +24,8 @@ urlpatterns = [
     path('api/marches/', MarchesListCreateAPIView.as_view(), name='api-marches'),
     path('api/passages_submersibles/', PassagesSubmersiblesListCreateAPIView.as_view(), name='api-passages-submersibles'),
     path('api/ponts/', PontsListCreateAPIView.as_view(), name='api-ponts'),
+    path('api/regions/', RegionsListCreateAPIView.as_view(), name='api-regions'),
+    path('api/prefectures/', PrefecturesListCreateAPIView.as_view(), name='api-prefectures'),
+    path('api/communes_rurales/', CommunesRuralesListCreateAPIView.as_view(), name='api-communes-rurales'),
+
 ]

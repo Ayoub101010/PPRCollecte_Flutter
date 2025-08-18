@@ -5,9 +5,30 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
 )
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
+
+class RegionSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = Region
+        geo_field = "geom"
+        fields = '__all__'
+
+
+class PrefectureSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = Prefecture
+        geo_field = "geom"
+        fields = '__all__'
+
+
+class CommuneRuraleSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = CommuneRurale
+        geo_field = "geom"
+        fields = '__all__'
+
 
 class ServicesSantesSerializer(GeoFeatureModelSerializer):
     class Meta:

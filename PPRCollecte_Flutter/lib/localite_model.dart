@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Localite {
   final int? localId;
   final double xLocalite;
@@ -17,7 +19,7 @@ class Localite {
     this.dateCreation = '',
   });
 
-  // Conversion vers Map pour SQLite
+  // Conversion vers Map (SQLite)
   Map<String, dynamic> toMap() {
     return {
       'local_id': localId,
@@ -26,11 +28,11 @@ class Localite {
       'nom': nom,
       'type': type,
       'enqueteur': enqueteur,
-      'date_creation': dateCreation.isEmpty ? DateTime.now().toString() : dateCreation,
+      'date_creation': dateCreation.isEmpty ? DateTime.now().toIso8601String() : dateCreation,
     };
   }
 
-  // Conversion depuis Map (pour les requêtes)
+  // Conversion depuis Map (SQLite)
   factory Localite.fromMap(Map<String, dynamic> map) {
     return Localite(
       localId: map['local_id'],
@@ -42,4 +44,26 @@ class Localite {
       dateCreation: map['date_creation'],
     );
   }
+
+  // Conversion vers JSON (string)
+  Map<String, dynamic> toJson() => {
+        'local_id': localId,
+        'x_localite': xLocalite,
+        'y_localite': yLocalite,
+        'nom': nom,
+        'type': type,
+        'enqueteur': enqueteur,
+        'date_creation': dateCreation.isEmpty ? DateTime.now().toIso8601String() : dateCreation,
+      };
+
+  // Conversion depuis JSON
+  factory Localite.fromJson(Map<String, dynamic> json) => Localite(
+        localId: json['local_id'],
+        xLocalite: (json['x_localite'] as num).toDouble(),
+        yLocalite: (json['y_localite'] as num).toDouble(),
+        nom: json['nom'],
+        type: json['type'],
+        enqueteur: json['enqueteur'],
+        dateCreation: json['date_creation'],
+      );
 }
