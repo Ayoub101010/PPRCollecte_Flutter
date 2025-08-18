@@ -115,15 +115,14 @@ class HomeController extends ChangeNotifier {
   // === NOUVELLES MÉTHODES POUR LES COLLECTES ===
 
   /// Démarre une collecte de ligne/piste
-  Future<void> startLigneCollection(
-      String provisionalId, String provisionalName) async {
+  Future<void> startLigneCollection(String codePiste) async {
     if (!gpsEnabled) {
       throw Exception('Le GPS doit être activé pour commencer la collecte');
     }
 
     try {
       _collectionManager.startLigneCollection(
-        provisionalName: provisionalName,
+        codePiste: codePiste, // ✅ Un seul paramètre requis
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
@@ -133,15 +132,13 @@ class HomeController extends ChangeNotifier {
   }
 
   /// Démarre une collecte de chaussée
-  Future<void> startChausseeCollection(
-      String provisionalId, String provisionalName) async {
+  Future<void> startChausseeCollection() async {
     if (!gpsEnabled) {
       throw Exception('Le GPS doit être activé pour commencer la collecte');
     }
 
     try {
       _collectionManager.startChausseeCollection(
-        provisionalName: provisionalName,
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
@@ -193,8 +190,8 @@ class HomeController extends ChangeNotifier {
 
     return {
       'points': result.points,
-      'provisionalId': result.id,
-      'provisionalName': result.provisionalName,
+      'id': result.id,
+      'codePiste': result.codePiste,
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,
@@ -208,8 +205,7 @@ class HomeController extends ChangeNotifier {
 
     return {
       'points': result.points,
-      'provisionalId': result.id,
-      'provisionalName': result.provisionalName,
+      'id': result.id,
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,

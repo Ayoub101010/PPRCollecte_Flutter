@@ -96,7 +96,7 @@ class MapControlsWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          
+
           // Bouton stop
           FloatingActionButton(
             heroTag: "stopLigneBtn",
@@ -148,7 +148,7 @@ class MapControlsWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          
+
           // Bouton stop
           FloatingActionButton(
             heroTag: "stopChausseeBtn",

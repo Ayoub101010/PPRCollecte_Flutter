@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
+import 'provisional_form_dialog.dart';
 
 class FormulaireLignePage extends StatefulWidget {
   final List<LatLng> linePoints;
-  final String? provisionalId;
-  final String? provisionalName;
+  final String? provisionalCode;
+  final DateTime? startTime; // 🆕 Heure de début de collecte
+  final DateTime? endTime; // 🆕 Heure de fin de collecte
 
   const FormulaireLignePage({
     super.key,
     required this.linePoints,
-    this.provisionalId,
-    this.provisionalName,
+    this.provisionalCode, // AJOUTER cette ligne
+    this.startTime, // 🆕 Passé depuis la page de collecte GPS
+    this.endTime, // 🆕 Passé depuis la page de collecte GPS
   });
 
   @override
@@ -34,6 +37,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   final _heureDebutController = TextEditingController();
   final _heureFinController = TextEditingController();
   final _entrepriseController = TextEditingController();
+  final _travauxRealisesController = TextEditingController();
 
   String? _communeRurale;
   String? _typeOccupation;
@@ -42,9 +46,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   double? _largeurEmprise; // Largeur de l'emprise de la piste
   String? _frequenceTrafic;
   String? _typeTrafic;
-  String? _etatPiste;
   DateTime? _dateDebutTravaux;
-  bool _travauxRealises = false;
 
   // Options pour les dropdowns
   final List<String> _communesRuralesOptions = [
@@ -60,37 +62,26 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   ];
 
   final List<String> _typeOccupationOptions = [
-    "rural",
-    "semi urbain",
-    "urbain",
-    "rizipiscicole",
-    "forestier",
-    "autre"
+    "Urbain",
+    "Semi Urbain",
+    "Rural",
+    "Rizipiscicole",
+    "Autre"
   ];
 
   final List<String> _typeTraficOptions = [
-    "piétons",
-    "véhicules légers",
-    "motos",
-    "poids lourds",
-    "mixte",
-    "autre"
+    "Véhicules Légers",
+    "Poids Lourds",
+    "Motos",
+    "Piétons",
+    "Autre"
   ];
 
   final List<String> _frequenceTraficOptions = [
-    "quotidien",
-    "hebdomadaire",
-    "mensuel",
-    "saisonnier"
-  ];
-
-  final List<String> _etatOptions = [
-    "Très bon",
-    "Bon",
-    "Passable",
-    "Mauvais",
-    "Très mauvais",
-    "Impraticable"
+    "Quotidien",
+    "Hebdomadaire",
+    "Mensuel",
+    "Saisonnier"
   ];
 
   @override
@@ -100,19 +91,34 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   }
 
   void _initializeForm() {
-    if (widget.provisionalId != null) {
-      _codeController.text = widget.provisionalId!;
+    if (widget.provisionalCode != null) {
+      _codeController.text = widget.provisionalCode!;
     }
-    if (widget.provisionalName != null) {
-      _nomOrigineController.text = widget.provisionalName!;
-    }
-
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
     _userLoginController.text =
         _getCurrentUser(); // À implémenter selon votre système d'auth
-    final now = TimeOfDay.now();
-    _heureDebutController.text =
-        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    if (widget.startTime != null) {
+      final startTime = TimeOfDay.fromDateTime(widget.startTime!);
+      _heureDebutController.text =
+          "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+    } else {
+      // Fallback : heure actuelle
+      final now = TimeOfDay.now();
+      _heureDebutController.text =
+          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    }
+
+    // 🚀 NOUVEAU : Heure de fin automatique
+    if (widget.endTime != null) {
+      final endTime = TimeOfDay.fromDateTime(widget.endTime!);
+      _heureFinController.text =
+          "${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
+    } else {
+      // Cas exceptionnel : utiliser l'heure actuelle comme fallback
+      final now = TimeOfDay.now();
+      _heureFinController.text =
+          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    }
 
     // Calculer et remplir automatiquement les coordonnées d'origine et destination
     if (widget.linePoints.isNotEmpty) {
@@ -126,13 +132,10 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     }
   }
 
-  // Méthode pour récupérer l'utilisateur actuel (à adapter selon votre système)
+  // Méthode pour récupérer l'utilisateur actuel
   String _getCurrentUser() {
-    // TODO: Remplacer par votre logique d'authentification
-    // Exemples possibles :
-    // return SharedPreferences.getString('user_login') ?? '';
-    // return Provider.of<AuthProvider>(context, listen: false).currentUser?.login ?? '';
-    // return FirebaseAuth.instance.currentUser?.email ?? '';
+    // je vais complèter ça après
+
     return 'user_demo'; // Valeur temporaire pour test
   }
 
@@ -179,25 +182,6 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     }
   }
 
-  Future<void> _selectTime(BuildContext context, bool isStartTime) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-
-    if (picked != null) {
-      setState(() {
-        final timeString =
-            "${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}";
-        if (isStartTime) {
-          _heureDebutController.text = timeString;
-        } else {
-          _heureFinController.text = timeString;
-        }
-      });
-    }
-  }
-
   Future<void> _selectOccupationDate(
       BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
@@ -229,9 +213,10 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       await Future.delayed(const Duration(seconds: 1));
 
       final pisteData = {
-        'id': _codeController.text,
-        'code_piste': _codeController.text,
-        'commune_rurale_id': _communeRurale, // À mapper avec l'ID réel
+        // ✅ L'ID sera auto-généré par la BDD, ne pas l'inclure ici
+        'code_piste':
+            _codeController.text, // ✅ Code piste saisi par l'utilisateur
+        'commune_rurale_id': _communeRurale,
         'user_login': _userLoginController.text,
         'heure_debut': _heureDebutController.text,
         'heure_fin': _heureFinController.text,
@@ -244,14 +229,15 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'type_occupation': _typeOccupation,
         'debut_occupation': _debutOccupation?.toIso8601String(),
         'fin_occupation': _finOccupation?.toIso8601String(),
-        'longueur_emergee':
-            _largeurEmprise, // Correction: c'est largeur emprise
+        'largeur_emprise': _largeurEmprise,
         'frequence_trafic': _frequenceTrafic,
         'type_trafic': _typeTrafic,
-        'etat_piste': _etatPiste,
-        'travaux_realises': _travauxRealises,
+
+        'travaux_realises': _travauxRealisesController.text.isNotEmpty
+            ? _travauxRealisesController.text
+            : null,
         'date_travaux': _dateDebutTravaux?.toIso8601String(),
-        'entreprise': _travauxRealises
+        'entreprise': _entrepriseController.text.isNotEmpty
             ? _entrepriseController.text
             : null, // Seulement si travaux réalisés
         'points': widget.linePoints
@@ -369,8 +355,8 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                               child: _buildTimeField(
                                 label: 'Heure Début',
                                 controller: _heureDebutController,
-                                onTap: () => _selectTime(context, true),
-                                enabled: false, // Lecture seule
+                                enabled: false, // 🔒 Lecture seule
+                                // onTap supprimé car non nécessaire
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -378,9 +364,8 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                               child: _buildTimeField(
                                 label: 'Heure Fin',
                                 controller: _heureFinController,
-                                onTap: () => _selectTime(context, false),
-                                enabled:
-                                    false, // CORRECTION : Lecture seule aussi
+                                enabled: false, // 🔒 Lecture seule
+                                // onTap supprimé car non nécessaire
                               ),
                             ),
                           ],
@@ -458,7 +443,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                     _buildFormSection(
                       title: '🏘️ Occupation du Sol',
                       children: [
-                        _buildDropdownField(
+                        _buildRadioGroupField(
                           label: 'Type d\'Occupation',
                           value: _typeOccupation,
                           options: _typeOccupationOptions,
@@ -492,26 +477,18 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                       ],
                     ),
 
-                    // Section Caractéristiques du Trafic
+                    // REMPLACER TOUTE LA SECTION PAR :
                     _buildFormSection(
                       title: '🚗 Caractéristiques du Trafic',
                       children: [
-                        _buildDropdownField(
-                          label: 'État de la Piste *',
-                          value: _etatPiste,
-                          options: _etatOptions,
-                          onChanged: (value) =>
-                              setState(() => _etatPiste = value),
-                          required: true,
-                        ),
-                        _buildDropdownField(
+                        _buildRadioGroupField(
                           label: 'Fréquence du Trafic',
                           value: _frequenceTrafic,
                           options: _frequenceTraficOptions,
                           onChanged: (value) =>
                               setState(() => _frequenceTrafic = value),
                         ),
-                        _buildDropdownField(
+                        _buildRadioGroupField(
                           label: 'Type de Trafic',
                           value: _typeTrafic,
                           options: _typeTraficOptions,
@@ -525,24 +502,22 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                     _buildFormSection(
                       title: '🔧 Travaux',
                       children: [
-                        _buildSwitchField(
+                        _buildTextField(
+                          controller: _travauxRealisesController,
                           label: 'Travaux réalisés',
-                          value: _travauxRealises,
-                          onChanged: (value) =>
-                              setState(() => _travauxRealises = value),
+                          hint: 'Description des travaux réalisés',
+                          maxLines: 3,
                         ),
-                        if (_travauxRealises) ...[
-                          _buildDateField(
-                            label: 'Date des Travaux',
-                            value: _dateDebutTravaux,
-                            onTap: () => _selectDate(context, true),
-                          ),
-                          _buildTextField(
-                            controller: _entrepriseController,
-                            label: 'Entreprise',
-                            hint: 'Nom de l\'entreprise',
-                          ),
-                        ],
+                        _buildDateField(
+                          label: 'Date des Travaux',
+                          value: _dateDebutTravaux,
+                          onTap: () => _selectDate(context, true),
+                        ),
+                        _buildTextField(
+                          controller: _entrepriseController,
+                          label: 'Entreprise',
+                          hint: 'Nom de l\'entreprise',
+                        ),
                       ],
                     ),
 
@@ -903,8 +878,8 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   Widget _buildTimeField({
     required String label,
     required TextEditingController controller,
-    required VoidCallback onTap,
-    bool enabled = true, // Nouveau paramètre
+    VoidCallback? onTap, // 🚀 RENDRE OPTIONNEL (ajout du ?)
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -919,7 +894,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         ),
         const SizedBox(height: 8),
         GestureDetector(
-          onTap: enabled ? onTap : null,
+          onTap: enabled && onTap != null ? onTap : null, // 🚀 CONDITIONNEL
           child: Container(
             decoration: BoxDecoration(
               color:
@@ -941,7 +916,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                 Expanded(
                   child: Text(
                     controller.text.isEmpty
-                        ? "Sélectionner l'heure"
+                        ? "Heure automatique" // 🚀 MESSAGE PLUS CLAIR
                         : controller.text,
                     style: TextStyle(
                       fontSize: 14,
@@ -958,34 +933,6 @@ class _FormulairePageState extends State<FormulaireLignePage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSwitchField({
-    required String label,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: const Color(0xFF1976D2),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1052,6 +999,67 @@ class _FormulairePageState extends State<FormulaireLignePage> {
               fontFamily: 'monospace',
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRadioGroupField({
+    required String label,
+    required String? value,
+    required List<String> options,
+    required Function(String?) onChanged,
+    bool required = false,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: options.map((option) {
+                return RadioListTile<String>(
+                  title: Text(
+                    option,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  value: option,
+                  groupValue: value,
+                  onChanged: onChanged,
+                  activeColor: const Color(0xFF1976D2),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                );
+              }).toList(),
+            ),
+          ),
+          if (required && (value == null || value.isEmpty))
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 12),
+              child: Text(
+                '$label est obligatoire',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 12,
+                ),
+              ),
+            ),
         ],
       ),
     );

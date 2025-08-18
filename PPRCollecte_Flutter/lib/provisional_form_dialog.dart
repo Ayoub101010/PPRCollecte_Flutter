@@ -1,24 +1,11 @@
-// lib/provisional_form_dialog.dart
+// lib/provisional_form_dialog.dart - VERSION OPTIMISÉE
 import 'package:flutter/material.dart';
-import 'collection_models.dart';
 
 class ProvisionalFormDialog {
   static Future<Map<String, String>?> show({
     required BuildContext context,
-    required CollectionType type,
   }) async {
-    final typeLabel = type == CollectionType.ligne ? 'Piste' : 'Chaussée';
-    final icon =
-        type == CollectionType.ligne ? Icons.timeline : Icons.construction;
-    final color = type == CollectionType.ligne
-        ? const Color(0xFF1976D2)
-        : const Color(0xFFFF9800);
-
-    final idController = TextEditingController(
-      text:
-          '${typeLabel.toUpperCase()}_${DateTime.now().millisecondsSinceEpoch}',
-    );
-    final nameController = TextEditingController();
+    final codeController = TextEditingController();
 
     return showDialog<Map<String, String>>(
       context: context,
@@ -30,23 +17,27 @@ class ProvisionalFormDialog {
           ),
           title: Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              color: Color(0xFF1976D2), // ✅ Ajout de const
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(15),
                 topRight: Radius.circular(15),
               ),
             ),
-            child: Row(
+            child: const Row(
+              // ✅ Ajout de const
               children: [
-                Icon(icon, color: Colors.white, size: 28),
-                const SizedBox(width: 12),
-                Text(
-                  'Nouvelle $typeLabel',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Icon(Icons.route, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Expanded(
+                  // ✅ Ajout d'Expanded pour éviter l'overflow
+                  child: Text(
+                    'Nouvelle Piste',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -56,63 +47,58 @@ class ProvisionalFormDialog {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Champ ID (lecture seule)
               TextField(
-                controller: idController,
-                enabled: false,
-                decoration: InputDecoration(
-                  labelText: 'ID ${typeLabel}',
-                  prefixIcon: Icon(Icons.fingerprint, color: color),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Champ Nom (obligatoire)
-              TextField(
-                controller: nameController,
+                controller: codeController,
                 autofocus: true,
+                textCapitalization:
+                    TextCapitalization.characters, // ✅ Majuscules auto
                 decoration: InputDecoration(
-                  labelText: 'Nom de la ${typeLabel.toLowerCase()} *',
-                  prefixIcon: Icon(Icons.edit, color: color),
+                  labelText: 'Code Piste *',
+                  hintText: 'Ex: 1B-02CR03P01',
+                  prefixIcon: const Icon(Icons.qr_code,
+                      color: Color(0xFF1976D2)), // ✅ const
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: color, width: 2),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF1976D2), width: 2), // ✅ const
                   ),
                 ),
+                onSubmitted: (value) {
+                  // ✅ Validation sur Enter
+                  if (value.trim().isNotEmpty) {
+                    Navigator.of(context).pop({
+                      'code_piste': value.trim(),
+                    });
+                  }
+                },
               ),
-
               const SizedBox(height: 12),
-
-              // Message d'information
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: const Color(0xFF1976D2).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: color.withOpacity(0.3)),
+                  border: Border.all(
+                    color: const Color(0xFF1976D2).withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 18, color: color),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: Color(0xFF1976D2),
+                    ), // ✅ const
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'La collecte GPS démarrera après validation',
+                        'Format: [REGION][BTGR]-[PREFECTURE]CR[COMMUNE]P[NUMERO]',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: color.withOpacity(0.8),
+                          fontSize: 11,
+                          color: const Color(0xFF1976D2).withOpacity(0.8),
                         ),
                       ),
                     ),
@@ -128,24 +114,25 @@ class ProvisionalFormDialog {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: color,
+                backgroundColor: const Color(0xFF1976D2),
+                foregroundColor: Colors.white, // ✅ Couleur texte explicite
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               onPressed: () {
-                if (nameController.text.trim().isEmpty) {
+                final code = codeController.text.trim();
+                if (code.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Le nom est obligatoire'),
+                      content: Text('Le code piste est obligatoire'),
                       backgroundColor: Colors.red,
                     ),
                   );
                   return;
                 }
                 Navigator.of(context).pop({
-                  'id': idController.text,
-                  'name': nameController.text.trim(),
+                  'code_piste': code,
                 });
               },
               child: const Text('Commencer la collecte'),

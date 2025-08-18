@@ -13,9 +13,7 @@ class ApiService {
 
     final response = await http.post(
       url,
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'mail': mail,
         'mdp': mdp,
