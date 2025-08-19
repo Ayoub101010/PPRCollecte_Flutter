@@ -1,7 +1,7 @@
 // lib/point_form_widget.dart
 import 'package:flutter/material.dart';
 import 'config.dart';
-import 'localite_model.dart';
+
 import 'database_helper.dart';
 
 class PointFormWidget extends StatefulWidget {
@@ -73,21 +73,47 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     setState(() => _isLoading = true);
 
     try {
-      final localite = Localite(
-        xLocalite: _formData['latitude'] ?? 0.0,
-        yLocalite: _formData['longitude'] ?? 0.0,
-        nom: _formData['nom'] ?? 'Sans nom',
-        type: _formData['type'] ?? 'Non spécifié',
-        enqueteur: widget.agentName ?? 'Anonyme',
-        dateCreation: _formData['date_creation'] ?? DateTime.now().toIso8601String(),
-        dateModification: _formData['date_modification'],
-      );
+      final config = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
+      final tableName = config?['tableName'];
 
-      // 1️⃣ Enregistrement SQLite
-      await DatabaseHelper().insertLocalite(localite);
+      if (tableName == null) {
+        throw Exception('Table non configurée pour ${widget.type}');
+      }
 
-      // 2️⃣ Afficher toutes les localités dans la console
-      await DatabaseHelper().getLocalites();
+      // PRÉFIXE CORRIGÉ avec tous les cas spéciaux !
+      final coordinatePrefix = _getCoordinatePrefix(tableName);
+
+      // DEBUG: Afficher le préfixe utilisé
+      print('🔧 Table: $tableName, Préfixe: $coordinatePrefix');
+
+      // Préparer les données de base avec le bon préfixe
+      final entityData = {
+        'x_$coordinatePrefix': _formData['latitude'] ?? 0.0,
+        'y_$coordinatePrefix': _formData['longitude'] ?? 0.0,
+        'nom': _formData['nom'] ?? 'Sans nom',
+        'enqueteur': widget.agentName ?? 'Anonyme',
+        'date_creation': _formData['date_creation'] ?? DateTime.now().toIso8601String(),
+        'date_modification': _formData['date_modification'] ?? '',
+        'code_piste': _formData['code_piste'],
+      };
+
+      // Ajouter le type si présent dans le formulaire
+      if (_formData['type'] != null) {
+        entityData['type'] = _formData['type'];
+      }
+
+      // Ajouter les champs spécifiques selon le type d'entité
+      _addSpecificFields(entityData, widget.type, config);
+
+      // DEBUG: Afficher les données avant validation
+      print('📦 Données préparées: $entityData');
+
+      // Validation finale des données requises
+      _validateRequiredFields(entityData, config);
+
+      // Insertion dans la base
+      final id = await DatabaseHelper().insertEntity(tableName, entityData);
+      print('✅ Entité enregistrée avec ID: $id');
 
       if (mounted) {
         showDialog(
@@ -100,18 +126,15 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                 Text('Succès'),
               ],
             ),
-            content: Text(
-              '${localite.type} "${localite.nom}" enregistrée\n'
-              'Coordonnées: ${localite.xLocalite.toStringAsFixed(6)}, '
-              '${localite.yLocalite.toStringAsFixed(6)}\n'
-              'Enquêteur: ${localite.enqueteur}\n'
-              '📁 Sauvegardée en base et en JSON',
-            ),
+            content: Text('${widget.type} "${_formData['nom']}" enregistré avec succès\n'
+                'Coordonnées: ${_formData['latitude']?.toStringAsFixed(6)}, '
+                '${_formData['longitude']?.toStringAsFixed(6)}\n'
+                'Code Piste: ${_formData['code_piste'] ?? 'Non spécifié'}'),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  widget.onSaved?.call();
+                  widget.onSaved();
                 },
                 child: const Text('OK'),
               ),
@@ -120,17 +143,143 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         );
       }
     } catch (error) {
+      print('❌ Erreur détaillée: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Erreur: ${error.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+// MÉTHODE COMPLÈTEMENT CORRIGÉE POUR LES PRÉFIXES :
+  String _getCoordinatePrefix(String tableName) {
+    // Mapping COMPLET de tous les cas spéciaux
+    final Map<String, String> coordinatePrefixes = {
+      // Infrastructures Rurales
+      'localites': 'localite',
+      'ecoles': 'ecole',
+      'marches': 'marche',
+      'services_santes': 'sante',
+      'batiments_administratifs': 'batiment_administratif',
+      'infrastructures_hydrauliques': 'infrastructure_hydraulique',
+      'autres_infrastructures': 'autre_infrastructure',
+
+      // Ouvrages
+      'ponts': 'pont',
+      'bacs': 'debut_traversee_bac', // Special case for bac
+      'buses': 'buse',
+      'dalots': 'dalot',
+      'passages_submersibles': 'debut_passage_submersible', // Special case
+
+      // Points Critiques
+      'points_critiques': 'point_critique',
+      'points_coupures': 'point_coupure',
+    };
+
+    // Retourne le préfixe spécifique ou le premier mot de la table
+    return coordinatePrefixes[tableName] ?? tableName.split('_').first;
+  }
+
+// MÉTHODE POUR AJOUTER LES CHAMPS SPÉCIFIQUES :
+  void _addSpecificFields(Map<String, dynamic> entityData, String entityType, Map<String, dynamic>? config) {
+    // Champs communs basés sur la configuration
+    if (config?['fields']?.contains('nom_cours_eau') == true && _formData['nom_cours_eau'] != null) {
+      entityData['nom_cours_eau'] = _formData['nom_cours_eau'];
+    }
+
+    // Champs spécifiques par type d'entité
+    switch (entityType) {
+      case 'Pont':
+        entityData['situation_pont'] = _formData['situation'] ?? 'Non spécifié';
+        entityData['type_pont'] = _formData['type_pont'] ?? 'Non spécifié';
+        break;
+
+      case 'Bac':
+        entityData['type_bac'] = _formData['type_bac'] ?? 'Non spécifié';
+        entityData['nom_cours_eau'] = _formData['nom_cours_eau'] ?? 'Non spécifié';
+        // Les coordonnées de début sont déjà dans entityData via le préfixe
+        entityData['x_fin_traversee_bac'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
+        entityData['y_fin_traversee_bac'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+        break;
+
+      case 'Dalot':
+        entityData['situation_dalot'] = _formData['situation'] ?? 'Non spécifié';
+        break;
+
+      case 'Passage Submersible':
+        entityData['type_materiau'] = _formData['type'] ?? 'Non spécifié';
+        // Les coordonnées de début sont déjà dans entityData via le préfixe
+        entityData['x_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
+        entityData['y_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+        break;
+
+      case 'Point Critique':
+        entityData['type_point_critique'] = _formData['type_point_critique'] ?? 'Non spécifié';
+        break;
+
+      case 'Point de Coupure':
+        entityData['causes_coupures'] = _formData['causes_coupures'] ?? 'Non spécifié';
+        break;
+
+      // Pour TOUTES les autres entités (écoles, marchés, etc.)
+      default:
+        // Utilisent les champs de base déjà définis + nom_cours_eau si configuré
+        break;
+    }
+
+    // Ajouter les champs optionnels supplémentaires
+    _addOptionalFields(entityData, config);
+  }
+
+// MÉTHODE POUR LES CHAMPS OPTIONNELS :
+  void _addOptionalFields(Map<String, dynamic> entityData, Map<String, dynamic>? config) {
+    final optionalFields = {
+      'description': _formData['description'],
+      'etat': _formData['etat'],
+      'capacite': _formData['capacite'],
+      'materiau': _formData['materiau'],
+      'hauteur': _formData['hauteur'],
+      'largeur': _formData['largeur'],
+    };
+
+    optionalFields.forEach((key, value) {
+      if (value != null && config?['fields']?.contains(key) == true) {
+        entityData[key] = value;
+      }
+    });
+  }
+
+// MÉTHODE DE VALIDATION :
+  void _validateRequiredFields(Map<String, dynamic> entityData, Map<String, dynamic>? config) {
+    final requiredFields = config?['fields'] as List<String>? ?? [];
+    final nullableFields = [
+      'date_modification'
+    ]; // Seulement ce champ
+    for (var field in requiredFields) {
+      if (nullableFields.contains(field)) continue;
+      if (entityData[field] == null || entityData[field].toString().isEmpty) {
+        throw Exception('Le champ $field est requis mais est vide');
+      }
+    }
+
+    // Validation spécifique pour les entités avec coordonnées multiples
+    if (widget.type == 'Bac' || widget.type == 'Passage Submersible') {
+      final latDebut = entityData['x_debut_traversee_bac'] ?? entityData['x_debut_passage_submersible'];
+      final lngDebut = entityData['y_debut_traversee_bac'] ?? entityData['y_debut_passage_submersible'];
+      final latFin = entityData['x_fin_traversee_bac'] ?? entityData['x_fin_passage_submersible'];
+      final lngFin = entityData['y_fin_traversee_bac'] ?? entityData['y_fin_passage_submersible'];
+
+      if (latDebut == latFin && lngDebut == lngFin) {
+        print('⚠️ Attention: Coordonnées identiques pour début et fin');
       }
     }
   }
@@ -705,7 +854,6 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           const SizedBox(height: 12),
           _buildGpsInfoRow('Latitude:', '${_formData['latitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
           _buildGpsInfoRow('Longitude:', '${_formData['longitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
-          if (_formData['accuracy'] != null) _buildGpsInfoRow('Précision:', '±${_formData['accuracy']?.round()}m'),
         ],
       ),
     );
