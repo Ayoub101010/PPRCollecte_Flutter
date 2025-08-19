@@ -50,6 +50,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   void _initializeFormData() {
     if (widget.pointData != null) {
       _formData = {
+        'code_piste': widget.pointData!['code_piste'], // Ajouté
         'latitude': widget.pointData!['latitude'],
         'longitude': widget.pointData!['longitude'],
         'accuracy': widget.pointData!['accuracy'],
@@ -60,6 +61,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     } else {
       _formData['date_creation'] = null; // Initialisation
       _formData['enqueteur'] = widget.agentName ?? 'N/A'; // <-- et ici
+      _formData['code_piste'] = null; // Vide au départ
     }
   }
 
@@ -175,7 +177,10 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             ],
           ),
         ),
-
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: _buildCodePisteField(),
+        ),
         // Contenu du formulaire
         Expanded(
           child: Form(
@@ -308,6 +313,66 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCodePisteField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Code Piste *',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.confirmation_number, size: 20, color: Color(0xFF1976D2)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: TextEditingController(
+                      text: _formData['code_piste']?.toString() ?? '',
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Entrez le code de la piste',
+                      hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF374151),
+                    ),
+                    onChanged: (value) {
+                      _formData['code_piste'] = value;
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Le code piste est obligatoire';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

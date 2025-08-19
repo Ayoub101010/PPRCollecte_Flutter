@@ -8,7 +8,7 @@ class InfrastructureConfig {
         "Localité": {
           "tableName": "localites",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_localite",
             "y_localite",
             "nom",
@@ -27,7 +27,7 @@ class InfrastructureConfig {
         "École": {
           "tableName": "ecoles",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_ecole",
             "y_ecole",
             "nom",
@@ -44,7 +44,7 @@ class InfrastructureConfig {
         "Marché": {
           "tableName": "marches",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_marche",
             "y_marche",
             "nom",
@@ -60,7 +60,7 @@ class InfrastructureConfig {
         "Service de Santé": {
           "tableName": "services_santes",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_sante",
             "y_sante",
             "nom",
@@ -77,7 +77,7 @@ class InfrastructureConfig {
         "Bâtiment Administratif": {
           "tableName": "batiments_administratifs",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_batiment_administratif",
             "y_batiment_administratif",
             "nom",
@@ -95,7 +95,7 @@ class InfrastructureConfig {
         "Infrastructure Hydraulique": {
           "tableName": "infrastructures_hydrauliques",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_infrastructure_hydraulique",
             "y_infrastructure_hydraulique_2",
             "nom",
@@ -112,7 +112,7 @@ class InfrastructureConfig {
         "Autre Infrastructure": {
           "tableName": "autres_infrastructures",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_autre_infrastructure",
             "y_autre_infrastructure",
             "nom",
@@ -141,7 +141,7 @@ class InfrastructureConfig {
         "Pont": {
           "tableName": "ponts",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_pont",
             "y_pont",
             "situation_pont",
@@ -168,7 +168,7 @@ class InfrastructureConfig {
         "Bac": {
           "tableName": "bacs",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_debut_traversee_bac",
             "y_debut_traversee_bac",
             "x_fin_traversee_bac",
@@ -186,7 +186,7 @@ class InfrastructureConfig {
         "Buse": {
           "tableName": "buses",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_buse",
             "y_buse",
             "date_creation",
@@ -196,7 +196,7 @@ class InfrastructureConfig {
         "Dalot": {
           "tableName": "dalots",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_dalot",
             "y_dalot",
             "situation_dalot",
@@ -212,7 +212,7 @@ class InfrastructureConfig {
         "Passage Submersible": {
           "tableName": "passages_submersibles",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_debut_passage_submersible",
             "y_debut_passage_submersible",
             "x_fin_passage_submersible",
@@ -237,7 +237,7 @@ class InfrastructureConfig {
         "Point Critique": {
           "parentTable": "chaussees",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_point_critique",
             "y_point_critique",
             "type_point_critique",
@@ -252,7 +252,7 @@ class InfrastructureConfig {
         "Point de Coupure": {
           "parentTable": "chaussees",
           "fields": [
-            "piste_id",
+            "code_piste",
             "x_point_coupure",
             "y_point_coupure",
             "causes_coupures",
