@@ -8,6 +8,7 @@ class MapWidget extends StatelessWidget {
   final Set<Marker> markers;
   final Set<Polyline> polylines;
   final Function(GoogleMapController) onMapCreated;
+  final Set<Marker> formMarkers;
 
   const MapWidget({
     super.key,
@@ -16,13 +17,19 @@ class MapWidget extends StatelessWidget {
     required this.markers,
     required this.polylines,
     required this.onMapCreated,
+    required this.formMarkers,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Fusionner tous les marqueurs
+    final allMarkers = {
+      ...markers,
+      ...formMarkers
+    };
     return GoogleMap(
       initialCameraPosition: CameraPosition(target: userPosition, zoom: 15),
-      markers: markers,
+      markers: allMarkers,
       polylines: polylines,
       myLocationEnabled: gpsEnabled,
       myLocationButtonEnabled: true,
