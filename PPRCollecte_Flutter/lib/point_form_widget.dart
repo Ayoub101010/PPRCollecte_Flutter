@@ -57,11 +57,13 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'timestamp': widget.pointData!['timestamp'],
         'enqueteur': widget.agentName ?? 'N/A', // À récupérer depuis les prefs
         'date_creation': widget.pointData!['date_creation'],
+        'date_modification': widget.pointData!['date_modification'],
       };
     } else {
       _formData['date_creation'] = null; // Initialisation
       _formData['enqueteur'] = widget.agentName ?? 'N/A'; // <-- et ici
       _formData['code_piste'] = null; // Vide au départ
+      _formData['date_modification'] = null;
     }
   }
 
@@ -78,6 +80,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         type: _formData['type'] ?? 'Non spécifié',
         enqueteur: widget.agentName ?? 'Anonyme',
         dateCreation: _formData['date_creation'] ?? DateTime.now().toIso8601String(),
+        dateModification: _formData['date_modification'],
       );
 
       // 1️⃣ Enregistrement SQLite
@@ -177,10 +180,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: _buildCodePisteField(),
-        ),
+
         // Contenu du formulaire
         Expanded(
           child: Form(
@@ -198,7 +198,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                     ),
                   ],
                 ),
-
+                _buildCodePisteField(),
                 // Section Identification
                 _buildFormSection(
                   title: '🏷️ Identification',
@@ -231,6 +231,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                       key: 'date_creation',
                       required: true,
                     ),
+                    _buildDateModificationField(),
                   ],
                 ),
 
@@ -313,6 +314,55 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDateModificationField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Date de modification',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F5F5), // Gris clair
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE0E0E0)),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _formData['date_modification'] != null
+                        ? DateTime.tryParse(_formData['date_modification']) != null
+                            ? "${DateTime.parse(_formData['date_modification']).day.toString().padLeft(2, '0')}/"
+                                "${DateTime.parse(_formData['date_modification']).month.toString().padLeft(2, '0')}/"
+                                "${DateTime.parse(_formData['date_modification']).year}"
+                            : _formData['date_modification']
+                        : "Non modifié",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF9E9E9E), // Texte gris
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

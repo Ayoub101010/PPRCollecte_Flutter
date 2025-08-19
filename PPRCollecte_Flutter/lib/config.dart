@@ -14,6 +14,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -33,6 +34,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -50,6 +52,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -66,6 +69,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -83,6 +87,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -101,6 +106,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -118,6 +124,7 @@ class InfrastructureConfig {
             "nom",
             "type",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -148,6 +155,7 @@ class InfrastructureConfig {
             "type_pont",
             "nom_cours_eau",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "situationOptions": [
@@ -176,6 +184,7 @@ class InfrastructureConfig {
             "type_bac",
             "nom_cours_eau",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeBacOptions": [
@@ -190,6 +199,7 @@ class InfrastructureConfig {
             "x_buse",
             "y_buse",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ]
         },
@@ -201,6 +211,7 @@ class InfrastructureConfig {
             "y_dalot",
             "situation_dalot",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "situationOptions": [
@@ -219,6 +230,7 @@ class InfrastructureConfig {
             "y_fin_passage_submersible",
             "type_materiau",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -242,6 +254,7 @@ class InfrastructureConfig {
             "y_point_critique",
             "type_point_critique",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "typeOptions": [
@@ -257,6 +270,7 @@ class InfrastructureConfig {
             "y_point_coupure",
             "causes_coupures",
             "date_creation",
+            "date_modification",
             "enqueteur"
           ],
           "causesOptions": [

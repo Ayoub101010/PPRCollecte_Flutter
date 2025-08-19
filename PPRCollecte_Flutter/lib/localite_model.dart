@@ -8,6 +8,7 @@ class Localite {
   final String type;
   final String enqueteur;
   final String dateCreation;
+  final String? dateModification;
 
   Localite({
     this.localId,
@@ -17,6 +18,7 @@ class Localite {
     required this.type,
     required this.enqueteur,
     this.dateCreation = '',
+    this.dateModification,
   });
 
   // Conversion vers Map (SQLite)
@@ -29,6 +31,7 @@ class Localite {
       'type': type,
       'enqueteur': enqueteur,
       'date_creation': dateCreation.isEmpty ? DateTime.now().toIso8601String() : dateCreation,
+      'date_modification': dateModification,
     };
   }
 
@@ -42,6 +45,7 @@ class Localite {
       type: map['type'],
       enqueteur: map['enqueteur'],
       dateCreation: map['date_creation'],
+      dateModification: map['date_modification'],
     );
   }
 
