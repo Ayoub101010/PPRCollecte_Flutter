@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'home_page.dart';
-import 'db_helper.dart';
+import 'database_helper.dart';
 import 'api_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -22,7 +22,10 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF3b82f6), Color(0xFF10b981)],
+            colors: [
+              Color(0xFF3b82f6),
+              Color(0xFF10b981)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -53,7 +56,10 @@ class _LoginPageState extends State<LoginPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFe0f7ff), Color(0xFFccfbf1)],
+                      colors: [
+                        Color(0xFFe0f7ff),
+                        Color(0xFFccfbf1)
+                      ],
                     ),
                   ),
                   child: const Stack(
@@ -193,19 +199,16 @@ class _LoginPageState extends State<LoginPage> {
 
                       if (email.isEmpty || password.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content:
-                                  Text("Veuillez remplir tous les champs")),
+                          const SnackBar(content: Text("Veuillez remplir tous les champs")),
                         );
                         return;
                       }
 
-                      final db = DBHelper();
+                      final db = DatabaseHelper();
 
                       try {
                         print('Tentative connexion API...');
-                        final userData =
-                            await ApiService.login(email, password);
+                        final userData = await ApiService.login(email, password);
                         print('Connexion API réussie: $userData');
 
                         final nom = userData['nom'] ?? '';
@@ -224,8 +227,7 @@ class _LoginPageState extends State<LoginPage> {
                               onLogout: () {
                                 Navigator.pushReplacement(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const LoginPage()),
+                                  MaterialPageRoute(builder: (_) => const LoginPage()),
                                 );
                               },
                             ),
@@ -233,25 +235,21 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       } catch (e) {
                         print('Connexion API échouée, essai base locale...');
-                        bool isValidLocal =
-                            await db.validateUser(email, password);
+                        bool isValidLocal = await db.validateUser(email, password);
 
                         if (isValidLocal) {
                           print('Connexion locale réussie.');
-                          final fullName = await db.getAgentFullName(email) ??
-                              'Utilisateur Local';
+                          final fullName = await db.getAgentFullName(email) ?? 'Utilisateur Local';
                           // Ici on ne peut pas utiliser fullName, donc on met juste un fallback
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
                               builder: (_) => HomePage(
-                                agentName:
-                                    fullName, // ou autre valeur par défaut
+                                agentName: fullName, // ou autre valeur par défaut
                                 onLogout: () {
                                   Navigator.pushReplacement(
                                     context,
-                                    MaterialPageRoute(
-                                        builder: (_) => const LoginPage()),
+                                    MaterialPageRoute(builder: (_) => const LoginPage()),
                                   );
                                 },
                               ),
