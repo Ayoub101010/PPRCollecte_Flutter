@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
+import 'piste_chaussee_db_helper.dart';
 
 class FormulaireChausseePage extends StatefulWidget {
   final List<LatLng> chausseePoints;
@@ -121,6 +122,10 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
         'created_at': DateTime.now().toIso8601String(),
         'sync_status': 'pending',
       };
+      final storageHelper = SimpleStorageHelper();
+      final savedId = await storageHelper.saveChaussee(chausseeData);
+      if (savedId != null)
+        print('✅ Chaussée sauvegardée en local avec ID: $savedId');
 
       if (mounted) {
         Navigator.of(context).pop(chausseeData);

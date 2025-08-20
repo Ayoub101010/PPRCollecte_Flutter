@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
-import 'provisional_form_dialog.dart';
+import 'piste_chaussee_db_helper.dart';
 
 class FormulaireLignePage extends StatefulWidget {
   final List<LatLng> linePoints;
@@ -250,6 +250,10 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'updated_at': DateTime.now().toIso8601String(),
         'sync_status': 'pending',
       };
+      final storageHelper = SimpleStorageHelper();
+      final savedId = await storageHelper.savePiste(pisteData);
+      if (savedId != null)
+        print('✅ Piste sauvegardée en local avec ID: $savedId');
 
       if (mounted) {
         Navigator.of(context).pop(pisteData);
