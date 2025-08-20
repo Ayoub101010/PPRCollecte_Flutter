@@ -38,28 +38,21 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final directory = await getExternalStorageDirectory();
-    final path = join(directory!.path, 'app_database.db');
+    // Utilisation du chemin de base de données interne
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'app_database.db');
     print('📂 Chemin absolu DB: $path');
 
-    final dbFile = File(path);
-    if (await dbFile.exists()) {
-      print('🗑️  Suppression de l\'ancienne DB corrompue...');
-      try {
-        await dbFile.delete();
-        final walFile = File('$path-wal');
-        final shmFile = File('$path-shm');
-        if (await walFile.exists()) await walFile.delete();
-        if (await shmFile.exists()) await shmFile.delete();
-        print('✅ Ancienne DB supprimée');
-      } catch (e) {
-        print('⚠️ Erreur suppression DB: $e');
-      }
-    }
+    // CORRECTION: On ne supprime plus la DB existante automatiquement
+    // On vérifie seulement si elle existe pour logging
+    final dbExists = await databaseExists(path);
+    print(dbExists ? '📁 Base de données existante' : '🆕 Nouvelle base de données');
 
-    if (!await Directory(directory.path).exists()) {
-      await Directory(directory.path).create(recursive: true);
-      print('📁 Répertoire créé: ${directory.path}');
+    // CORRECTION: Création du répertoire si nécessaire
+    final dbDir = Directory(dbPath);
+    if (!await dbDir.exists()) {
+      await dbDir.create(recursive: true);
+      print('📁 Répertoire créé: $dbPath');
     }
 
     return await openDatabase(
@@ -334,6 +327,10 @@ class DatabaseHelper {
     ''');
     print('✅ Table points_coupures créée');
 
+    // CORRECTION: Création de la table de test pour l'intégrité
+    await db.execute('CREATE TABLE IF NOT EXISTS test (id INTEGER)');
+    print('✅ Table test créée');
+
     print("🎉 Toutes les tables ont été créées avec succès !");
   }
 
@@ -359,7 +356,7 @@ class DatabaseHelper {
 
   Future<void> _testDatabaseIntegrity(Database db) async {
     try {
-      await db.execute('CREATE TABLE IF NOT EXISTS test (id INTEGER)');
+      // CORRECTION: On utilise la table test qui a été créée dans _createAllTables
       await db.insert('test', {
         'id': 1
       });
@@ -398,6 +395,30 @@ class DatabaseHelper {
         print('   ├─ $name ($type)'
             '${pk == 1 ? ' [PRIMARY KEY]' : ''}'
             '${notnull == 1 ? ' [NOT NULL]' : ''}');
+      }
+      // NOUVEAU: Afficher le contenu de la table (sauf pour les tables système)
+      if (tableName != 'android_metadata' && tableName != 'test') {
+        try {
+          final content = await db.query(tableName);
+          print('   └─ 📊 CONTENU (${content.length} enregistrement(s)):');
+
+          if (content.isEmpty) {
+            print('      └─ Aucune donnée');
+          } else {
+            for (var i = 0; i < content.length; i++) {
+              final row = content[i];
+              print('      ${i + 1}.');
+              row.forEach((key, value) {
+                print('         ├─ $key: $value');
+              });
+              if (i < content.length - 1) {
+                print('         │');
+              }
+            }
+          }
+        } catch (e) {
+          print('   └─ ❌ Erreur lecture contenu: $e');
+        }
       }
     }
     print('=' * 50);
@@ -488,9 +509,15 @@ class DatabaseHelper {
       final db = await database;
       await db.close();
       _database = null;
-      final documentsDirectory = await getApplicationDocumentsDirectory();
-      final path = join(documentsDirectory.path, 'app_database.db');
-      await deleteDatabase(path);
+
+      // CORRECTION: Utilisation du bon chemin pour la suppression
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'app_database.db');
+
+      if (await databaseExists(path)) {
+        await deleteDatabase(path);
+      }
+
       print('✅ Base de données réinitialisée');
     } catch (e) {
       print("❌ Erreur resetDatabase: $e");
@@ -501,10 +528,16 @@ class DatabaseHelper {
 
   Future<int> insertEntity(String tableName, Map<String, dynamic> data) async {
     final db = await database;
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbPath = join(documentsDirectory.path, 'app_database.db');
-    print('🗂️ Insertion dans: $dbPath');
+    // CORRECTION: Utilisation du bon chemin
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'app_database.db');
+    print('🗂️ Insertion dans: $path');
     print('📋 Table: $tableName');
+    // NOUVEAU: Afficher les champs et valeurs qui seront insérés
+    print('📝 Champs à insérer:');
+    data.forEach((key, value) {
+      print('   ├─ $key: $value (${value.runtimeType})');
+    });
 
     final id = await db.insert(tableName, data);
     print("✅ Entité insérée dans $tableName (ID: $id)");
@@ -513,9 +546,10 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getEntities(String tableName) async {
     final db = await database;
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbPath = join(documentsDirectory.path, 'app_database.db');
-    print('🗂️ Lecture depuis: $dbPath');
+    // CORRECTION: Utilisation du bon chemin
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'app_database.db');
+    print('🗂️ Lecture depuis: $path');
     print('📋 Table: $tableName');
 
     final List<Map<String, dynamic>> maps = await db.query(tableName);
@@ -529,9 +563,10 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> getAllPoints() async {
     final db = await database;
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final dbPath = join(documentsDirectory.path, 'app_database.db');
-    print('🗂️ Scan complet depuis: $dbPath');
+    // CORRECTION: Utilisation du bon chemin
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'app_database.db');
+    print('🗂️ Scan complet depuis: $path');
 
     final List<Map<String, dynamic>> allPoints = [];
     final tables = [
