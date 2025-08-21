@@ -57,7 +57,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 10, // Version augmentée pour la fusion
+      version: 11, // Version augmentée pour la fusion
       onCreate: (db, version) async {
         print('🆕 Création de toutes les tables pour la version $version');
         await _createAllTables(db);
@@ -83,251 +83,277 @@ class DatabaseHelper {
   Future<void> _createAllTables(Database db) async {
     print('🏗️  Début de la création des tables...');
 
-    // ============ TABLE USERS (pour le login) ============
+    // ============ TABLE USERS ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nom TEXT,
-        prenom TEXT,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        role TEXT,
-        date_creation TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS users(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom TEXT,
+      prenom TEXT,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      role TEXT,
+      date_creation TEXT
+    )
+  ''');
     print('✅ Table users créée');
 
-    // ============ TABLES FORMULAIRES ============
-
-    // Table localites
+    // ============ TABLE LOCALITES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS localites(
-        local_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_localite REAL NOT NULL,
-        y_localite REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS localites(
+      local_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_localite REAL NOT NULL,
+      y_localite REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table localites créée');
 
-    // Table ecoles
+    // ============ TABLE ECOLES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS ecoles(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_ecole REAL NOT NULL,
-        y_ecole REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS ecoles(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_ecole REAL NOT NULL,
+      y_ecole REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table ecoles créée');
 
-    // Table marches
+    // ============ TABLE MARCHES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS marches(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_marche REAL NOT NULL,
-        y_marche REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS marches(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_marche REAL NOT NULL,
+      y_marche REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table marches créée');
 
-    // Table services_santes
+    // ============ TABLE SERVICES_SANTES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS services_santes(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_sante REAL NOT NULL,
-        y_sante REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS services_santes(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_sante REAL NOT NULL,
+      y_sante REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table services_santes créée');
 
-    // Table batiments_administratifs
+    // ============ TABLE BATIMENTS_ADMINISTRATIFS ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS batiments_administratifs(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_batiment_administratif REAL NOT NULL,
-        y_batiment_administratif REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS batiments_administratifs(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_batiment_administratif REAL NOT NULL,
+      y_batiment_administratif REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table batiments_administratifs créée');
 
-    // Table infrastructures_hydrauliques
+    // ============ TABLE INFRASTRUCTURES_HYDRAULIQUES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS infrastructures_hydrauliques(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_infrastructure_hydraulique REAL NOT NULL,
-        y_infrastructure_hydraulique REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS infrastructures_hydrauliques(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_infrastructure_hydraulique REAL NOT NULL,
+      y_infrastructure_hydraulique REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table infrastructures_hydrauliques créée');
 
-    // Table autres_infrastructures
+    // ============ TABLE AUTRES_INFRASTRUCTURES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS autres_infrastructures(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_autre_infrastructure REAL NOT NULL,
-        y_autre_infrastructure REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS autres_infrastructures(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_autre_infrastructure REAL NOT NULL,
+      y_autre_infrastructure REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table autres_infrastructures créée');
 
-    // Table ponts
+    // ============ TABLE PONTS ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS ponts(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_pont REAL NOT NULL,
-        y_pont REAL NOT NULL,
-        nom TEXT NOT NULL,
-        situation_pont TEXT NOT NULL,
-        type_pont TEXT NOT NULL,
-        nom_cours_eau TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS ponts(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_pont REAL NOT NULL,
+      y_pont REAL NOT NULL,
+      nom TEXT NOT NULL,
+      situation_pont TEXT NOT NULL,
+      type_pont TEXT NOT NULL,
+      nom_cours_eau TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table ponts créée');
 
-    // Table bacs
+    // ============ TABLE BACS ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS bacs(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_debut_traversee_bac REAL NOT NULL,
-        y_debut_traversee_bac REAL NOT NULL,
-        x_fin_traversee_bac REAL NOT NULL,
-        y_fin_traversee_bac REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type_bac TEXT NOT NULL,
-        nom_cours_eau TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS bacs(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_debut_traversee_bac REAL NOT NULL,
+      y_debut_traversee_bac REAL NOT NULL,
+      x_fin_traversee_bac REAL NOT NULL,
+      y_fin_traversee_bac REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type_bac TEXT NOT NULL,
+      nom_cours_eau TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table bacs créée');
 
-    // Table buses
+    // ============ TABLE BUSES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS buses(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_buse REAL NOT NULL,
-        y_buse REAL NOT NULL,
-        nom TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS buses(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_buse REAL NOT NULL,
+      y_buse REAL NOT NULL,
+      nom TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table buses créée');
 
-    // Table dalots
+    // ============ TABLE DALOTS ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS dalots(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_dalot REAL NOT NULL,
-        y_dalot REAL NOT NULL,
-        nom TEXT NOT NULL,
-        situation_dalot TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS dalots(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_dalot REAL NOT NULL,
+      y_dalot REAL NOT NULL,
+      nom TEXT NOT NULL,
+      situation_dalot TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table dalots créée');
 
-    // Table passages_submersibles
+    // ============ TABLE PASSAGES_SUBMERSIBLES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS passages_submersibles(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_debut_passage_submersible REAL NOT NULL,
-        y_debut_passage_submersible REAL NOT NULL,
-        x_fin_passage_submersible REAL NOT NULL,
-        y_fin_passage_submersible REAL NOT NULL,
-        nom TEXT NOT NULL,
-        type_materiau TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS passages_submersibles(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_debut_passage_submersible REAL NOT NULL,
+      y_debut_passage_submersible REAL NOT NULL,
+      x_fin_passage_submersible REAL NOT NULL,
+      y_fin_passage_submersible REAL NOT NULL,
+      nom TEXT NOT NULL,
+      type_materiau TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table passages_submersibles créée');
 
-    // Table points_critiques
+    // ============ TABLE POINTS_CRITIQUES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS points_critiques(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_point_critique REAL NOT NULL,
-        y_point_critique REAL NOT NULL,
-        type_point_critique TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS points_critiques(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_point_critique REAL NOT NULL,
+      y_point_critique REAL NOT NULL,
+      type_point_critique TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table points_critiques créée');
 
-    // Table points_coupures
+    // ============ TABLE POINTS_COUPURES ============
     await db.execute('''
-      CREATE TABLE IF NOT EXISTS points_coupures(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        x_point_coupure REAL NOT NULL,
-        y_point_coupure REAL NOT NULL,
-        causes_coupures TEXT NOT NULL,
-        enqueteur TEXT NOT NULL,
-        date_creation TEXT NOT NULL,
-        date_modification TEXT,
-        code_piste TEXT
-      )
-    ''');
+    CREATE TABLE IF NOT EXISTS points_coupures(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      x_point_coupure REAL NOT NULL,
+      y_point_coupure REAL NOT NULL,
+      causes_coupures TEXT NOT NULL,
+      enqueteur TEXT NOT NULL,
+      date_creation TEXT NOT NULL,
+      date_modification TEXT,
+      code_piste TEXT,
+      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+    )
+  ''');
     print('✅ Table points_coupures créée');
 
-    // CORRECTION: Création de la table de test pour l'intégrité
+    // ============ TABLE TEST ============
     await db.execute('CREATE TABLE IF NOT EXISTS test (id INTEGER)');
     print('✅ Table test créée');
 
@@ -783,5 +809,57 @@ class DatabaseHelper {
       _database = null;
       print("🔒 Base de données fermée");
     }
+  }
+
+  // Dans la classe DatabaseHelper, ajoutez:
+
+  Future<List<Map<String, dynamic>>> getUnsyncedEntities(String tableName) async {
+    final db = await database;
+
+    // Vérifier si la table a une colonne 'synced'
+    final columns = await db.rawQuery('PRAGMA table_info($tableName)');
+    final hasSyncedColumn = columns.any((col) => col['name'] == 'synced');
+
+    if (hasSyncedColumn) {
+      return await db.query(tableName, where: 'synced = ? OR synced IS NULL', whereArgs: [
+        0
+      ]);
+    } else {
+      // Si la table n'a pas de colonne synced, retourner toutes les données
+      return await db.query(tableName);
+    }
+  }
+
+  Future<void> markAsSynced(String tableName, int id) async {
+    final db = await database;
+
+    // Vérifier si la table a une colonne 'synced'
+    final columns = await db.rawQuery('PRAGMA table_info($tableName)');
+    final hasSyncedColumn = columns.any((col) => col['name'] == 'synced');
+    final hasDateSyncColumn = columns.any((col) => col['name'] == 'date_sync');
+
+    if (hasSyncedColumn && hasDateSyncColumn) {
+      await db.update(
+          tableName,
+          {
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String()
+          },
+          where: 'id = ?',
+          whereArgs: [
+            id
+          ]);
+    } else if (hasSyncedColumn) {
+      await db.update(
+          tableName,
+          {
+            'synced': 1
+          },
+          where: 'id = ?',
+          whereArgs: [
+            id
+          ]);
+    }
+    // Si la table n'a pas de colonne synced, on ne fait rien
   }
 }

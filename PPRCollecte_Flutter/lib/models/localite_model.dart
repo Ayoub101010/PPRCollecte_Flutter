@@ -7,6 +7,7 @@ class Localite {
   final String enqueteur;
   final String dateCreation;
   final String? dateModification;
+  int? synced;
 
   Localite({
     this.localId,
@@ -17,6 +18,7 @@ class Localite {
     required this.enqueteur,
     this.dateCreation = '',
     this.dateModification,
+    this.synced = 0,
   });
 
   // Conversion vers Map (SQLite)
@@ -30,6 +32,7 @@ class Localite {
       'enqueteur': enqueteur,
       'date_creation': dateCreation.isEmpty ? DateTime.now().toIso8601String() : dateCreation,
       'date_modification': dateModification,
+      'synced': synced
     };
   }
 
@@ -44,7 +47,8 @@ class Localite {
       enqueteur: map['enqueteur'],
       dateCreation: map['date_creation'],
       dateModification: map['date_modification'],
-    );
+      synced: map['synced'] != null ? (map['synced'] as num).toInt() : 0,
+    ); // valeur par défaut;
   }
 
   // Conversion vers JSON (string)
@@ -56,6 +60,7 @@ class Localite {
         'type': type,
         'enqueteur': enqueteur,
         'date_creation': dateCreation.isEmpty ? DateTime.now().toIso8601String() : dateCreation,
+        'synced': synced,
       };
 
   // Conversion depuis JSON
@@ -67,5 +72,6 @@ class Localite {
         type: json['type'],
         enqueteur: json['enqueteur'],
         dateCreation: json['date_creation'],
+        synced: json['synced'] != null ? json['synced'] as int : 0,
       );
 }

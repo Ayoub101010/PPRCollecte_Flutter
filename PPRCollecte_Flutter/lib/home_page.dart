@@ -11,7 +11,7 @@ import 'bottom_buttons_widget.dart';
 import 'home_controller.dart';
 import 'Point_form_screen.dart';
 import 'collection_exports.dart';
-import 'form_marker_service.dart';
+import 'sync_service.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -33,6 +33,8 @@ class _HomePageState extends State<HomePage> {
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
   Set<Marker> formMarkers = {};
+  bool isSyncing = false;
+  SyncResult? lastSyncResult;
 
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _lastCameraPosition;
@@ -60,15 +62,14 @@ class _HomePageState extends State<HomePage> {
       Marker(
         markerId: const MarkerId('poi1'),
         position: const LatLng(34.021, -6.841),
-        infoWindow: const InfoWindow(
-            title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
+        infoWindow: const InfoWindow(title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       ),
     ]);
 
-    collectedPolylines.add(Polyline(
-      polylineId: const PolylineId('piste1'),
-      points: const [
+    collectedPolylines.add(const Polyline(
+      polylineId: PolylineId('piste1'),
+      points: [
         LatLng(34.020, -6.840),
         LatLng(34.022, -6.842),
         LatLng(34.023, -6.843),
@@ -83,8 +84,7 @@ class _HomePageState extends State<HomePage> {
       _controller.complete(controller);
     }
 
-    if (userPosition.latitude != 34.020882 ||
-        userPosition.longitude != -6.841650) {
+    if (userPosition.latitude != 34.020882 || userPosition.longitude != -6.841650) {
       await controller.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(target: userPosition, zoom: 17),
@@ -122,8 +122,7 @@ class _HomePageState extends State<HomePage> {
     if (activeType != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Veuillez mettre en pause la collecte de $activeType en cours'),
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -154,8 +153,7 @@ class _HomePageState extends State<HomePage> {
             markerId: MarkerId('poi${collectedMarkers.length + 1}'),
             position: LatLng(result['latitude'], result['longitude']),
             infoWindow: InfoWindow(title: result['nom'] ?? 'Nouveau point'),
-            icon:
-                BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
           ),
         );
       });
@@ -177,8 +175,7 @@ class _HomePageState extends State<HomePage> {
       final activeType = homeController.activeCollectionType;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Veuillez mettre en pause la collecte de $activeType en cours'),
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -226,8 +223,7 @@ class _HomePageState extends State<HomePage> {
     final result = homeController.finishLigneCollection();
     if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Une piste doit contenir au moins 2 points.")),
+        const SnackBar(content: Text("Une piste doit contenir au moins 2 points.")),
       );
       return;
     }
@@ -278,8 +274,7 @@ class _HomePageState extends State<HomePage> {
       final activeType = homeController.activeCollectionType;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Veuillez mettre en pause la collecte de $activeType en cours'),
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -287,8 +282,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      await homeController
-          .startChausseeCollection(); // ✅ Aucun paramètre requis
+      await homeController.startChausseeCollection(); // ✅ Aucun paramètre requis
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -323,8 +317,7 @@ class _HomePageState extends State<HomePage> {
     final result = homeController.finishChausseeCollection();
     if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Une chaussée doit contenir au moins 2 points.")),
+        const SnackBar(content: Text("Une chaussée doit contenir au moins 2 points.")),
       );
       return;
     }
@@ -359,26 +352,79 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void handleSave() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Sauvegardé !')));
+  void _showSyncResult(SyncResult result) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Synchronisation terminée'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('✅ ${result.successCount} succès'),
+            Text('❌ ${result.failedCount} échecs'),
+            if (result.errors.isNotEmpty) ...[
+              SizedBox(height: 10),
+              Text('Détails des erreurs:'),
+              SizedBox(height: 5),
+              Container(
+                height: 100,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: result.errors.length,
+                  itemBuilder: (ctx, i) => Text(
+                    '• ${result.errors[i]}',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   void handleSync() {
-    ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Synchronisation lancée !')));
+    if (isSyncing) return;
+
+    _performSync(); // Appeler la méthode async séparément
+  }
+
+  void handleSave() {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Synchronisation lancée !')));
   }
 
   void handleMenuPress() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Menu ouvert')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Menu ouvert')));
+  }
+
+  // Méthode AVEC Future pour la logique async
+  Future<void> _performSync() async {
+    setState(() => isSyncing = true);
+
+    try {
+      final result = await SyncService().syncAllData();
+      setState(() => lastSyncResult = result);
+      _showSyncResult(result);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur: $e')),
+      );
+    } finally {
+      setState(() => isSyncing = false);
+    }
   }
 
   double _coordinateDistance(lat1, lon1, lat2, lon2) {
     const p = 0.017453292519943295;
-    final a = 0.5 -
-        (cos((lat2 - lat1) * p) / 2) +
-        cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
+    final a = 0.5 - (cos((lat2 - lat1) * p) / 2) + cos(lat1 * p) * cos(lat2 * p) * (1 - cos((lon2 - lon1) * p)) / 2;
     return 12742000 * asin(sqrt(a));
   }
 
@@ -411,12 +457,13 @@ class _HomePageState extends State<HomePage> {
         allPolylines.add(Polyline(
           polylineId: const PolylineId('currentLigne'),
           points: lignePoints,
-          color: homeController.ligneCollection!.isPaused
-              ? Colors.orange
-              : Colors.green,
+          color: homeController.ligneCollection!.isPaused ? Colors.orange : Colors.green,
           width: 4,
           patterns: homeController.ligneCollection!.isPaused
-              ? <PatternItem>[PatternItem.dash(10), PatternItem.gap(5)]
+              ? <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(5)
+                ]
               : <PatternItem>[],
         ));
       }
@@ -429,12 +476,13 @@ class _HomePageState extends State<HomePage> {
         allPolylines.add(Polyline(
           polylineId: const PolylineId('currentChaussee'),
           points: chausseePoints,
-          color: homeController.chausseeCollection!.isPaused
-              ? Colors.deepOrange
-              : const Color(0xFFFF9800),
+          color: homeController.chausseeCollection!.isPaused ? Colors.deepOrange : const Color(0xFFFF9800),
           width: 5,
           patterns: homeController.chausseeCollection!.isPaused
-              ? <PatternItem>[PatternItem.dash(15), PatternItem.gap(5)]
+              ? <PatternItem>[
+                  PatternItem.dash(15),
+                  PatternItem.gap(5)
+                ]
               : <PatternItem>[],
         ));
       }
@@ -483,20 +531,17 @@ class _HomePageState extends State<HomePage> {
                   if (homeController.chausseeCollection != null)
                     ChausseeStatusWidget(
                       collection: homeController.chausseeCollection!,
-                      topOffset:
-                          homeController.ligneCollection != null ? 70 : 16,
+                      topOffset: homeController.ligneCollection != null ? 70 : 16,
                     ),
 
-                  DataCountWidget(
-                      count:
-                          collectedMarkers.length + collectedPolylines.length),
+                  DataCountWidget(count: collectedMarkers.length + collectedPolylines.length),
                 ],
               ),
             ),
             BottomStatusBarWidget(gpsEnabled: gpsEnabled),
             BottomButtonsWidget(
               onSave: handleSave,
-              onSync: handleSync,
+              onSync: isSyncing ? () {} : handleSync,
               onMenu: handleMenuPress,
             ),
           ],

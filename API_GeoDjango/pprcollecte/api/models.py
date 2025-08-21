@@ -114,9 +114,9 @@ class Piste(models.Model):
 
 
 class ServicesSantes(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_sante = models.FloatField(null=True, blank=True)
     y_sante = models.FloatField(null=True, blank=True)
     nom = models.CharField(max_length=254, null=True, blank=True)
@@ -153,9 +153,9 @@ class ServicesSantes(models.Model):
 
 
 class AutresInfrastructures(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_autre_in = models.FloatField(null=True, blank=True)
     y_autre_in = models.FloatField(null=True, blank=True)
     type = models.CharField(max_length=254, null=True, blank=True)
@@ -191,9 +191,9 @@ class AutresInfrastructures(models.Model):
 
 
 class Bacs(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_debut_tr = models.FloatField(null=True, blank=True)
     y_debut_tr = models.FloatField(null=True, blank=True)
     x_fin_trav = models.FloatField(null=True, blank=True)
@@ -232,9 +232,9 @@ class Bacs(models.Model):
 
 
 class BatimentsAdministratifs(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_batiment = models.FloatField(null=True, blank=True)
     y_batiment = models.FloatField(null=True, blank=True)
     nom = models.CharField(max_length=254, null=True, blank=True)
@@ -271,9 +271,9 @@ class BatimentsAdministratifs(models.Model):
 
 
 class Buses(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_buse = models.FloatField(null=True, blank=True)
     y_buse = models.FloatField(null=True, blank=True)
     created_at = models.CharField(max_length=24, null=True, blank=True)
@@ -307,9 +307,9 @@ class Buses(models.Model):
 
 
 class Dalots(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_dalot = models.FloatField(null=True, blank=True)
     y_dalot = models.FloatField(null=True, blank=True)
     situation = models.CharField(max_length=254, null=True, blank=True, db_column='situation_')
@@ -344,9 +344,9 @@ class Dalots(models.Model):
 
 
 class Ecoles(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_ecole = models.FloatField(null=True, blank=True)
     y_ecole = models.FloatField(null=True, blank=True)
     nom = models.CharField(max_length=254, null=True, blank=True)
@@ -383,9 +383,9 @@ class Ecoles(models.Model):
 
 
 class InfrastructuresHydrauliques(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_infrastr = models.FloatField(null=True, blank=True)
     y_infrastr = models.FloatField(null=True, blank=True)
     nom = models.CharField(max_length=254, null=True, blank=True)
@@ -422,9 +422,9 @@ class InfrastructuresHydrauliques(models.Model):
 
 
 class Localites(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_localite = models.FloatField(null=True, blank=True)
     y_localite = models.FloatField(null=True, blank=True)
     nom = models.CharField(max_length=254, null=True, blank=True)
@@ -460,9 +460,9 @@ class Localites(models.Model):
 
 
 class Marches(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_marche = models.FloatField(null=True, blank=True)
     y_marche = models.FloatField(null=True, blank=True)
     nom = models.CharField(max_length=254, null=True, blank=True)
@@ -498,9 +498,9 @@ class Marches(models.Model):
 
 
 class PassagesSubmersibles(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_debut_pa = models.FloatField(null=True, blank=True)
     y_debut_pa = models.FloatField(null=True, blank=True)
     x_fin_pass = models.FloatField(null=True, blank=True)
@@ -538,9 +538,9 @@ class PassagesSubmersibles(models.Model):
 
 
 class Ponts(models.Model):
-    fid = models.BigIntegerField(primary_key=True)
+    fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
-    id = models.FloatField(null=True, blank=True)
+    sqlite_id = models.IntegerField(null=True, blank=True, db_column='id')
     x_pont = models.FloatField(null=True, blank=True)
     y_pont = models.FloatField(null=True, blank=True)
     situation = models.CharField(max_length=254, null=True, blank=True, db_column='situation_')
