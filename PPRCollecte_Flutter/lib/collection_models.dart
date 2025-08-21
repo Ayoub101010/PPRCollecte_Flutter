@@ -1,9 +1,16 @@
 // lib/collection_models.dart - VERSION CORRIGÉE
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-enum CollectionType { ligne, chaussee }
+enum CollectionType {
+  ligne,
+  chaussee
+}
 
-enum CollectionStatus { inactive, active, paused }
+enum CollectionStatus {
+  inactive,
+  active,
+  paused
+}
 
 class CollectionBase {
   final int id; // ✅ ID auto-généré (entier)
@@ -55,22 +62,15 @@ class CollectionBase {
 
 class LigneCollection extends CollectionBase {
   LigneCollection({
-    required int id,
-    required String codePiste, // ✅ Obligatoire pour ligne
-    required CollectionStatus status,
-    required List<LatLng> points,
-    required DateTime startTime,
-    DateTime? lastPointTime,
-    double totalDistance = 0.0,
+    required super.id,
+    required String super.codePiste, // ✅ Obligatoire pour ligne
+    required super.status,
+    required super.points,
+    required super.startTime,
+    super.lastPointTime,
+    super.totalDistance,
   }) : super(
-          id: id,
-          codePiste: codePiste, // ✅ Passer le code piste
           type: CollectionType.ligne,
-          status: status,
-          points: points,
-          startTime: startTime,
-          lastPointTime: lastPointTime,
-          totalDistance: totalDistance,
         );
 
   @override
@@ -101,8 +101,12 @@ class LigneCollection extends CollectionBase {
       'codePiste': codePiste,
       'type': 'ligne',
       'status': status.toString(),
-      'points':
-          points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'points': points
+          .map((p) => {
+                'lat': p.latitude,
+                'lng': p.longitude
+              })
+          .toList(),
       'startTime': startTime.toIso8601String(),
       'lastPointTime': lastPointTime?.toIso8601String(),
       'totalDistance': totalDistance,
@@ -116,13 +120,9 @@ class LigneCollection extends CollectionBase {
       status: CollectionStatus.values.firstWhere(
         (e) => e.toString() == json['status'],
       ),
-      points: (json['points'] as List)
-          .map((p) => LatLng(p['lat'], p['lng']))
-          .toList(),
+      points: (json['points'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
       startTime: DateTime.parse(json['startTime']),
-      lastPointTime: json['lastPointTime'] != null
-          ? DateTime.parse(json['lastPointTime'])
-          : null,
+      lastPointTime: json['lastPointTime'] != null ? DateTime.parse(json['lastPointTime']) : null,
       totalDistance: json['totalDistance']?.toDouble() ?? 0.0,
     );
   }
@@ -130,21 +130,15 @@ class LigneCollection extends CollectionBase {
 
 class ChausseeCollection extends CollectionBase {
   ChausseeCollection({
-    required int id,
-    required CollectionStatus status,
-    required List<LatLng> points,
-    required DateTime startTime,
-    DateTime? lastPointTime,
-    double totalDistance = 0.0,
+    required super.id,
+    required super.status,
+    required super.points,
+    required super.startTime,
+    super.lastPointTime,
+    super.totalDistance,
   }) : super(
-          id: id,
           codePiste: null, // ✅ Pas de code piste pour chaussée
           type: CollectionType.chaussee,
-          status: status,
-          points: points,
-          startTime: startTime,
-          lastPointTime: lastPointTime,
-          totalDistance: totalDistance,
         );
 
   @override
@@ -173,8 +167,12 @@ class ChausseeCollection extends CollectionBase {
       'id': id,
       'type': 'chaussee',
       'status': status.toString(),
-      'points':
-          points.map((p) => {'lat': p.latitude, 'lng': p.longitude}).toList(),
+      'points': points
+          .map((p) => {
+                'lat': p.latitude,
+                'lng': p.longitude
+              })
+          .toList(),
       'startTime': startTime.toIso8601String(),
       'lastPointTime': lastPointTime?.toIso8601String(),
       'totalDistance': totalDistance,
@@ -187,13 +185,9 @@ class ChausseeCollection extends CollectionBase {
       status: CollectionStatus.values.firstWhere(
         (e) => e.toString() == json['status'],
       ),
-      points: (json['points'] as List)
-          .map((p) => LatLng(p['lat'], p['lng']))
-          .toList(),
+      points: (json['points'] as List).map((p) => LatLng(p['lat'], p['lng'])).toList(),
       startTime: DateTime.parse(json['startTime']),
-      lastPointTime: json['lastPointTime'] != null
-          ? DateTime.parse(json['lastPointTime'])
-          : null,
+      lastPointTime: json['lastPointTime'] != null ? DateTime.parse(json['lastPointTime']) : null,
       totalDistance: json['totalDistance']?.toDouble() ?? 0.0,
     );
   }

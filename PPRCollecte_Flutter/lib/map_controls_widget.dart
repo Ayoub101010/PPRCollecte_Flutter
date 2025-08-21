@@ -1,6 +1,5 @@
 // lib/map_controls_widget.dart
 import 'package:flutter/material.dart';
-import 'collection_models.dart';
 import 'home_controller.dart';
 
 class MapControlsWidget extends StatelessWidget {
@@ -83,9 +82,7 @@ class MapControlsWidget extends StatelessWidget {
           // Bouton pause/reprendre
           FloatingActionButton(
             heroTag: "pauseLigneBtn",
-            backgroundColor: ligneCollection.isPaused
-                ? const Color(0xFF4CAF50)
-                : const Color(0xFFD69E2E),
+            backgroundColor: ligneCollection.isPaused ? const Color(0xFF4CAF50) : const Color(0xFFD69E2E),
             foregroundColor: Colors.white,
             onPressed: onToggleLigne,
             mini: true,
@@ -135,9 +132,7 @@ class MapControlsWidget extends StatelessWidget {
           // Bouton pause/reprendre
           FloatingActionButton(
             heroTag: "pauseChausseeBtn",
-            backgroundColor: chausseeCollection.isPaused
-                ? const Color(0xFF4CAF50)
-                : const Color(0xFFD69E2E),
+            backgroundColor: chausseeCollection.isPaused ? const Color(0xFF4CAF50) : const Color(0xFFD69E2E),
             foregroundColor: Colors.white,
             onPressed: onToggleChaussee,
             mini: true,

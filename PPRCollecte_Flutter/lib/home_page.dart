@@ -356,7 +356,7 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Synchronisation terminée'),
+        title: const Text('Synchronisation terminée'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,17 +364,17 @@ class _HomePageState extends State<HomePage> {
             Text('✅ ${result.successCount} succès'),
             Text('❌ ${result.failedCount} échecs'),
             if (result.errors.isNotEmpty) ...[
-              SizedBox(height: 10),
-              Text('Détails des erreurs:'),
-              SizedBox(height: 5),
-              Container(
+              const SizedBox(height: 10),
+              const Text('Détails des erreurs:'),
+              const SizedBox(height: 5),
+              SizedBox(
                 height: 100,
                 child: ListView.builder(
                   shrinkWrap: true,
                   itemCount: result.errors.length,
                   itemBuilder: (ctx, i) => Text(
                     '• ${result.errors[i]}',
-                    style: TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
               ),
@@ -384,7 +384,7 @@ class _HomePageState extends State<HomePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('OK'),
+            child: const Text('OK'),
           ),
         ],
       ),

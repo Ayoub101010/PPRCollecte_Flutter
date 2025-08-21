@@ -95,29 +95,24 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       _codeController.text = widget.provisionalCode!;
     }
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
-    _userLoginController.text =
-        _getCurrentUser(); // À implémenter selon votre système d'auth
+    _userLoginController.text = _getCurrentUser(); // À implémenter selon votre système d'auth
     if (widget.startTime != null) {
       final startTime = TimeOfDay.fromDateTime(widget.startTime!);
-      _heureDebutController.text =
-          "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+      _heureDebutController.text = "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
     } else {
       // Fallback : heure actuelle
       final now = TimeOfDay.now();
-      _heureDebutController.text =
-          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+      _heureDebutController.text = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
     }
 
     // 🚀 NOUVEAU : Heure de fin automatique
     if (widget.endTime != null) {
       final endTime = TimeOfDay.fromDateTime(widget.endTime!);
-      _heureFinController.text =
-          "${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
+      _heureFinController.text = "${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
     } else {
       // Cas exceptionnel : utiliser l'heure actuelle comme fallback
       final now = TimeOfDay.now();
-      _heureFinController.text =
-          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+      _heureFinController.text = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
     }
 
     // Calculer et remplir automatiquement les coordonnées d'origine et destination
@@ -156,11 +151,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     final dLat = (point2.latitude - point1.latitude) * p;
     final dLon = (point2.longitude - point1.longitude) * p;
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(point1.latitude * p) *
-            cos(point2.latitude * p) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
+    final a = sin(dLat / 2) * sin(dLat / 2) + cos(point1.latitude * p) * cos(point2.latitude * p) * sin(dLon / 2) * sin(dLon / 2);
 
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
@@ -182,8 +173,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     }
   }
 
-  Future<void> _selectOccupationDate(
-      BuildContext context, bool isStartDate) async {
+  Future<void> _selectOccupationDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -214,8 +204,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
 
       final pisteData = {
         // ✅ L'ID sera auto-généré par la BDD, ne pas l'inclure ici
-        'code_piste':
-            _codeController.text, // ✅ Code piste saisi par l'utilisateur
+        'code_piste': _codeController.text, // ✅ Code piste saisi par l'utilisateur
         'commune_rurale_id': _communeRurale,
         'user_login': _userLoginController.text,
         'heure_debut': _heureDebutController.text,
@@ -233,13 +222,9 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'frequence_trafic': _frequenceTrafic,
         'type_trafic': _typeTrafic,
 
-        'travaux_realises': _travauxRealisesController.text.isNotEmpty
-            ? _travauxRealisesController.text
-            : null,
+        'travaux_realises': _travauxRealisesController.text.isNotEmpty ? _travauxRealisesController.text : null,
         'date_travaux': _dateDebutTravaux?.toIso8601String(),
-        'entreprise': _entrepriseController.text.isNotEmpty
-            ? _entrepriseController.text
-            : null, // Seulement si travaux réalisés
+        'entreprise': _entrepriseController.text.isNotEmpty ? _entrepriseController.text : null, // Seulement si travaux réalisés
         'points': widget.linePoints
             .map((p) => {
                   'latitude': p.latitude,
@@ -252,8 +237,9 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       };
       final storageHelper = SimpleStorageHelper();
       final savedId = await storageHelper.savePiste(pisteData);
-      if (savedId != null)
+      if (savedId != null) {
         print('✅ Piste sauvegardée en local avec ID: $savedId');
+      }
 
       if (mounted) {
         Navigator.of(context).pop(pisteData);
@@ -300,8 +286,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back,
-                        color: Colors.white, size: 28),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
                     padding: const EdgeInsets.all(8),
                   ),
                   const Expanded(
@@ -341,8 +326,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           label: 'Commune Rurale *',
                           value: _communeRurale,
                           options: _communesRuralesOptions,
-                          onChanged: (value) =>
-                              setState(() => _communeRurale = value),
+                          onChanged: (value) => setState(() => _communeRurale = value),
                           required: true,
                         ),
                         _buildTextField(
@@ -451,8 +435,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           label: 'Type d\'Occupation',
                           value: _typeOccupation,
                           options: _typeOccupationOptions,
-                          onChanged: (value) =>
-                              setState(() => _typeOccupation = value),
+                          onChanged: (value) => setState(() => _typeOccupation = value),
                         ),
                         Column(
                           children: [
@@ -464,19 +447,16 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                             _buildDateField(
                               label: 'Fin Occupation',
                               value: _finOccupation,
-                              onTap: () =>
-                                  _selectOccupationDate(context, false),
+                              onTap: () => _selectOccupationDate(context, false),
                             ),
                           ],
                         ),
                         _buildTextFieldWithCallback(
-                          controller: TextEditingController(
-                              text: _largeurEmprise?.toString() ?? ''),
+                          controller: TextEditingController(text: _largeurEmprise?.toString() ?? ''),
                           label: 'Largeur Emprise (m)',
                           hint: 'Largeur de l\'emprise en mètres',
                           keyboardType: TextInputType.number,
-                          onChanged: (value) =>
-                              _largeurEmprise = double.tryParse(value),
+                          onChanged: (value) => _largeurEmprise = double.tryParse(value),
                         ),
                       ],
                     ),
@@ -489,15 +469,13 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           label: 'Fréquence du Trafic',
                           value: _frequenceTrafic,
                           options: _frequenceTraficOptions,
-                          onChanged: (value) =>
-                              setState(() => _frequenceTrafic = value),
+                          onChanged: (value) => setState(() => _frequenceTrafic = value),
                         ),
                         _buildRadioGroupField(
                           label: 'Type de Trafic',
                           value: _typeTrafic,
                           options: _typeTraficOptions,
-                          onChanged: (value) =>
-                              setState(() => _typeTrafic = value),
+                          onChanged: (value) => setState(() => _typeTrafic = value),
                         ),
                       ],
                     ),
@@ -598,8 +576,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     );
   }
 
-  Widget _buildFormSection(
-      {required String title, required List<Widget> children}) {
+  Widget _buildFormSection({required String title, required List<Widget> children}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -671,8 +648,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
               filled: true,
-              fillColor:
-                  enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+              fillColor: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -856,18 +832,13 @@ class _FormulairePageState extends State<FormulaireLignePage> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today,
-                      size: 20, color: Color(0xFF666666)),
+                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF666666)),
                   const SizedBox(width: 12),
                   Text(
-                    value != null
-                        ? "${value.day}/${value.month}/${value.year}"
-                        : "Sélectionner une date",
+                    value != null ? "${value.day}/${value.month}/${value.year}" : "Sélectionner une date",
                     style: TextStyle(
                       fontSize: 14,
-                      color: value != null
-                          ? const Color(0xFF374151)
-                          : const Color(0xFF9CA3AF),
+                      color: value != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
@@ -901,8 +872,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
           onTap: enabled && onTap != null ? onTap : null, // 🚀 CONDITIONNEL
           child: Container(
             decoration: BoxDecoration(
-              color:
-                  enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+              color: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
@@ -912,9 +882,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                 Icon(
                   Icons.access_time,
                   size: 20,
-                  color: enabled
-                      ? const Color(0xFF666666)
-                      : const Color(0xFF9CA3AF),
+                  color: enabled ? const Color(0xFF666666) : const Color(0xFF9CA3AF),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -924,11 +892,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                         : controller.text,
                     style: TextStyle(
                       fontSize: 14,
-                      color: controller.text.isEmpty
-                          ? const Color(0xFF9CA3AF)
-                          : (enabled
-                              ? const Color(0xFF374151)
-                              : const Color(0xFF6B7280)),
+                      color: controller.text.isEmpty ? const Color(0xFF9CA3AF) : (enabled ? const Color(0xFF374151) : const Color(0xFF6B7280)),
                     ),
                   ),
                 ),
@@ -968,13 +932,10 @@ class _FormulairePageState extends State<FormulaireLignePage> {
           ),
           const SizedBox(height: 12),
           _buildGpsInfoRow('Points collectés:', '${widget.linePoints.length}'),
-          _buildGpsInfoRow('Distance totale:',
-              '${(_calculateTotalDistance(widget.linePoints) / 1000).toStringAsFixed(2)} km'),
+          _buildGpsInfoRow('Distance totale:', '${(_calculateTotalDistance(widget.linePoints) / 1000).toStringAsFixed(2)} km'),
           if (widget.linePoints.isNotEmpty) ...[
-            _buildGpsInfoRow('Premier point:',
-                '${widget.linePoints.first.latitude.toStringAsFixed(6)}°, ${widget.linePoints.first.longitude.toStringAsFixed(6)}°'),
-            _buildGpsInfoRow('Dernier point:',
-                '${widget.linePoints.last.latitude.toStringAsFixed(6)}°, ${widget.linePoints.last.longitude.toStringAsFixed(6)}°'),
+            _buildGpsInfoRow('Premier point:', '${widget.linePoints.first.latitude.toStringAsFixed(6)}°, ${widget.linePoints.first.longitude.toStringAsFixed(6)}°'),
+            _buildGpsInfoRow('Dernier point:', '${widget.linePoints.last.latitude.toStringAsFixed(6)}°, ${widget.linePoints.last.longitude.toStringAsFixed(6)}°'),
           ],
         ],
       ),

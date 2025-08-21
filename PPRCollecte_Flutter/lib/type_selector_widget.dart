@@ -8,11 +8,11 @@ class TypeSelectorWidget extends StatelessWidget {
   final VoidCallback onBack;
 
   const TypeSelectorWidget({
-    Key? key,
+    super.key,
     required this.category,
     required this.onTypeSelected,
     required this.onBack,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

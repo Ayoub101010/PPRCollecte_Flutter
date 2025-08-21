@@ -26,12 +26,10 @@ class BottomButtonsWidget extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),
                 padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const FaIcon(FontAwesomeIcons.save, size: 14),
-              label: const Text("Sauvegarder",
-                  style: TextStyle(fontWeight: FontWeight.w500)),
+              label: const Text("Sauvegarder", style: TextStyle(fontWeight: FontWeight.w500)),
               onPressed: onSave,
             ),
           ),
@@ -41,12 +39,10 @@ class BottomButtonsWidget extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2196F3),
                 padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const FaIcon(FontAwesomeIcons.sync, size: 14),
-              label: const Text("Synchroniser",
-                  style: TextStyle(fontWeight: FontWeight.w500)),
+              label: const Text("Synchroniser", style: TextStyle(fontWeight: FontWeight.w500)),
               onPressed: onSync,
             ),
           ),
@@ -56,12 +52,10 @@ class BottomButtonsWidget extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF757575),
                 padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.menu, size: 18),
-              label: const Text("Menu",
-                  style: TextStyle(fontWeight: FontWeight.w500)),
+              label: const Text("Menu", style: TextStyle(fontWeight: FontWeight.w500)),
               onPressed: onMenu,
             ),
           ),

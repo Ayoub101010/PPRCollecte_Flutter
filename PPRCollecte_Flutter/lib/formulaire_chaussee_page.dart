@@ -68,12 +68,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
 
   double _distanceBetween(LatLng point1, LatLng point2) {
     const double p = 0.017453292519943295;
-    final a = 0.5 -
-        (cos((point2.latitude - point1.latitude) * p) / 2) +
-        cos(point1.latitude * p) *
-            cos(point2.latitude * p) *
-            (1 - cos((point2.longitude - point1.longitude) * p)) /
-            2;
+    final a = 0.5 - (cos((point2.latitude - point1.latitude) * p) / 2) + cos(point1.latitude * p) * cos(point2.latitude * p) * (1 - cos((point2.longitude - point1.longitude) * p)) / 2;
     return 12742000 * asin(sqrt(a));
   }
 
@@ -97,18 +92,10 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
         'etat_piste': _etatPiste,
 
         // ✅ Coordonnées auto-gérées (les 4)
-        'x_debut_chaussee': widget.chausseePoints.isNotEmpty
-            ? widget.chausseePoints.first.longitude
-            : null,
-        'y_debut_chaussee': widget.chausseePoints.isNotEmpty
-            ? widget.chausseePoints.first.latitude
-            : null,
-        'x_fin_chaussee': widget.chausseePoints.isNotEmpty
-            ? widget.chausseePoints.last.longitude
-            : null,
-        'y_fin_chaussee': widget.chausseePoints.isNotEmpty
-            ? widget.chausseePoints.last.latitude
-            : null,
+        'x_debut_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.longitude : null,
+        'y_debut_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.latitude : null,
+        'x_fin_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.longitude : null,
+        'y_fin_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.latitude : null,
 
         // Métadonnées de collecte
         'points_collectes': widget.chausseePoints
@@ -124,8 +111,9 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
       };
       final storageHelper = SimpleStorageHelper();
       final savedId = await storageHelper.saveChaussee(chausseeData);
-      if (savedId != null)
+      if (savedId != null) {
         print('✅ Chaussée sauvegardée en local avec ID: $savedId');
+      }
 
       if (mounted) {
         Navigator.of(context).pop(chausseeData);
@@ -172,8 +160,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back,
-                        color: Colors.white, size: 28),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
                     padding: const EdgeInsets.all(8),
                   ),
                   const Expanded(
@@ -233,20 +220,14 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                             Expanded(
                               child: _buildCoordinateDisplay(
                                 label: 'X Début chaussée',
-                                value: widget.chausseePoints.isNotEmpty
-                                    ? widget.chausseePoints.first.longitude
-                                        .toStringAsFixed(8)
-                                    : 'N/A',
+                                value: widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.longitude.toStringAsFixed(8) : 'N/A',
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildCoordinateDisplay(
                                 label: 'Y Début chaussée',
-                                value: widget.chausseePoints.isNotEmpty
-                                    ? widget.chausseePoints.first.latitude
-                                        .toStringAsFixed(8)
-                                    : 'N/A',
+                                value: widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.latitude.toStringAsFixed(8) : 'N/A',
                               ),
                             ),
                           ],
@@ -257,20 +238,14 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                             Expanded(
                               child: _buildCoordinateDisplay(
                                 label: 'X Fin chaussée',
-                                value: widget.chausseePoints.isNotEmpty
-                                    ? widget.chausseePoints.last.longitude
-                                        .toStringAsFixed(8)
-                                    : 'N/A',
+                                value: widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.longitude.toStringAsFixed(8) : 'N/A',
                               ),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildCoordinateDisplay(
                                 label: 'Y Fin chaussée',
-                                value: widget.chausseePoints.isNotEmpty
-                                    ? widget.chausseePoints.last.latitude
-                                        .toStringAsFixed(8)
-                                    : 'N/A',
+                                value: widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.latitude.toStringAsFixed(8) : 'N/A',
                               ),
                             ),
                           ],
@@ -286,16 +261,14 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                           label: 'Type de chaussée *',
                           value: _typeChaussee,
                           options: _typeChausseeOptions,
-                          onChanged: (value) =>
-                              setState(() => _typeChaussee = value),
+                          onChanged: (value) => setState(() => _typeChaussee = value),
                           required: true,
                         ),
                         _buildRadioGroupField(
                           label: 'État de la piste *',
                           value: _etatPiste,
                           options: _etatPisteOptions,
-                          onChanged: (value) =>
-                              setState(() => _etatPiste = value),
+                          onChanged: (value) => setState(() => _etatPiste = value),
                           required: true,
                         ),
                       ],
@@ -374,8 +347,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     );
   }
 
-  Widget _buildFormSection(
-      {required String title, required List<Widget> children}) {
+  Widget _buildFormSection({required String title, required List<Widget> children}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -607,15 +579,11 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildGpsInfoRow(
-              'Points collectés:', '${widget.chausseePoints.length}'),
-          _buildGpsInfoRow('Distance totale:',
-              '${(_calculateTotalDistance(widget.chausseePoints) / 1000).toStringAsFixed(2)} km'),
+          _buildGpsInfoRow('Points collectés:', '${widget.chausseePoints.length}'),
+          _buildGpsInfoRow('Distance totale:', '${(_calculateTotalDistance(widget.chausseePoints) / 1000).toStringAsFixed(2)} km'),
           if (widget.chausseePoints.isNotEmpty) ...[
-            _buildGpsInfoRow('Premier point:',
-                '${widget.chausseePoints.first.latitude.toStringAsFixed(6)}°, ${widget.chausseePoints.first.longitude.toStringAsFixed(6)}°'),
-            _buildGpsInfoRow('Dernier point:',
-                '${widget.chausseePoints.last.latitude.toStringAsFixed(6)}°, ${widget.chausseePoints.last.longitude.toStringAsFixed(6)}°'),
+            _buildGpsInfoRow('Premier point:', '${widget.chausseePoints.first.latitude.toStringAsFixed(6)}°, ${widget.chausseePoints.first.longitude.toStringAsFixed(6)}°'),
+            _buildGpsInfoRow('Dernier point:', '${widget.chausseePoints.last.latitude.toStringAsFixed(6)}°, ${widget.chausseePoints.last.longitude.toStringAsFixed(6)}°'),
           ],
         ],
       ),

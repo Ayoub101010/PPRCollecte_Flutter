@@ -59,15 +59,15 @@ class SyncService {
           // 3. Marquer comme synchronisé
           await dbHelper.markAsSynced(tableName, data['id']);
           result.successCount++;
-          print('✅ ${tableName} ID ${data['id']} synchronisé');
+          print('✅ $tableName ID ${data['id']} synchronisé');
         } else {
           result.failedCount++;
-          result.errors.add('Échec synchronisation ${tableName} ID ${data['id']}');
-          print('❌ Échec synchronisation ${tableName} ID ${data['id']}');
+          result.errors.add('Échec synchronisation $tableName ID ${data['id']}');
+          print('❌ Échec synchronisation $tableName ID ${data['id']}');
         }
 
         // Petite pause pour éviter de surcharger l'API
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 100));
       }
     } catch (e) {
       result.errors.add('$tableName: $e');

@@ -13,14 +13,14 @@ class PointFormWidget extends StatefulWidget {
   final String? agentName; // ← nouveau
 
   const PointFormWidget({
-    Key? key,
+    super.key,
     required this.category,
     required this.type,
     this.pointData,
     required this.onBack,
     required this.onSaved,
     this.agentName, // ← nouveau
-  }) : super(key: key);
+  });
 
   @override
   State<PointFormWidget> createState() => _PointFormWidgetState();
@@ -472,9 +472,9 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Date de modification',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Color(0xFF374151),
@@ -521,9 +521,9 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Code Piste *',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: Color(0xFF374151),

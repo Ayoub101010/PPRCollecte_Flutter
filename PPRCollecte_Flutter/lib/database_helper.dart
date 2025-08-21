@@ -1,6 +1,5 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 class DatabaseHelper {
@@ -100,7 +99,7 @@ class DatabaseHelper {
     // ============ TABLE LOCALITES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS localites(
-      local_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       x_localite REAL NOT NULL,
       y_localite REAL NOT NULL,
       nom TEXT NOT NULL,

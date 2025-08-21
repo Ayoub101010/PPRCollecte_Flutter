@@ -11,7 +11,7 @@ class CollectionService {
 
   // ✅ STOCKAGE de la position GPS la plus récente
   LocationData? _currentLocation;
-  List<DateTime> _captureTimestamps = [];
+  final List<DateTime> _captureTimestamps = [];
 
   // ✅ CONFIGURATION GPS TÉLÉPHONE
   final Duration _captureInterval = const Duration(seconds: 20);
@@ -72,8 +72,7 @@ class CollectionService {
   }
 
   /// ✅ CAPTURE immédiate du premier point
-  void _captureFirstPoint(CollectionBase collection,
-      Function(LatLng point, double distance) onPointAdded) {
+  void _captureFirstPoint(CollectionBase collection, Function(LatLng point, double distance) onPointAdded) {
     Timer(const Duration(seconds: 2), () {
       if (_currentLocation != null && collection.isActive) {
         final now = DateTime.now();
@@ -118,11 +117,7 @@ class CollectionService {
   }
 
   /// ✅ TRAITE une position GPS pour la collecte
-  Future<void> _processLocationForCollection(
-      LocationData locationData,
-      CollectionBase collection,
-      Function(LatLng point, double distance) onPointAdded,
-      {bool isFirstPoint = false}) async {
+  Future<void> _processLocationForCollection(LocationData locationData, CollectionBase collection, Function(LatLng point, double distance) onPointAdded, {bool isFirstPoint = false}) async {
     if (locationData.latitude == null || locationData.longitude == null) {
       print('❌ Coordonnées GPS invalides');
       return;
@@ -134,8 +129,7 @@ class CollectionService {
 
     // ✅ FILTRE de précision téléphone
     if (accuracy > _minimumAccuracy) {
-      print(
-          '❌ Point rejeté: précision insuffisante (${accuracy.toStringAsFixed(1)}m > ${_minimumAccuracy}m)');
+      print('❌ Point rejeté: précision insuffisante (${accuracy.toStringAsFixed(1)}m > ${_minimumAccuracy}m)');
       return;
     }
 
@@ -150,8 +144,7 @@ class CollectionService {
     // ✅ PREMIER POINT : toujours accepté si précision OK
     if (collection.points.isEmpty || isFirstPoint) {
       onPointAdded(newPoint, 0.0);
-      print(
-          '✅ Premier point accepté: précision ${accuracy.toStringAsFixed(1)}m');
+      print('✅ Premier point accepté: précision ${accuracy.toStringAsFixed(1)}m');
       return;
     }
 
@@ -166,24 +159,20 @@ class CollectionService {
 
     // ✅ FILTRE de vitesse (détection mouvement irréaliste)
     if (_captureTimestamps.length >= 2) {
-      final timeDiff = _captureTimestamps.last
-          .difference(_captureTimestamps[_captureTimestamps.length - 2])
-          .inSeconds;
+      final timeDiff = _captureTimestamps.last.difference(_captureTimestamps[_captureTimestamps.length - 2]).inSeconds;
 
       if (timeDiff > 0) {
         final speed = distanceFromLast / timeDiff; // m/s
 
         if (speed > _maxSpeed) {
-          print(
-              '❌ Point rejeté: vitesse irréaliste (${speed.toStringAsFixed(1)} m/s > ${_maxSpeed} m/s)');
+          print('❌ Point rejeté: vitesse irréaliste (${speed.toStringAsFixed(1)} m/s > $_maxSpeed m/s)');
           return;
         }
       }
     }
 
     // 🧠 ANALYSE INTELLIGENTE de la distance
-    await _analyzeDistanceAndPrompt(
-        distanceFromLast, accuracy, collection, newPoint, onPointAdded);
+    await _analyzeDistanceAndPrompt(distanceFromLast, accuracy, collection, newPoint, onPointAdded);
   }
 
   /// 🧠 ANALYSE distance avec dialogue utilisateur
@@ -196,8 +185,7 @@ class CollectionService {
   ) async {
     if (distance < _minimumDistance) {
       // ❌ DISTANCE TROP FAIBLE (< 3m) - Rejet automatique (dérive GPS)
-      print(
-          '❌ Point rejeté: distance trop faible (${distance.toStringAsFixed(1)}m < ${_minimumDistance}m)');
+      print('❌ Point rejeté: distance trop faible (${distance.toStringAsFixed(1)}m < ${_minimumDistance}m)');
       _consecutiveLowDistances++;
       await _checkForMovementAdvice();
     } else if (distance < _lowDistanceThreshold) {
@@ -205,23 +193,19 @@ class CollectionService {
       _consecutiveLowDistances++;
 
       if (await _shouldPromptUser()) {
-        final userDecision =
-            await _promptUserForLowDistance(distance, accuracy, collection);
+        final userDecision = await _promptUserForLowDistance(distance, accuracy, collection);
 
         if (userDecision) {
           onPointAdded(newPoint, distance);
-          print(
-              '✅ Point accepté par utilisateur: ${distance.toStringAsFixed(1)}m');
+          print('✅ Point accepté par utilisateur: ${distance.toStringAsFixed(1)}m');
           _resetLowDistanceTracking();
         } else {
-          print(
-              '❌ Point rejeté par utilisateur: ${distance.toStringAsFixed(1)}m');
+          print('❌ Point rejeté par utilisateur: ${distance.toStringAsFixed(1)}m');
         }
       } else {
         // Accepter automatiquement si pas de notification récente
         onPointAdded(newPoint, distance);
-        print(
-            '✅ Point accepté automatiquement: ${distance.toStringAsFixed(1)}m');
+        print('✅ Point accepté automatiquement: ${distance.toStringAsFixed(1)}m');
       }
     } else {
       // ✅ DISTANCE NORMALE (> 8m) - Acceptation automatique
@@ -236,8 +220,7 @@ class CollectionService {
     final now = DateTime.now();
 
     // Ne pas notifier si déjà fait récemment (< 1 minute)
-    if (_lastNotificationTime != null &&
-        now.difference(_lastNotificationTime!).inMinutes < 1) {
+    if (_lastNotificationTime != null && now.difference(_lastNotificationTime!).inMinutes < 1) {
       return false;
     }
 
@@ -246,8 +229,7 @@ class CollectionService {
   }
 
   /// 💬 DIALOGUE utilisateur pour distance faible
-  Future<bool> _promptUserForLowDistance(
-      double distance, double accuracy, CollectionBase collection) async {
+  Future<bool> _promptUserForLowDistance(double distance, double accuracy, CollectionBase collection) async {
     if (_context == null) {
       print('⚠️ Context non disponible, acceptation automatique');
       return true;
@@ -260,8 +242,7 @@ class CollectionService {
           barrierDismissible: false,
           builder: (BuildContext dialogContext) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
 
               // 🎨 TITRE avec icône
               title: Row(
@@ -298,12 +279,9 @@ class CollectionService {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Informations de distance
-                  _buildInfoRow(
-                      'Distance mesurée:', '${distance.toStringAsFixed(1)} m'),
-                  _buildInfoRow(
-                      'Précision GPS:', '±${accuracy.toStringAsFixed(1)} m'),
-                  _buildInfoRow(
-                      'Points collectés:', '${collection.points.length}'),
+                  _buildInfoRow('Distance mesurée:', '${distance.toStringAsFixed(1)} m'),
+                  _buildInfoRow('Précision GPS:', '±${accuracy.toStringAsFixed(1)} m'),
+                  _buildInfoRow('Points collectés:', '${collection.points.length}'),
 
                   const SizedBox(height: 16),
 
@@ -320,8 +298,7 @@ class CollectionService {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline,
-                                size: 18, color: Colors.blue[700]),
+                            Icon(Icons.info_outline, size: 18, color: Colors.blue[700]),
                             const SizedBox(width: 6),
                             Text(
                               'Mouvement lent détecté',
@@ -488,12 +465,11 @@ class CollectionService {
 
     final intervals = <int>[];
     for (int i = 1; i < _captureTimestamps.length; i++) {
-      final interval =
-          _captureTimestamps[i].difference(_captureTimestamps[i - 1]).inSeconds;
+      final interval = _captureTimestamps[i].difference(_captureTimestamps[i - 1]).inSeconds;
       intervals.add(interval);
 
       final status = interval >= 18 && interval <= 22 ? '✅' : '❌';
-      print('$status Intervalle ${i}: ${interval}s');
+      print('$status Intervalle $i: ${interval}s');
     }
 
     if (intervals.isNotEmpty) {
@@ -515,9 +491,9 @@ class CollectionService {
     // Log simplifié toutes les 10 secondes pour éviter spam
     if (DateTime.now().second % 10 == 0) {
       String quality;
-      if (accuracy <= 5)
+      if (accuracy <= 5) {
         quality = "EXCELLENT";
-      else if (accuracy <= 10)
+      } else if (accuracy <= 10)
         quality = "BON";
       else if (accuracy <= 20)
         quality = "MOYEN";
@@ -537,25 +513,19 @@ class CollectionService {
     _currentLocation = null;
 
     if (_captureTimestamps.isNotEmpty) {
-      print(
-          '🏁 Collecte terminée: ${_captureTimestamps.length} points capturés');
+      print('🏁 Collecte terminée: ${_captureTimestamps.length} points capturés');
       _validateCaptureIntervals();
     }
   }
 
   /// Calcule la distance entre deux points (Haversine)
-  double _haversineDistance(
-      double lat1, double lon1, double lat2, double lon2) {
+  double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371000.0; // Rayon de la Terre en mètres
 
     final double dLat = _degToRad(lat2 - lat1);
     final double dLon = _degToRad(lon2 - lon1);
 
-    final double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_degToRad(lat1)) *
-            cos(_degToRad(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
+    final double a = sin(dLat / 2) * sin(dLat / 2) + cos(_degToRad(lat1)) * cos(_degToRad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
 
     final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
@@ -587,11 +557,9 @@ class CollectionService {
     final canFinish = collection.points.length >= 2;
 
     if (!canFinish) {
-      print(
-          '❌ Impossible de terminer: seulement ${collection.points.length} point(s)');
+      print('❌ Impossible de terminer: seulement ${collection.points.length} point(s)');
     } else {
-      print(
-          '✅ Collecte peut être terminée: ${collection.points.length} points');
+      print('✅ Collecte peut être terminée: ${collection.points.length} points');
     }
 
     return canFinish;
@@ -610,21 +578,18 @@ class CollectionService {
     print('=== 🔍 DEBUG COLLECTION ===');
     print('Timer actif: ${_captureTimer?.isActive ?? false}');
     print('Stream GPS actif: ${_locationSubscription != null}');
-    print(
-        'Position actuelle: ${_currentLocation != null ? "Disponible" : "Indisponible"}');
+    print('Position actuelle: ${_currentLocation != null ? "Disponible" : "Indisponible"}');
     print('Captures effectuées: ${_captureTimestamps.length}');
     print('Distances faibles consécutives: $_consecutiveLowDistances');
 
     if (_currentLocation != null) {
-      print(
-          'Dernière position: ${_currentLocation!.latitude?.toStringAsFixed(6)}, ${_currentLocation!.longitude?.toStringAsFixed(6)}');
+      print('Dernière position: ${_currentLocation!.latitude?.toStringAsFixed(6)}, ${_currentLocation!.longitude?.toStringAsFixed(6)}');
       print('Précision: ${_currentLocation!.accuracy?.toStringAsFixed(1)}m');
     }
 
     if (_captureTimestamps.isNotEmpty) {
       final lastCapture = _captureTimestamps.last;
-      final timeSinceLastCapture =
-          DateTime.now().difference(lastCapture).inSeconds;
+      final timeSinceLastCapture = DateTime.now().difference(lastCapture).inSeconds;
       print('Dernière capture: il y a ${timeSinceLastCapture}s');
       print('Prochaine capture: dans ${20 - (timeSinceLastCapture % 20)}s');
     }

@@ -130,7 +130,7 @@ class ApiService {
   /// Mapping des données locales vers le format API
   static Map<String, dynamic> _mapLocaliteToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_localite': localData['x_localite'],
       'y_localite': localData['y_localite'],
       'nom': localData['nom'],
@@ -143,7 +143,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapEcoleToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_ecole': localData['x_ecole'],
       'y_ecole': localData['y_ecole'],
       'nom': localData['nom'],
@@ -156,7 +156,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapMarcheToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_marche': localData['x_marche'],
       'y_marche': localData['y_marche'],
       'nom': localData['nom'],
@@ -169,7 +169,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapServiceSanteToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_sante': localData['x_sante'],
       'y_sante': localData['y_sante'],
       'nom': localData['nom'],
@@ -182,7 +182,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapBatimentAdministratifToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_batiment_administratif': localData['x_batiment_administratif'],
       'y_batiment_administratif': localData['y_batiment_administratif'],
       'nom': localData['nom'],
@@ -195,7 +195,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapInfrastructureHydrauliqueToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_infrastructure_hydraulique': localData['x_infrastructure_hydraulique'],
       'y_infrastructure_hydraulique': localData['y_infrastructure_hydraulique'],
       'nom': localData['nom'],
@@ -208,7 +208,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapAutreInfrastructureToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_autre_infrastructure': localData['x_autre_infrastructure'],
       'y_autre_infrastructure': localData['y_autre_infrastructure'],
       'nom': localData['nom'],
@@ -221,7 +221,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapPontToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_pont': localData['x_pont'],
       'y_pont': localData['y_pont'],
       'nom': localData['nom'],
@@ -236,7 +236,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapBacToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_debut_traversee_bac': localData['x_debut_traversee_bac'],
       'y_debut_traversee_bac': localData['y_debut_traversee_bac'],
       'x_fin_traversee_bac': localData['x_fin_traversee_bac'],
@@ -252,7 +252,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapBuseToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_buse': localData['x_buse'],
       'y_buse': localData['y_buse'],
       'nom': localData['nom'],
@@ -264,7 +264,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapDalotToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_dalot': localData['x_dalot'],
       'y_dalot': localData['y_dalot'],
       'nom': localData['nom'],
@@ -277,7 +277,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapPassageSubmersibleToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_debut_passage_submersible': localData['x_debut_passage_submersible'],
       'y_debut_passage_submersible': localData['y_debut_passage_submersible'],
       'x_fin_passage_submersible': localData['x_fin_passage_submersible'],
@@ -292,7 +292,7 @@ class ApiService {
 
   static Map<String, dynamic> _mapPointCritiqueToApi(Map<String, dynamic> localData) {
     return {
-      'sqlite_id': localData['local_id'],
+      'sqlite_id': localData['id'],
       'x_point_critique': localData['x_point_critique'],
       'y_point_critique': localData['y_point_critique'],
       'type_point_critique': localData['type_point_critique'],
