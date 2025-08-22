@@ -861,4 +861,629 @@ class DatabaseHelper {
     }
     // Si la table n'a pas de colonne synced, on ne fait rien
   }
+
+  /// Sauvegarde ou met à jour une localité depuis PostgreSQL
+  Future<void> saveOrUpdateLocalite(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'localites',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'localites',
+          {
+            'id': properties['sqlite_id'], // ID original de SQLite
+            'x_localite': geometry['coordinates'][0], // longitude
+            'y_localite': geometry['coordinates'][1], // latitude
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1, // Déjà synchronisé
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+
+        print('✅ Localité sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde localité: $e');
+      rethrow;
+    }
+  }
+
+  /// Sauvegarde ou met à jour une école depuis PostgreSQL
+  Future<void> saveOrUpdateEcole(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'ecoles',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'ecoles',
+          {
+            'id': properties['sqlite_id'],
+            'x_ecole': geometry['coordinates'][0],
+            'y_ecole': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ école sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde école: $e');
+      rethrow;
+    }
+  }
+
+  /// Sauvegarde ou met à jour une marché depuis PostgreSQL
+  Future<void> saveOrUpdateMarche(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'marches',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'marches',
+          {
+            'id': properties['sqlite_id'],
+            'x_marche': geometry['coordinates'][0],
+            'y_marche': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ Marché sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde Marché: $e');
+      rethrow;
+    }
+  }
+
+  // ============ SERVICES SANTES ============
+  Future<void> saveOrUpdateServiceSante(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'services_santes',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'services_santes',
+          {
+            'id': properties['sqlite_id'],
+            'x_sante': geometry['coordinates'][0],
+            'y_sante': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ services_santes sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde services_santes: $e');
+      rethrow;
+    }
+  }
+
+// ============ BATIMENTS ADMINISTRATIFS ============
+  Future<void> saveOrUpdateBatimentAdministratif(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'batiments_administratifs',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'batiments_administratifs',
+          {
+            'id': properties['sqlite_id'],
+            'x_batiment_administratif': geometry['coordinates'][0],
+            'y_batiment_administratif': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ batiments_administratifs sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde batiments_administratifs: $e');
+      rethrow;
+    }
+  }
+
+// ============ INFRASTRUCTURES HYDRAULIQUES ============
+  Future<void> saveOrUpdateInfrastructureHydraulique(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'infrastructures_hydrauliques',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'infrastructures_hydrauliques',
+          {
+            'id': properties['sqlite_id'],
+            'x_infrastructure_hydraulique': geometry['coordinates'][0],
+            'y_infrastructure_hydraulique': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ infrastructures_hydrauliques sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde infrastructures_hydrauliques: $e');
+      rethrow;
+    }
+  }
+
+// ============ AUTRES INFRASTRUCTURES ============
+  Future<void> saveOrUpdateAutreInfrastructure(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'autres_infrastructures',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'autres_infrastructures',
+          {
+            'id': properties['sqlite_id'],
+            'x_autre_infrastructure': geometry['coordinates'][0],
+            'y_autre_infrastructure': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type': properties['type'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ autres_infrastructures sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde autres_infrastructures: $e');
+      rethrow;
+    }
+  }
+
+// ============ PONTS ============
+  Future<void> saveOrUpdatePont(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'ponts',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'ponts',
+          {
+            'id': properties['sqlite_id'],
+            'x_pont': geometry['coordinates'][0],
+            'y_pont': geometry['coordinates'][1],
+            'nom': properties['nom'] ?? 'Sans nom',
+            'situation_pont': properties['situation_pont'] ?? 'Non spécifié',
+            'type_pont': properties['type_pont'] ?? 'Non spécifié',
+            'nom_cours_eau': properties['nom_cours_eau'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ ponts sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde ponts: $e');
+      rethrow;
+    }
+  }
+
+// ============ BACS ============
+  Future<void> saveOrUpdateBac(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'bacs',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'bacs',
+          {
+            'id': properties['sqlite_id'],
+            'x_debut_traversee_bac': geometry['coordinates'][0],
+            'y_debut_traversee_bac': geometry['coordinates'][1],
+            'x_fin_traversee_bac': properties['x_fin_traversee_bac'] ?? 'Non spécifié',
+            'y_fin_traversee_bac': properties['y_fin_traversee_bac'] ?? 'Non spécifié',
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type_bac': properties['type_bac'] ?? 'Non spécifié',
+            'nom_cours_eau': properties['nom_cours_eau'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ bacs sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde bacs: $e');
+      rethrow;
+    }
+  }
+
+// ============ BUSES ============
+  Future<void> saveOrUpdateBuse(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'buses',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'buses',
+          {
+            'id': properties['sqlite_id'],
+            'x_buse': geometry['coordinates'][0] ?? 'Non spécifié',
+            'y_buse': geometry['coordinates'][1] ?? 'Non spécifié',
+            'nom': properties['nom'] ?? 'Sans nom',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ buses sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde buses: $e');
+      rethrow;
+    }
+  }
+
+// ============ DALOTS ============
+  Future<void> saveOrUpdateDalot(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'dalots',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'dalots',
+          {
+            'id': properties['sqlite_id'],
+            'x_dalot': geometry['coordinates'][0] ?? 'Non spécifié',
+            'y_dalot': geometry['coordinates'][1] ?? 'Non spécifié',
+            'nom': properties['nom'] ?? 'Sans nom',
+            'situation_dalot': properties['situation_dalot'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ dalots sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde dalots: $e');
+      rethrow;
+    }
+  }
+
+// ============ PASSAGES SUBMERSIBLES ============
+  Future<void> saveOrUpdatePassageSubmersible(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'passages_submersibles',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'passages_submersibles',
+          {
+            'id': properties['sqlite_id'],
+            'x_debut_passage_submersible': geometry['coordinates'][0],
+            'y_debut_passage_submersible': geometry['coordinates'][1],
+            'x_fin_passage_submersible': properties['x_fin_passage_submersible'] ?? 'Non spécifié',
+            'y_fin_passage_submersible': properties['y_fin_passage_submersible'] ?? 'Non spécifié',
+            'nom': properties['nom'] ?? 'Sans nom',
+            'type_materiau': properties['type_materiau'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ passages_submersibles sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde passages_submersibles: $e');
+      rethrow;
+    }
+  }
+
+// ============ POINTS CRITIQUES ============
+  Future<void> saveOrUpdatePointCritique(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'points_critiques',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'points_critiques',
+          {
+            'id': properties['sqlite_id'],
+            'x_point_critique': geometry['coordinates'][0],
+            'y_point_critique': geometry['coordinates'][1],
+            'type_point_critique': properties['type_point_critique'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ points_critiques sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde points_critiques: $e');
+      rethrow;
+    }
+  }
+
+// ============ POINTS COUPURES ============
+  Future<void> saveOrUpdatePointCoupure(Map<String, dynamic> geoJsonData) async {
+    final db = await database;
+    try {
+      // Extraire les données du GeoJSON
+      final properties = geoJsonData['properties'];
+      final geometry = geoJsonData['geometry'];
+      final sqliteId = properties['sqlite_id'];
+
+      final existing = await db.query(
+        'points_coupures',
+        where: 'id = ?',
+        whereArgs: [
+          sqliteId
+        ],
+        limit: 1,
+      );
+
+      if (existing.isEmpty) {
+        await db.insert(
+          'points_coupures',
+          {
+            'id': properties['sqlite_id'],
+            'x_point_coupure': geometry['coordinates'][0],
+            'y_point_coupure': geometry['coordinates'][1],
+            'causes_coupures': properties['causes_coupures'] ?? 'Non spécifié',
+            'enqueteur': properties['enqueteur'] ?? 'Sync',
+            'date_creation': properties['created_at'] ?? 'Non spécifié',
+            'date_modification': properties['updated_at'] ?? 'Non spécifié',
+            'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'synced': 1,
+            'date_sync': DateTime.now().toIso8601String(),
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ points_coupures sauvegardée: ${properties['nom']}');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde points_coupures: $e');
+      rethrow;
+    }
+  }
 }

@@ -313,4 +313,97 @@ class ApiService {
       'code_piste': localData['code_piste'],
     };
   }
+
+  // ============ MÉTHODES GET POUR TÉLÉCHARGER LES DONNÉES ============
+
+  /// Méthode générique pour récupérer des données
+  static Future<List<dynamic>> fetchData(String endpoint) async {
+    try {
+      final url = Uri.parse('$baseUrl/api/$endpoint/');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['features']; // Extraire les features du GeoJSON
+      } else {
+        print('❌ Erreur GET ($endpoint): ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception lors de la récupération de $endpoint: $e');
+      return [];
+    }
+  }
+
+  /// Méthodes spécifiques pour chaque type de données
+  static Future<List<dynamic>> fetchLocalites() async {
+    return await fetchData('localites');
+  }
+
+  static Future<List<dynamic>> fetchEcoles() async {
+    return await fetchData('ecoles');
+  }
+
+  static Future<List<dynamic>> fetchMarches() async {
+    return await fetchData('marches');
+  }
+
+  static Future<List<dynamic>> fetchServicesSantes() async {
+    return await fetchData('services_santes');
+  }
+
+  static Future<List<dynamic>> fetchBatimentsAdministratifs() async {
+    return await fetchData('batiments_administratifs');
+  }
+
+  static Future<List<dynamic>> fetchInfrastructuresHydrauliques() async {
+    return await fetchData('infrastructures_hydrauliques');
+  }
+
+  static Future<List<dynamic>> fetchAutresInfrastructures() async {
+    return await fetchData('autres_infrastructures');
+  }
+
+  static Future<List<dynamic>> fetchPonts() async {
+    return await fetchData('ponts');
+  }
+
+  static Future<List<dynamic>> fetchBacs() async {
+    return await fetchData('bacs');
+  }
+
+  static Future<List<dynamic>> fetchBuses() async {
+    return await fetchData('buses');
+  }
+
+  static Future<List<dynamic>> fetchDalots() async {
+    return await fetchData('dalots');
+  }
+
+  static Future<List<dynamic>> fetchPassagesSubmersibles() async {
+    return await fetchData('passages_submersibles');
+  }
+
+  static Future<List<dynamic>> fetchPointsCritiques() async {
+    return await fetchData('points_critiques');
+  }
+
+  static Future<List<dynamic>> fetchPointsCoupures() async {
+    return await fetchData('points_coupures');
+  }
+
+  /// Méthode pour extraire les données du GeoJSON
+  static Map<String, dynamic> extractFromGeoJson(Map<String, dynamic> geoJson) {
+    return {
+      'properties': geoJson['properties'],
+      'geometry': geoJson['geometry'],
+      'id': geoJson['id'],
+    };
+  }
 }

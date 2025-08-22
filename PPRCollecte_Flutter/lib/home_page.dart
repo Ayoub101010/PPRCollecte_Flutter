@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage> {
   List<Polyline> collectedPolylines = [];
   Set<Marker> formMarkers = {};
   bool isSyncing = false;
+  bool isDownloading = false;
   SyncResult? lastSyncResult;
 
   final Completer<GoogleMapController> _controller = Completer();
@@ -397,8 +398,37 @@ class _HomePageState extends State<HomePage> {
     _performSync(); // Appeler la méthode async séparément
   }
 
+  // AJOUTEZ cette méthode
   void handleSave() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Synchronisation lancée !')));
+    if (isDownloading) return;
+    _performDownload(); // Appeler la méthode async séparément
+  }
+
+// AJOUTEZ cette méthode
+  Future<void> _performDownload() async {
+    setState(() => isDownloading = true);
+
+    try {
+      final result = await SyncService().downloadAllData();
+      setState(() => lastSyncResult = result);
+      _showSyncResult(result); // Réutilisez la même méthode d'affichage
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sauvegarde terminée: ${result.successCount} données'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur sauvegarde: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => isDownloading = false);
+    }
   }
 
   void handleMenuPress() {
@@ -540,7 +570,7 @@ class _HomePageState extends State<HomePage> {
             ),
             BottomStatusBarWidget(gpsEnabled: gpsEnabled),
             BottomButtonsWidget(
-              onSave: handleSave,
+              onSave: isDownloading ? () {} : handleSave,
               onSync: isSyncing ? () {} : handleSync,
               onMenu: handleMenuPress,
             ),

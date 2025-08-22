@@ -109,4 +109,146 @@ class SyncService {
         return await ApiService.postData(endpoint, data);
     }
   }
+
+  // AJOUTEZ cette méthode
+  Future<SyncResult> downloadAllData() async {
+    final result = SyncResult();
+
+    try {
+      print('⬇️ Début du téléchargement des données...');
+
+      // ============ LOCALITES ============
+      print('📥 Téléchargement des localités...');
+      final localites = await ApiService.fetchLocalites();
+      print('📍 ${localites.length} localités à traiter');
+      for (var localite in localites) {
+        await dbHelper.saveOrUpdateLocalite(localite);
+        result.successCount++;
+      }
+
+      // ============ ECOLES ============
+      print('📥 Téléchargement des écoles...');
+      final ecoles = await ApiService.fetchEcoles();
+      print('🏫 ${ecoles.length} écoles à traiter');
+      for (var ecole in ecoles) {
+        await dbHelper.saveOrUpdateEcole(ecole);
+        result.successCount++;
+      }
+
+      // ============ MARCHES ============
+      print('📥 Téléchargement des marchés...');
+      final marches = await ApiService.fetchMarches();
+      print('🛒 ${marches.length} marchés à traiter');
+      for (var marche in marches) {
+        await dbHelper.saveOrUpdateMarche(marche);
+        result.successCount++;
+      }
+
+      // ============ SERVICES SANTES ============
+      print('📥 Téléchargement des services de santé...');
+      final servicesSantes = await ApiService.fetchServicesSantes();
+      print('🏥 ${servicesSantes.length} services de santé à traiter');
+      for (var service in servicesSantes) {
+        await dbHelper.saveOrUpdateServiceSante(service);
+        result.successCount++;
+      }
+
+      // ============ BATIMENTS ADMINISTRATIFS ============
+      print('📥 Téléchargement des bâtiments administratifs...');
+      final batiments = await ApiService.fetchBatimentsAdministratifs();
+      print('🏛️ ${batiments.length} bâtiments administratifs à traiter');
+      for (var batiment in batiments) {
+        await dbHelper.saveOrUpdateBatimentAdministratif(batiment);
+        result.successCount++;
+      }
+
+      // ============ INFRASTRUCTURES HYDRAULIQUES ============
+      print('📥 Téléchargement des infrastructures hydrauliques...');
+      final infrastructures = await ApiService.fetchInfrastructuresHydrauliques();
+      print('💧 ${infrastructures.length} infrastructures hydrauliques à traiter');
+      for (var infrastructure in infrastructures) {
+        await dbHelper.saveOrUpdateInfrastructureHydraulique(infrastructure);
+        result.successCount++;
+      }
+
+      // ============ AUTRES INFRASTRUCTURES ============
+      print('📥 Téléchargement des autres infrastructures...');
+      final autresInfrastructures = await ApiService.fetchAutresInfrastructures();
+      print('🏗️ ${autresInfrastructures.length} autres infrastructures à traiter');
+      for (var infrastructure in autresInfrastructures) {
+        await dbHelper.saveOrUpdateAutreInfrastructure(infrastructure);
+        result.successCount++;
+      }
+
+      // ============ PONTS ============
+      print('📥 Téléchargement des ponts...');
+      final ponts = await ApiService.fetchPonts();
+      print('🌉 ${ponts.length} ponts à traiter');
+      for (var pont in ponts) {
+        await dbHelper.saveOrUpdatePont(pont);
+        result.successCount++;
+      }
+
+      // ============ BACS ============
+      print('📥 Téléchargement des bacs...');
+      final bacs = await ApiService.fetchBacs();
+      print('⛴️ ${bacs.length} bacs à traiter');
+      for (var bac in bacs) {
+        await dbHelper.saveOrUpdateBac(bac);
+        result.successCount++;
+      }
+
+      // ============ BUSES ============
+      print('📥 Téléchargement des buses...');
+      final buses = await ApiService.fetchBuses();
+      print('🕳️ ${buses.length} buses à traiter');
+      for (var buse in buses) {
+        await dbHelper.saveOrUpdateBuse(buse);
+        result.successCount++;
+      }
+
+      // ============ DALOTS ============
+      print('📥 Téléchargement des dalots...');
+      final dalots = await ApiService.fetchDalots();
+      print('🔄 ${dalots.length} dalots à traiter');
+      for (var dalot in dalots) {
+        await dbHelper.saveOrUpdateDalot(dalot);
+        result.successCount++;
+      }
+
+      // ============ PASSAGES SUBMERSIBLES ============
+      print('📥 Téléchargement des passages submersibles...');
+      final passages = await ApiService.fetchPassagesSubmersibles();
+      print('🌊 ${passages.length} passages submersibles à traiter');
+      for (var passage in passages) {
+        await dbHelper.saveOrUpdatePassageSubmersible(passage);
+        result.successCount++;
+      }
+
+      // ============ POINTS CRITIQUES ============
+      print('📥 Téléchargement des points critiques...');
+      final pointsCritiques = await ApiService.fetchPointsCritiques();
+      print('⚠️ ${pointsCritiques.length} points critiques à traiter');
+      for (var point in pointsCritiques) {
+        await dbHelper.saveOrUpdatePointCritique(point);
+        result.successCount++;
+      }
+
+      // ============ POINTS COUPURES ============
+      print('📥 Téléchargement des points de coupure...');
+      final pointsCoupures = await ApiService.fetchPointsCoupures();
+      print('🔌 ${pointsCoupures.length} points de coupure à traiter');
+      for (var point in pointsCoupures) {
+        await dbHelper.saveOrUpdatePointCoupure(point);
+        result.successCount++;
+      }
+
+      print('✅ Téléchargement terminé: ${result.successCount} données traitées');
+    } catch (e) {
+      result.errors.add('Erreur téléchargement: $e');
+      print('❌ Erreur lors du téléchargement: $e');
+    }
+
+    return result;
+  }
 }
