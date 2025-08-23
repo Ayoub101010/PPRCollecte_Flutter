@@ -115,8 +115,7 @@ class SimpleStorageHelper {
   Future<List<PisteModel>> getAllPistes() async {
     try {
       final db = await database;
-      final List<Map<String, dynamic>> maps =
-          await db.query('pistes', orderBy: 'created_at DESC');
+      final List<Map<String, dynamic>> maps = await db.query('pistes', orderBy: 'created_at DESC');
       return maps.map((map) => PisteModel.fromMap(map)).toList();
     } catch (e) {
       print('❌ Erreur lecture pistes: $e');
@@ -128,8 +127,7 @@ class SimpleStorageHelper {
   Future<List<ChausseeModel>> getAllChaussees() async {
     try {
       final db = await database;
-      final List<Map<String, dynamic>> maps =
-          await db.query('chaussees', orderBy: 'created_at DESC');
+      final List<Map<String, dynamic>> maps = await db.query('chaussees', orderBy: 'created_at DESC');
       return maps.map((map) => ChausseeModel.fromMap(map)).toList();
     } catch (e) {
       print('❌ Erreur lecture chaussées: $e');
@@ -141,12 +139,8 @@ class SimpleStorageHelper {
   Future<Map<String, int>> getCount() async {
     try {
       final db = await database;
-      final pisteCount = Sqflite.firstIntValue(
-              await db.rawQuery('SELECT COUNT(*) FROM pistes')) ??
-          0;
-      final chausseeCount = Sqflite.firstIntValue(
-              await db.rawQuery('SELECT COUNT(*) FROM chaussees')) ??
-          0;
+      final pisteCount = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes')) ?? 0;
+      final chausseeCount = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM chaussees')) ?? 0;
 
       return {
         'pistes': pisteCount,
@@ -155,7 +149,11 @@ class SimpleStorageHelper {
       };
     } catch (e) {
       print('❌ Erreur comptage: $e');
-      return {'pistes': 0, 'chaussees': 0, 'total': 0};
+      return {
+        'pistes': 0,
+        'chaussees': 0,
+        'total': 0
+      };
     }
   }
 }

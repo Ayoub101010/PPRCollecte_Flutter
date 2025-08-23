@@ -9,8 +9,7 @@ class VerificationDonneesPage extends StatefulWidget {
   const VerificationDonneesPage({super.key});
 
   @override
-  State<VerificationDonneesPage> createState() =>
-      _VerificationDonneesPageState();
+  State<VerificationDonneesPage> createState() => _VerificationDonneesPageState();
 }
 
 class _VerificationDonneesPageState extends State<VerificationDonneesPage> {
@@ -117,7 +116,10 @@ class _VerificationDonneesPageState extends State<VerificationDonneesPage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: const LinearGradient(
-            colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+            colors: [
+              Color(0xFF2196F3),
+              Color(0xFF1976D2)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

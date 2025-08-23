@@ -12,6 +12,7 @@ import 'home_controller.dart';
 import 'Point_form_screen.dart';
 import 'collection_exports.dart';
 import 'sync_service.dart';
+import 'dart:ui'; // Pour ImageFilter
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -36,6 +37,10 @@ class _HomePageState extends State<HomePage> {
   bool isSyncing = false;
   bool isDownloading = false;
   SyncResult? lastSyncResult;
+  double _progressValue = 0.0;
+  String _currentOperation = "Préparation de la sauvegarde...";
+  int _totalItems = 0;
+  int _processedItems = 0;
 
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _lastCameraPosition;
@@ -353,6 +358,38 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _showSyncConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmation de synchronisation'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Êtes-vous sûr de vouloir synchroniser vos données locales vers le serveur ?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Non'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _performSync();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+            ),
+            child: const Text('Oui', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showSyncResult(SyncResult result) {
     showDialog(
       context: context,
@@ -364,6 +401,77 @@ class _HomePageState extends State<HomePage> {
           children: [
             Text('✅ ${result.successCount} succès'),
             Text('❌ ${result.failedCount} échecs'),
+            if (result.errors.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              const Text('Détails des erreurs:'),
+              const SizedBox(height: 5),
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: result.errors.length,
+                  itemBuilder: (ctx, i) => Text(
+                    '• ${result.errors[i]}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSaveConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmation de sauvegarde'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Êtes-vous sûr de vouloir télécharger toutes les données depuis le serveur ?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Non'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _performDownload();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+            ),
+            child: const Text('Oui', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDownloadResult(SyncResult result) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sauvegarde terminée'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('📥 ${result.successCount} données sauvegardées'),
+            if (result.failedCount > 0) Text('❌ ${result.failedCount} données non sauvegardées'),
             if (result.errors.isNotEmpty) ...[
               const SizedBox(height: 10),
               const Text('Détails des erreurs:'),
@@ -406,12 +514,24 @@ class _HomePageState extends State<HomePage> {
 
 // AJOUTEZ cette méthode
   Future<void> _performDownload() async {
-    setState(() => isDownloading = true);
+    setState(() {
+      isDownloading = true;
+      _progressValue = 0.0;
+      _processedItems = 0;
+      _totalItems = 1; // Valeur initiale
+    });
 
     try {
-      final result = await SyncService().downloadAllData();
+      final result = await SyncService().downloadAllData(onProgress: (progress, currentOperation, processed, total) {
+        setState(() {
+          _progressValue = progress;
+          _currentOperation = currentOperation;
+          _processedItems = processed;
+          _totalItems = total;
+        });
+      });
       setState(() => lastSyncResult = result);
-      _showSyncResult(result); // Réutilisez la même méthode d'affichage
+      _showDownloadResult(result); // Réutilisez la même méthode d'affichage
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -432,7 +552,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void handleMenuPress() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Menu ouvert')));
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Données ouvertes')));
   }
 
   // Méthode AVEC Future pour la logique async
@@ -462,6 +582,71 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     homeController.dispose();
     super.dispose();
+  }
+
+// Ajoutez cette méthode pour afficher la progression
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.grey[100], // Même couleur que la boîte "Sauvegarde terminée"
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[100]!), // Bordure bleue claire
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.cloud_download, color: Colors.blue),
+              SizedBox(width: 10),
+              Text(
+                'Sauvegarde en cours',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: _progressValue,
+            backgroundColor: Colors.grey[300],
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${(_progressValue * 100).toStringAsFixed(0)}%',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              Text(
+                '$_processedItems/$_totalItems',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            _currentOperation,
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -535,7 +720,13 @@ class _HomePageState extends State<HomePage> {
                     onMapCreated: _onMapCreated,
                     formMarkers: formMarkers,
                   ),
-
+                  if (isDownloading)
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                      child: Container(
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                    ),
                   // Contrôles de carte
                   MapControlsWidget(
                     controller: homeController,
@@ -565,13 +756,30 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                   DataCountWidget(count: collectedMarkers.length + collectedPolylines.length),
+                  // Remplacez le Positioned actuel par ceci :
+                  if (isDownloading)
+                    Positioned(
+                      top: 70, // Position sous la barre d'outils
+                      left: 0,
+                      right: 0,
+                      child: AnimatedSlide(
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                        offset: isDownloading ? Offset.zero : Offset(0, -1),
+                        child: AnimatedOpacity(
+                          duration: Duration(milliseconds: 300),
+                          opacity: isDownloading ? 1.0 : 0.0,
+                          child: _buildProgressIndicator(),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
             BottomStatusBarWidget(gpsEnabled: gpsEnabled),
             BottomButtonsWidget(
-              onSave: isDownloading ? () {} : handleSave,
-              onSync: isSyncing ? () {} : handleSync,
+              onSave: isDownloading ? () {} : _showSaveConfirmationDialog,
+              onSync: isSyncing ? () {} : _showSyncConfirmationDialog,
               onMenu: handleMenuPress,
             ),
           ],

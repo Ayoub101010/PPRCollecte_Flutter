@@ -17,13 +17,9 @@ class CollectionManager extends ChangeNotifier {
   LigneCollection? get ligneCollection => _ligneCollection;
   ChausseeCollection? get chausseeCollection => _chausseeCollection;
 
-  bool get hasActiveCollection =>
-      (_ligneCollection?.isActive ?? false) ||
-      (_chausseeCollection?.isActive ?? false);
+  bool get hasActiveCollection => (_ligneCollection?.isActive ?? false) || (_chausseeCollection?.isActive ?? false);
 
-  bool get hasPausedCollection =>
-      (_ligneCollection?.isPaused ?? false) ||
-      (_chausseeCollection?.isPaused ?? false);
+  bool get hasPausedCollection => (_ligneCollection?.isPaused ?? false) || (_chausseeCollection?.isPaused ?? false);
 
   String? get activeCollectionType {
     if (_ligneCollection?.isActive ?? false) return 'ligne';
@@ -38,15 +34,16 @@ class CollectionManager extends ChangeNotifier {
     required Stream<LocationData> locationStream,
   }) {
     if (hasActiveCollection) {
-      throw Exception(
-          'Une collecte est déjà en cours. Veuillez la mettre en pause d\'abord.');
+      throw Exception('Une collecte est déjà en cours. Veuillez la mettre en pause d\'abord.');
     }
 
     _ligneCollection = LigneCollection(
       id: _nextPisteId++, // ✅ Générer ID automatiquement
       codePiste: codePiste, // ✅ Utiliser le code piste fourni
       status: CollectionStatus.active,
-      points: [initialPosition],
+      points: [
+        initialPosition
+      ],
       startTime: DateTime.now(),
       lastPointTime: DateTime.now(),
     );
@@ -61,14 +58,15 @@ class CollectionManager extends ChangeNotifier {
     required Stream<LocationData> locationStream,
   }) {
     if (hasActiveCollection) {
-      throw Exception(
-          'Une collecte est déjà en cours. Veuillez la mettre en pause d\'abord.');
+      throw Exception('Une collecte est déjà en cours. Veuillez la mettre en pause d\'abord.');
     }
 
     _chausseeCollection = ChausseeCollection(
       id: _nextChausseeId++, // ✅ Générer ID automatiquement
       status: CollectionStatus.active,
-      points: [initialPosition],
+      points: [
+        initialPosition
+      ],
       startTime: DateTime.now(),
       lastPointTime: DateTime.now(),
     );
@@ -78,8 +76,7 @@ class CollectionManager extends ChangeNotifier {
   }
 
   /// Démarre le service de collecte pour une collection donnée
-  void _startCollectionService(
-      CollectionBase collection, Stream<LocationData> locationStream) {
+  void _startCollectionService(CollectionBase collection, Stream<LocationData> locationStream) {
     _collectionService.startCollection(
       collection: collection,
       locationStream: locationStream,
@@ -90,11 +87,9 @@ class CollectionManager extends ChangeNotifier {
   }
 
   /// Ajoute un point à la collecte appropriée
-  void _addPointToCollection(
-      CollectionType type, LatLng point, double distance) {
+  void _addPointToCollection(CollectionType type, LatLng point, double distance) {
     if (type == CollectionType.ligne && _ligneCollection != null) {
-      final updatedPoints = List<LatLng>.from(_ligneCollection!.points)
-        ..add(point);
+      final updatedPoints = List<LatLng>.from(_ligneCollection!.points)..add(point);
       final newDistance = _ligneCollection!.totalDistance + distance;
 
       _ligneCollection = _ligneCollection!.copyWith(
@@ -103,8 +98,7 @@ class CollectionManager extends ChangeNotifier {
         lastPointTime: DateTime.now(),
       );
     } else if (type == CollectionType.chaussee && _chausseeCollection != null) {
-      final updatedPoints = List<LatLng>.from(_chausseeCollection!.points)
-        ..add(point);
+      final updatedPoints = List<LatLng>.from(_chausseeCollection!.points)..add(point);
       final newDistance = _chausseeCollection!.totalDistance + distance;
 
       _chausseeCollection = _chausseeCollection!.copyWith(
@@ -143,8 +137,7 @@ class CollectionManager extends ChangeNotifier {
   void resumeLigneCollection(Stream<LocationData> locationStream) {
     if (_ligneCollection?.isPaused ?? false) {
       if (hasActiveCollection) {
-        throw Exception(
-            'Une autre collecte est en cours. Veuillez la mettre en pause d\'abord.');
+        throw Exception('Une autre collecte est en cours. Veuillez la mettre en pause d\'abord.');
       }
 
       _ligneCollection = _ligneCollection!.copyWith(
@@ -159,8 +152,7 @@ class CollectionManager extends ChangeNotifier {
   void resumeChausseeCollection(Stream<LocationData> locationStream) {
     if (_chausseeCollection?.isPaused ?? false) {
       if (hasActiveCollection) {
-        throw Exception(
-            'Une autre collecte est en cours. Veuillez la mettre en pause d\'abord.');
+        throw Exception('Une autre collecte est en cours. Veuillez la mettre en pause d\'abord.');
       }
 
       _chausseeCollection = _chausseeCollection!.copyWith(
@@ -224,21 +216,20 @@ class CollectionManager extends ChangeNotifier {
   /// ✅ MÉTHODE MANQUANTE AJOUTÉE - Ajoute un point manuellement pour debug/simulation
   void addManualPoint(CollectionType type, LatLng point) {
     if (type == CollectionType.ligne && (_ligneCollection?.isActive ?? false)) {
-      final lastPoint = _ligneCollection!.points.isNotEmpty
-          ? _ligneCollection!.points.last
-          : point;
+      final lastPoint = _ligneCollection!.points.isNotEmpty ? _ligneCollection!.points.last : point;
 
-      final distance =
-          _collectionService.calculateTotalDistance([lastPoint, point]);
+      final distance = _collectionService.calculateTotalDistance([
+        lastPoint,
+        point
+      ]);
       _addPointToCollection(type, point, distance);
-    } else if (type == CollectionType.chaussee &&
-        (_chausseeCollection?.isActive ?? false)) {
-      final lastPoint = _chausseeCollection!.points.isNotEmpty
-          ? _chausseeCollection!.points.last
-          : point;
+    } else if (type == CollectionType.chaussee && (_chausseeCollection?.isActive ?? false)) {
+      final lastPoint = _chausseeCollection!.points.isNotEmpty ? _chausseeCollection!.points.last : point;
 
-      final distance =
-          _collectionService.calculateTotalDistance([lastPoint, point]);
+      final distance = _collectionService.calculateTotalDistance([
+        lastPoint,
+        point
+      ]);
       _addPointToCollection(type, point, distance);
     }
   }

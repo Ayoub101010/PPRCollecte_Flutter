@@ -12,3 +12,5 @@ export 'dalot_model.dart';
 export 'passage_submersible_model.dart';
 export 'point_critique_model.dart';
 export 'point_coupure_model.dart';
+export '../piste_model.dart';
+export '../chaussee_model.dart';

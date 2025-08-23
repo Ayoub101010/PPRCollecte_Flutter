@@ -25,6 +25,7 @@ class BottomButtonsWidget extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4CAF50),
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -38,6 +39,7 @@ class BottomButtonsWidget extends StatelessWidget {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2196F3),
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -50,12 +52,13 @@ class BottomButtonsWidget extends StatelessWidget {
           Expanded(
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF757575),
+                backgroundColor: const Color.fromARGB(255, 167, 94, 196),
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              icon: const Icon(Icons.menu, size: 18),
-              label: const Text("Menu", style: TextStyle(fontWeight: FontWeight.w500)),
+              icon: const Icon(Icons.analytics, size: 18), // 📊
+              label: const Text("Données", style: TextStyle(fontWeight: FontWeight.w500)),
               onPressed: onMenu,
             ),
           ),
