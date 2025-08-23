@@ -13,6 +13,7 @@ import 'Point_form_screen.dart';
 import 'collection_exports.dart';
 import 'sync_service.dart';
 import 'dart:ui'; // Pour ImageFilter
+import 'login_page.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -555,6 +556,41 @@ class _HomePageState extends State<HomePage> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Données ouvertes')));
   }
 
+// Ajoutez cette méthode pour afficher la confirmation de déconnexion
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmation de déconnexion'),
+        content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Non'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Fermer la boîte de dialogue
+              _performLogout(); // Effectuer la déconnexion
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Oui', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+// Ajoutez cette méthode pour effectuer la déconnexion
+  void _performLogout() {
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
   // Méthode AVEC Future pour la logique async
   Future<void> _performSync() async {
     setState(() => isSyncing = true);
@@ -708,7 +744,7 @@ class _HomePageState extends State<HomePage> {
       body: SafeArea(
         child: Column(
           children: [
-            TopBarWidget(onLogout: widget.onLogout),
+            TopBarWidget(onLogout: _showLogoutConfirmation),
             Expanded(
               child: Stack(
                 children: [

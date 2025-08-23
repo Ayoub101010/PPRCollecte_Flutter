@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TopBarWidget extends StatelessWidget {
-  final Function onLogout;
+  final VoidCallback onLogout;
+
   const TopBarWidget({super.key, required this.onLogout});
 
   @override
@@ -36,13 +37,10 @@ class TopBarWidget extends StatelessWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF64B5F6),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             ),
-            onPressed: () {
-              onLogout();
-            },
+            onPressed: onLogout, // Appel direct de la fonction passée
             child: const Text(
               "Se déconnecter",
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
