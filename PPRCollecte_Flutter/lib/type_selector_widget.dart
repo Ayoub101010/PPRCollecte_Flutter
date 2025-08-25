@@ -6,12 +6,14 @@ class TypeSelectorWidget extends StatelessWidget {
   final String category;
   final Function(String) onTypeSelected;
   final VoidCallback onBack;
+  final bool showBackButton;
 
   const TypeSelectorWidget({
     super.key,
     required this.category,
     required this.onTypeSelected,
     required this.onBack,
+    this.showBackButton = true,
   });
 
   @override
@@ -25,37 +27,12 @@ class TypeSelectorWidget extends StatelessWidget {
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          // Bouton retour
-          Row(
-            children: [
-              GestureDetector(
-                onTap: onBack,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.arrow_back, color: Color(0xFF333333)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Retour',
-                      style: TextStyle(fontSize: 16, color: Color(0xFF333333)),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // SUPPRIMER COMPLÈTEMENT la section du bouton retour
+          // On garde seulement le titre
+
+          const SizedBox(height: 24),
 
           // Titre de la catégorie
-          Text(
-            category,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: categoryColor,
-            ),
-          ),
-          const SizedBox(height: 24),
 
           // Liste des types
           Expanded(

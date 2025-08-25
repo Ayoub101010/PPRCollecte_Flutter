@@ -23,8 +23,7 @@ class LigneStatusWidget extends StatelessWidget {
           color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color:
-                collection.isActive ? const Color(0xFF1976D2) : Colors.orange,
+            color: collection.isActive ? const Color(0xFF1976D2) : Colors.orange,
             width: 2,
           ),
           boxShadow: [
@@ -38,31 +37,20 @@ class LigneStatusWidget extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              collection.isActive
-                  ? Icons.radio_button_checked
-                  : Icons.pause_circle_filled,
-              color:
-                  collection.isActive ? const Color(0xFF1976D2) : Colors.orange,
+              collection.isActive ? Icons.radio_button_checked : Icons.pause_circle_filled,
+              color: collection.isActive ? const Color(0xFF1976D2) : Colors.orange,
               size: 16,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                collection.isActive
-                    ? "Collecte piste active"
-                    : "Piste en pause",
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.black87),
+                collection.isActive ? "Collecte piste active" : "Piste en pause",
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
               ),
             ),
             Text(
               "${collection.points.length} pts • ${collection.totalDistance.round()}m",
-              style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Colors.grey[700]),
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey[700]),
             ),
           ],
         ),
@@ -93,9 +81,7 @@ class ChausseeStatusWidget extends StatelessWidget {
           color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: collection.isActive
-                ? const Color(0xFFFF9800)
-                : Colors.deepOrange,
+            color: collection.isActive ? const Color(0xFFFF9800) : Colors.deepOrange,
             width: 2,
           ),
           boxShadow: [
@@ -109,32 +95,20 @@ class ChausseeStatusWidget extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              collection.isActive
-                  ? Icons.radio_button_checked
-                  : Icons.pause_circle_filled,
-              color: collection.isActive
-                  ? const Color(0xFFFF9800)
-                  : Colors.deepOrange,
+              collection.isActive ? Icons.radio_button_checked : Icons.pause_circle_filled,
+              color: collection.isActive ? const Color(0xFFFF9800) : Colors.deepOrange,
               size: 16,
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                collection.isActive
-                    ? "Collecte chaussée active"
-                    : "Chaussée en pause",
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.black87),
+                collection.isActive ? "Collecte chaussée active" : "Chaussée en pause",
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
               ),
             ),
             Text(
               "${collection.points.length} pts • ${collection.totalDistance.round()}m",
-              style: TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  color: Colors.grey[700]),
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey[700]),
             ),
           ],
         ),

@@ -14,6 +14,7 @@ import 'collection_exports.dart';
 import 'sync_service.dart';
 import 'dart:ui'; // Pour ImageFilter
 import 'login_page.dart';
+import 'data_categories_page.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -553,7 +554,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   void handleMenuPress() {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Données ouvertes')));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const DataCategoriesPage()),
+    );
   }
 
 // Ajoutez cette méthode pour afficher la confirmation de déconnexion
