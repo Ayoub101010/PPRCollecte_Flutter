@@ -48,22 +48,123 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   void _initializeFormData() {
-    if (widget.pointData != null) {
+    print('🔄 Début _initializeFormData()');
+    print('   widget.pointData: ${widget.pointData}');
+
+    // Réinitialiser _formData
+    _formData = {};
+
+    if (widget.pointData != null && widget.pointData!['id'] != null) {
+      // ============ MODIFICATION ============
+      print('📝 Mode MODIFICATION');
+
+      final config = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
+      final tableName = config?['tableName'] ?? '';
+      final coordinatePrefix = _getCoordinatePrefix(tableName);
+
       _formData = {
-        'code_piste': widget.pointData!['code_piste'], // Ajouté
-        'latitude': widget.pointData!['latitude'],
-        'longitude': widget.pointData!['longitude'],
-        'accuracy': widget.pointData!['accuracy'],
-        'timestamp': widget.pointData!['timestamp'],
-        'enqueteur': widget.agentName ?? 'N/A', // À récupérer depuis les prefs
+        'id': widget.pointData!['id'],
+        'code_piste': widget.pointData!['code_piste'],
+        'nom': widget.pointData!['nom'],
+        'type': widget.pointData!['type'],
+        'enqueteur': widget.pointData!['enqueteur'] ?? widget.agentName ?? 'N/A',
         'date_creation': widget.pointData!['date_creation'],
-        'date_modification': widget.pointData!['date_modification'],
+        'date_modification': widget.pointData!['date_modification'] ?? DateTime.now().toIso8601String(),
+        'latitude': widget.pointData!['x_$coordinatePrefix'],
+        'longitude': widget.pointData!['y_$coordinatePrefix'],
       };
+
+      _addSpecificFormDataFromPointData(widget.pointData!, widget.type);
     } else {
-      _formData['date_creation'] = null; // Initialisation
-      _formData['enqueteur'] = widget.agentName ?? 'N/A'; // <-- et ici
-      _formData['code_piste'] = null; // Vide au départ
-      _formData['date_modification'] = null;
+      // ============ CRÉATION ============
+      print('🆕 Mode CRÉATION');
+
+      // COORDONNÉES GPS - CORRECTION DÉFINITIVE
+      final double latitude = widget.pointData?['latitude']?.toDouble() ?? 0.0;
+      final double longitude = widget.pointData?['longitude']?.toDouble() ?? 0.0;
+
+      _formData = {
+        'id': null,
+        'code_piste': null,
+        'nom': null,
+        'type': null,
+        'enqueteur': widget.agentName ?? 'N/A',
+        'date_creation': null,
+        'date_modification': null,
+        'latitude': latitude,
+        'longitude': longitude,
+      };
+
+      print('📍 Coordonnées extraites:');
+      print('   latitude: $latitude');
+      print('   longitude: $longitude');
+      print('   widget.pointData[latitude]: ${widget.pointData?['latitude']}');
+      print('   widget.pointData[longitude]: ${widget.pointData?['longitude']}');
+    }
+
+    print('✅ _initializeFormData() terminé:');
+    print('   _formData: $_formData');
+  }
+
+  @override
+  void didUpdateWidget(PointFormWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Re-initialiser si les données pointData changent
+    if (oldWidget.pointData != widget.pointData) {
+      print('🔄 didUpdateWidget - pointData changé');
+      _initializeFormData();
+    }
+
+    // Mettre à jour le controller agent si besoin
+    if (oldWidget.agentName != widget.agentName) {
+      agentController.text = widget.agentName ?? 'N/A';
+      _formData['enqueteur'] = widget.agentName ?? 'N/A';
+    }
+  }
+
+  void _addSpecificFormDataFromPointData(Map<String, dynamic> pointData, String entityType) {
+    // Champs communs pour plusieurs entités
+    if (pointData.containsKey('nom_cours_eau')) {
+      _formData['nom_cours_eau'] = pointData['nom_cours_eau'];
+    }
+
+    // Champs spécifiques par type d'entité
+    switch (entityType) {
+      case 'Pont':
+        _formData['situation'] = pointData['situation_pont'];
+        _formData['type_pont'] = pointData['type_pont'];
+        break;
+
+      case 'Bac':
+        _formData['type_bac'] = pointData['type_bac'];
+        _formData['nom_cours_eau'] = pointData['nom_cours_eau'];
+        _formData['latitude_fin'] = pointData['x_fin_traversee_bac'];
+        _formData['longitude_fin'] = pointData['y_fin_traversee_bac'];
+        break;
+
+      case 'Dalot':
+        _formData['situation'] = pointData['situation_dalot'];
+        break;
+
+      case 'Passage Submersible':
+        _formData['type'] = pointData['type_materiau'];
+        _formData['latitude_fin'] = pointData['x_fin_passage_submersible'];
+        _formData['longitude_fin'] = pointData['y_fin_passage_submersible'];
+        break;
+
+      case 'Point Critique':
+        _formData['type_point_critique'] = pointData['type_point_critique'];
+        break;
+
+      case 'Point de Coupure':
+        _formData['causes_coupures'] = pointData['causes_coupures'];
+        break;
+
+      // Pour les infrastructures rurales (écoles, marchés, etc.)
+      default:
+        // Les champs de base sont déjà mappés
+        break;
     }
   }
 
@@ -80,22 +181,26 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         throw Exception('Table non configurée pour ${widget.type}');
       }
 
-      // PRÉFIXE CORRIGÉ avec tous les cas spéciaux !
       final coordinatePrefix = _getCoordinatePrefix(tableName);
-
-      // DEBUG: Afficher le préfixe utilisé
-      print('🔧 Table: $tableName, Préfixe: $coordinatePrefix');
 
       // Préparer les données de base avec le bon préfixe
       final entityData = {
         'x_$coordinatePrefix': _formData['latitude'] ?? 0.0,
         'y_$coordinatePrefix': _formData['longitude'] ?? 0.0,
         'nom': _formData['nom'] ?? 'Sans nom',
-        'enqueteur': widget.agentName ?? 'Anonyme',
-        'date_creation': _formData['date_creation'] ?? DateTime.now().toIso8601String(),
-        'date_modification': _formData['date_modification'] ?? '',
+        'enqueteur': _formData['enqueteur'] ?? 'Anonyme',
         'code_piste': _formData['code_piste'],
       };
+
+      // Si c'est une modification, ajouter l'ID
+      if (widget.pointData != null && widget.pointData!['id'] != null) {
+        entityData['id'] = widget.pointData!['id'];
+        entityData['date_modification'] = _formData['date_modification'] ?? DateTime.now().toIso8601String();
+        entityData['date_creation'] = _formData['date_creation'];
+      } else {
+        // Si c'est une création, ajouter la date de création
+        entityData['date_creation'] = _formData['date_creation'] ?? DateTime.now().toIso8601String();
+      }
 
       // Ajouter le type si présent dans le formulaire
       if (_formData['type'] != null) {
@@ -105,17 +210,25 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       // Ajouter les champs spécifiques selon le type d'entité
       _addSpecificFields(entityData, widget.type, config);
 
-      // DEBUG: Afficher les données avant validation
-      print('📦 Données préparées: $entityData');
+      // Insertion ou mise à jour dans la base
+      final dbHelper = DatabaseHelper();
+      int id;
 
-      // Validation finale des données requises
-      _validateRequiredFields(entityData, config);
+      if (widget.pointData != null && widget.pointData!['id'] != null) {
+        // MISE À JOUR de l'entité existante
+        id = await dbHelper.updateEntity(tableName, widget.pointData!['id'], entityData);
+        print('✅ Entité mise à jour avec ID: $id');
+      } else {
+        // INSERTION d'une nouvelle entité
+        id = await dbHelper.insertEntity(tableName, entityData);
+        print('✅ Nouvelle entité enregistrée avec ID: $id');
+      }
 
-      // Insertion dans la base
-      final id = await DatabaseHelper().insertEntity(tableName, entityData);
-      print('✅ Entité enregistrée avec ID: $id');
-
+      // ============ AJOUTER CE CODE POUR LA CONFIRMATION ============
       if (mounted) {
+        // RÉINITIALISER L'ÉTAT DU FORMULAIRE APRÈS SUCCÈS
+        _formKey.currentState?.reset();
+
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -133,8 +246,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
-                  widget.onSaved();
+                  Navigator.of(context).pop(); // Fermer la boîte de dialogue
+                  widget.onSaved(); // ← CETTE LIGNE EST CRUCIALE
                 },
                 child: const Text('OK'),
               ),
@@ -142,6 +255,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           ),
         );
       }
+      // ============ FIN DE L'AJOUT ============
     } catch (error) {
       print('❌ Erreur détaillée: $error');
       if (mounted) {
@@ -286,10 +400,19 @@ class _PointFormWidgetState extends State<PointFormWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug: Afficher l'état des données
+    print('🔄 PointFormWidget rebuild:');
+    print('   category: ${widget.category}');
+    print('   type: ${widget.type}');
+    print('   pointData: ${widget.pointData}');
+    print('   formData: $_formData');
+    print('   agentName: ${widget.agentName}');
     final categoryColor = Color(InfrastructureConfig.getCategoryColor(widget.category));
     final config = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
     final typeOptions = InfrastructureConfig.getTypeOptions(widget.category, widget.type);
-
+    final bool isCreation = widget.pointData == null || widget.pointData!['id'] == null;
+    print('🏗️ Build - Mode: ${isCreation ? "CRÉATION" : "MODIFICATION"}');
+    print('   date_modification: ${_formData['date_modification']}');
     return Column(
       children: [
         // Header du formulaire - Style React Native
@@ -467,47 +590,80 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   Widget _buildDateModificationField() {
+    final bool isCreation = widget.pointData == null || widget.pointData!['id'] == null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Date de modification',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
+              color: isCreation ? Colors.grey : const Color(0xFF374151),
             ),
           ),
           const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5), // Gris clair
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE0E0E0)),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _formData['date_modification'] != null
-                        ? DateTime.tryParse(_formData['date_modification']) != null
-                            ? "${DateTime.parse(_formData['date_modification']).day.toString().padLeft(2, '0')}/"
-                                "${DateTime.parse(_formData['date_modification']).month.toString().padLeft(2, '0')}/"
-                                "${DateTime.parse(_formData['date_modification']).year}"
-                            : _formData['date_modification']
-                        : "Non modifié",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF9E9E9E), // Texte gris
+          GestureDetector(
+            onTap: isCreation
+                ? null
+                : () async {
+                    // DÉSACTIVÉ en création
+                    DateTime initialDate = DateTime.now();
+                    if (_formData['date_modification'] != null) {
+                      initialDate = DateTime.tryParse(_formData['date_modification']) ?? DateTime.now();
+                    }
+
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: initialDate,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _formData['date_modification'] = picked.toIso8601String();
+                      });
+                    }
+                  },
+            child: Container(
+              decoration: BoxDecoration(
+                color: isCreation ? const Color(0xFFF5F5F5) : const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isCreation ? const Color(0xFFE0E0E0) : const Color(0xFFE5E7EB),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 20,
+                    color: isCreation ? Colors.grey : const Color(0xFF1976D2),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isCreation
+                          ? "Non modifié"
+                          : (_formData['date_modification'] != null
+                              ? (DateTime.tryParse(_formData['date_modification']) != null
+                                  ? "${DateTime.parse(_formData['date_modification']).day.toString().padLeft(2, '0')}/"
+                                      "${DateTime.parse(_formData['date_modification']).month.toString().padLeft(2, '0')}/"
+                                      "${DateTime.parse(_formData['date_modification']).year}"
+                                  : _formData['date_modification'].toString())
+                              : "Sélectionner une date"),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isCreation ? const Color(0xFF9E9E9E) : (_formData['date_modification'] != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF)),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -694,6 +850,9 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     bool required = false,
     int maxLines = 1,
   }) {
+    // Créer un contrôleur avec la valeur pré-remplie
+    final controller = TextEditingController(text: _formData[key]?.toString() ?? '');
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -709,6 +868,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           ),
           const SizedBox(height: 8),
           TextFormField(
+            controller: controller, // Utiliser le contrôleur
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
@@ -753,6 +913,9 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     required String key,
     bool required = false,
   }) {
+    // Récupérer la valeur actuelle
+    final currentValue = _formData[key];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -776,6 +939,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             padding: const EdgeInsets.all(12),
             child: Column(
               children: options.map((option) {
+                final isSelected = currentValue == option;
+
                 return GestureDetector(
                   onTap: () {
                     setState(() {
@@ -793,7 +958,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                             shape: BoxShape.circle,
                             border: Border.all(color: const Color(0xFFD1D5DB), width: 2),
                           ),
-                          child: _formData[key] == option
+                          child: isSelected
                               ? const Center(
                                   child: Icon(
                                     Icons.circle,
@@ -807,9 +972,10 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                         Expanded(
                           child: Text(
                             option,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
-                              color: Color(0xFF374151),
+                              color: isSelected ? const Color(0xFF1976D2) : const Color(0xFF374151),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                         ),
@@ -826,6 +992,20 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   Widget _buildGpsInfo() {
+    final dynamic lat = _formData['latitude'];
+    final dynamic lng = _formData['longitude'];
+
+    String latStr = 'N/A';
+    String lngStr = 'N/A';
+
+    if (lat != null) {
+      latStr = lat is double ? lat.toStringAsFixed(6) : lat.toString();
+    }
+
+    if (lng != null) {
+      lngStr = lng is double ? lng.toStringAsFixed(6) : lng.toString();
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -852,8 +1032,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildGpsInfoRow('Latitude:', '${_formData['latitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
-          _buildGpsInfoRow('Longitude:', '${_formData['longitude']?.toStringAsFixed(6) ?? 'N/A'}°'),
+          _buildGpsInfoRow('Latitude:', '$latStr°'),
+          _buildGpsInfoRow('Longitude:', '$lngStr°'),
         ],
       ),
     );

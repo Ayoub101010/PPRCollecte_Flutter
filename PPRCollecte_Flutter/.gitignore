@@ -43,4 +43,13 @@ app.*.map.json
 /android/app/release
 
 __pycache__/
+
+**/linux/flutter/
+**/macos/Flutter/
+**/windows/flutter/
+# Flutter generated
+**/linux/flutter/
+**/macos/Flutter/
+**/windows/flutter/
+**/__pycache__/
 *.pyc

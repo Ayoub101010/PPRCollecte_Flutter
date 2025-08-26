@@ -114,27 +114,29 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     final tableName = config?['tableName'] ?? '';
 
     if (tableName.isEmpty) return;
-
-    // Navigation vers le formulaire d'édition
+    final String agentName = item['enqueteur'] ?? 'Agent';
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PointFormWidget(
-          category: selectedCategory!,
-          type: selectedType!,
-          pointData: item,
-          onBack: () => Navigator.pop(context),
-          onSaved: () {
-            _fetchData(); // Rafraîchir la liste
-            Navigator.pop(context);
-          },
-          agentName: 'Agent', // À adapter selon votre logique
+        builder: (_) => Scaffold(
+          // ✅ Ajout du Scaffold ici
+          body: PointFormWidget(
+            category: selectedCategory!,
+            type: selectedType!,
+            pointData: item, // ✅ Données à modifier
+            onBack: () => Navigator.pop(context),
+            onSaved: () {
+              _fetchData();
+              Navigator.pop(context);
+            },
+            agentName: agentName,
+          ),
         ),
       ),
     );
 
     if (result != null) {
-      _fetchData(); // Rafraîchir la liste après modification
+      _fetchData();
     }
   }
 

@@ -87,6 +87,11 @@ class DataListView extends StatelessWidget {
     );
   }
 
+  void _editItem(Map<String, dynamic> item, BuildContext context) {
+    // Appeler la fonction onEdit avec toutes les données de l'item
+    onEdit(item);
+  }
+
   void _confirmDelete(int id, BuildContext context) {
     showDialog(
       context: context,
