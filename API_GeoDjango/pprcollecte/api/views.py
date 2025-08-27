@@ -114,3 +114,6 @@ class LoginAPIView(APIView):
 class PisteListCreateAPIView(generics.ListCreateAPIView):
     queryset = Piste.objects.all()
     serializer_class = PisteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()

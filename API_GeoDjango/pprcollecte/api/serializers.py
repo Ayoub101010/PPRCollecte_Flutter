@@ -250,3 +250,12 @@ class PisteSerializer(GeoFeatureModelSerializer):
         model = Piste
         geo_field = "geom"
         fields = '__all__'
+
+    def to_internal_value(self, data):
+        # Si 'geom' existe, on force le SRID sur 32628
+        if 'geom' in data and data['geom'] is not None:
+            from django.contrib.gis.geos import GEOSGeometry
+            geom = GEOSGeometry(str(data['geom']))
+            geom.srid = 32628  # forcer SRID UTM
+            data['geom'] = geom
+        return super().to_internal_value(data)

@@ -52,15 +52,21 @@ class Prefecture(models.Model):
 
 
 class CommuneRurale(models.Model):
-    prefectures_id = models.ForeignKey(Prefecture, on_delete=models.SET_NULL, null=True, blank=True, db_column='prefectures_id')
-    nom = models.TextField()
-    geom = models.GeometryField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
+    prefectures_id = models.ForeignKey(
+        'Prefecture',               # modèle référencé
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='prefectures_id'  # correspond exactement à la colonne de la table
+    )
+    nom = models.CharField(max_length=80)
+    geom = models.GeometryField(null=True, blank=True, srid=4326)
+    created_at = models.CharField(max_length=80, null=True, blank=True)
+    updated_at = models.CharField(max_length=80, null=True, blank=True)
 
     class Meta:
         db_table = 'communes_rurales'
-        managed = False
+        managed = False  # la table existe déjà dans PostgreSQL
 
     def __str__(self):
         return self.nom
@@ -68,15 +74,15 @@ class CommuneRurale(models.Model):
 class Piste(models.Model):
     communes_rurales_id = models.ForeignKey(
         CommuneRurale, 
-        on_delete=models.SET_NULL,  # ou CASCADE si tu veux supprimer les pistes avec la commune
+        on_delete=models.SET_NULL,
         null=True, 
         blank=True, 
         db_column='communes_rurales_id'
     )
-    code_piste = models.IntegerField(unique=True, null=True, blank=True)
-    geom = models.LineStringField(srid=4326, null=True, blank=True)
-    heure_debut = models.DateTimeField(null=True, blank=True)
-    heure_fin = models.DateTimeField(null=True, blank=True)
+    code_piste = models.CharField(max_length=50, unique=True, null=True, blank=True)  # texte
+    geom = models.MultiLineStringField(srid=32628, null=True, blank=True)  # aligné avec PostGIS
+    heure_debut = models.TimeField(null=True, blank=True)  # time dans PostgreSQL
+    heure_fin = models.TimeField(null=True, blank=True)
     nom_origine_piste = models.TextField(null=True, blank=True)
     x_origine = models.FloatField(null=True, blank=True)
     y_origine = models.FloatField(null=True, blank=True)
@@ -90,15 +96,15 @@ class Piste(models.Model):
     debut_occupation = models.DateTimeField(null=True, blank=True)
     fin_occupation = models.DateTimeField(null=True, blank=True)
     largeur_emprise = models.FloatField(null=True, blank=True)
-    frequence_trafic = models.FloatField(null=True, blank=True)
+    frequence_trafic = models.CharField(max_length=50, null=True, blank=True)  # texte
     type_trafic = models.TextField(null=True, blank=True)
     travaux_realises = models.TextField(null=True, blank=True)
     date_travaux = models.TextField(null=True, blank=True)
     entreprise = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(null=True, blank=True)
-    updated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     login_id = models.ForeignKey(
-        'Login',  # suppose que tu as un modèle Login
+        'Login', 
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -107,10 +113,11 @@ class Piste(models.Model):
 
     class Meta:
         db_table = 'pistes'
-        managed = False  # mettre True si tu veux que Django gère la table
+        managed = True
 
     def __str__(self):
         return f"Piste {self.code_piste} - {self.nom_origine_piste} → {self.nom_destination_piste}"
+
 
 
 class ServicesSantes(models.Model):
