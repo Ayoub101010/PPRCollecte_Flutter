@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:io';
+import 'api_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -56,7 +57,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 11, // Version augmentée pour la fusion
+      version: 12, // Version augmentée pour la fusion
       onCreate: (db, version) async {
         print('🆕 Création de toutes les tables pour la version $version');
         await _createAllTables(db);
@@ -109,7 +110,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table localites créée');
@@ -127,7 +129,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table ecoles créée');
@@ -145,7 +148,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table marches créée');
@@ -163,7 +167,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table services_santes créée');
@@ -181,7 +186,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table batiments_administratifs créée');
@@ -199,7 +205,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table infrastructures_hydrauliques créée');
@@ -217,7 +224,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table autres_infrastructures créée');
@@ -237,7 +245,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table ponts créée');
@@ -258,7 +267,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table bacs créée');
@@ -275,7 +285,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table buses créée');
@@ -293,7 +304,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table dalots créée');
@@ -313,7 +325,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table passages_submersibles créée');
@@ -330,7 +343,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table points_critiques créée');
@@ -347,7 +361,8 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
-      date_sync TEXT                 -- ← COLONNE AJOUTÉE
+      date_sync TEXT,
+      login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
   ''');
     print('✅ Table points_coupures créée');
@@ -556,6 +571,10 @@ class DatabaseHelper {
     // CORRECTION: Utilisation du bon chemin
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'app_database.db');
+    final userData = {
+      ...data,
+      'login_id': ApiService.userId, // ← Utiliser l'ID de l'API
+    };
     print('🗂️ Insertion dans: $path');
     print('📋 Table: $tableName');
     // NOUVEAU: Afficher les champs et valeurs qui seront insérés
@@ -564,7 +583,7 @@ class DatabaseHelper {
       print('   ├─ $key: $value (${value.runtimeType})');
     });
 
-    final id = await db.insert(tableName, data);
+    final id = await db.insert(tableName, userData);
     print("✅ Entité insérée dans $tableName (ID: $id)");
     return id;
   }

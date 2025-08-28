@@ -1,7 +1,7 @@
 // lib/point_form_widget.dart
 import 'package:flutter/material.dart';
 import 'config.dart';
-
+import 'api_service.dart';
 import 'database_helper.dart';
 
 class PointFormWidget extends StatefulWidget {
@@ -190,6 +190,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'nom': _formData['nom'] ?? 'Sans nom',
         'enqueteur': _formData['enqueteur'] ?? 'Anonyme',
         'code_piste': _formData['code_piste'],
+        'login_id': ApiService.userId,
       };
 
       // Si c'est une modification, ajouter l'ID

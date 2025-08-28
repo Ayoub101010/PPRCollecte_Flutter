@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 class ApiService {
   static const String baseUrl = 'http://10.0.2.2:8000';
   static String? authToken;
+  static int? userId;
   // Remplace par l'IP de ton PC ou le serveur API
 
   /// Fonction pour se connecter via API
@@ -28,6 +29,7 @@ class ApiService {
       // L'API renvoie les données de l'utilisateur
       final data = jsonDecode(response.body);
       authToken = data['token'];
+      userId = data['id'];
       // On vérifie que "nom" et "prenom" sont bien présents
       if (data.containsKey('nom') && data.containsKey('prenom')) {
         return data;
@@ -138,6 +140,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -151,6 +154,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -164,6 +168,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -177,6 +182,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -190,6 +196,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -203,6 +210,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -216,6 +224,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -231,6 +240,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -247,6 +257,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -259,6 +270,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -272,6 +284,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -287,6 +300,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -299,6 +313,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
@@ -311,6 +326,7 @@ class ApiService {
       'enqueteur': localData['enqueteur'],
       'date_creation': localData['date_creation'],
       'code_piste': localData['code_piste'],
+      'login_id': userId,
     };
   }
 
