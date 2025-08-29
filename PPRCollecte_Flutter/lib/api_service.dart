@@ -131,6 +131,27 @@ class ApiService {
 
   /// Mapping des données locales vers le format API
   static Map<String, dynamic> _mapLocaliteToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_localite': localData['x_localite'],
@@ -138,13 +159,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapEcoleToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_ecole': localData['x_ecole'],
@@ -152,13 +195,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapMarcheToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_marche': localData['x_marche'],
@@ -166,13 +231,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapServiceSanteToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_sante': localData['x_sante'],
@@ -180,13 +267,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapBatimentAdministratifToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_batiment_administratif': localData['x_batiment_administratif'],
@@ -194,13 +303,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapInfrastructureHydrauliqueToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_infrastructure_hydraulique': localData['x_infrastructure_hydraulique'],
@@ -208,13 +339,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapAutreInfrastructureToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_autre_infrastructure': localData['x_autre_infrastructure'],
@@ -222,13 +375,35 @@ class ApiService {
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapPontToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_pont': localData['x_pont'],
@@ -238,13 +413,35 @@ class ApiService {
       'type_pont': localData['type_pont'],
       'nom_cours_eau': localData['nom_cours_eau'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapBacToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_debut_traversee_bac': localData['x_debut_traversee_bac'],
@@ -255,26 +452,70 @@ class ApiService {
       'type_bac': localData['type_bac'],
       'nom_cours_eau': localData['nom_cours_eau'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapBuseToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_buse': localData['x_buse'],
       'y_buse': localData['y_buse'],
       'nom': localData['nom'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapDalotToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_dalot': localData['x_dalot'],
@@ -282,13 +523,35 @@ class ApiService {
       'nom': localData['nom'],
       'situation_dalot': localData['situation_dalot'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapPassageSubmersibleToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_debut_passage_submersible': localData['x_debut_passage_submersible'],
@@ -298,33 +561,78 @@ class ApiService {
       'nom': localData['nom'],
       'type_materiau': localData['type_materiau'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapPointCritiqueToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['id'],
       'x_point_critique': localData['x_point_critique'],
       'y_point_critique': localData['y_point_critique'],
       'type_point_critique': localData['type_point_critique'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapPointCoupureToApi(Map<String, dynamic> localData) {
+    // Convertir la date au format PostgreSQL
+    String formatDateForPostgres(String? dateString) {
+      if (dateString == null) return '';
+      try {
+        final date = DateTime.parse(dateString);
+
+        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
+        if (date.hour == 0 && date.minute == 0 && date.second == 0) {
+          final now = DateTime.now();
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+        } else {
+          // Sinon utiliser l'heure de la date
+          return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+              '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
+        }
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return {
       'sqlite_id': localData['local_id'],
       'x_point_coupure': localData['x_point_coupure'],
       'y_point_coupure': localData['y_point_coupure'],
       'causes_coupures': localData['causes_coupures'],
       'enqueteur': localData['enqueteur'],
-      'date_creation': localData['date_creation'],
+      'created_at': formatDateForPostgres(localData['date_creation']),
+      'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
     };

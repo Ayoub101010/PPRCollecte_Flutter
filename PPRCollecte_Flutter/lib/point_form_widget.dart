@@ -182,6 +182,19 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       }
 
       final coordinatePrefix = _getCoordinatePrefix(tableName);
+// CORRECTION: Formater la date avec l'heure actuelle
+      String formatDateWithCurrentTime(String? dateString) {
+        if (dateString == null) return DateTime.now().toIso8601String();
+        try {
+          final selectedDate = DateTime.parse(dateString);
+          final now = DateTime.now();
+          // Garder la date sélectionnée mais avec l'heure actuelle
+          final dateWithTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, now.hour, now.minute, now.second);
+          return dateWithTime.toIso8601String();
+        } catch (e) {
+          return DateTime.now().toIso8601String();
+        }
+      }
 
       // Préparer les données de base avec le bon préfixe
       final entityData = {
@@ -196,13 +209,16 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       // Si c'est une modification, ajouter l'ID
       if (widget.pointData != null && widget.pointData!['id'] != null) {
         entityData['id'] = widget.pointData!['id'];
-        entityData['date_modification'] = _formData['date_modification'] ?? DateTime.now().toIso8601String();
-        entityData['date_creation'] = _formData['date_creation'];
-      } else {
-        // Si c'est une création, ajouter la date de création
-        entityData['date_creation'] = _formData['date_creation'] ?? DateTime.now().toIso8601String();
-      }
+        // ⚠️ CORRECTION IMPORTANTE ⚠️
+        // NE PAS modifier la date de création originale
+        entityData['date_creation'] = _formData['date_creation']; // Garder l'original
 
+        // Seulement mettre à jour la date de modification avec l'heure actuelle
+        entityData['date_modification'] = formatDateWithCurrentTime(DateTime.now().toIso8601String());
+      } else {
+        // Si c'est une création, ajouter la date de création avec l'heure actuelle
+        entityData['date_creation'] = formatDateWithCurrentTime(_formData['date_creation']);
+      }
       // Ajouter le type si présent dans le formulaire
       if (_formData['type'] != null) {
         entityData['type'] = _formData['type'];
