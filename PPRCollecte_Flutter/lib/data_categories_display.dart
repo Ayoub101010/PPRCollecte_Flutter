@@ -89,14 +89,23 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
       // Filtrer selon le type de données
       List<Map<String, dynamic>> filteredData;
       switch (widget.dataFilter) {
-        case "unsynced":
-          filteredData = allData.where((item) => item['synced'] == 0 || item['synced'] == null).toList();
+        case "unsynced": // Données enregistrées
+          filteredData = allData
+              .where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null) // ← Non téléchargées
+                  )
+              .toList();
           break;
-        case "synced":
-          filteredData = allData.where((item) => item['synced'] == 1).toList();
+        case "synced": // Données synchronisées
+          filteredData = allData
+              .where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null) // ← Créées par l'utilisateur
+                  )
+              .toList();
           break;
-        case "saved":
-          filteredData = allData; // Pour les données sauvegardées, on montre tout
+        case "saved": // Données sauvegardées
+          filteredData = allData
+              .where((item) => item['downloaded'] == 1 // ← Uniquement les données téléchargées
+                  )
+              .toList();
           break;
         default:
           filteredData = allData;

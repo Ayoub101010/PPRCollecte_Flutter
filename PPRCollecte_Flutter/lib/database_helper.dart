@@ -109,7 +109,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -128,7 +129,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -147,7 +149,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -166,7 +169,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -185,7 +189,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -204,7 +209,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -223,7 +229,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -244,7 +251,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -266,7 +274,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -284,7 +293,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -303,7 +313,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -324,7 +335,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -342,7 +354,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -360,7 +373,8 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
-      synced INTEGER DEFAULT 0,      -- ← COLONNE AJOUTÉE
+      synced INTEGER DEFAULT 0,
+    downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER                -- ← COLONNE AJOUTÉE
     )
@@ -855,12 +869,13 @@ class DatabaseHelper {
     final columns = await db.rawQuery('PRAGMA table_info($tableName)');
     final hasSyncedColumn = columns.any((col) => col['name'] == 'synced');
     final hasDateSyncColumn = columns.any((col) => col['name'] == 'date_sync');
-
-    if (hasSyncedColumn && hasDateSyncColumn) {
+    final hasDownloadedColumn = columns.any((col) => col['name'] == 'downloaded');
+    if (hasSyncedColumn && hasDateSyncColumn && hasDownloadedColumn) {
       await db.update(
           tableName,
           {
             'synced': 1,
+            'downloaded': 0,
             'date_sync': DateTime.now().toIso8601String()
           },
           where: 'id = ?',
@@ -913,7 +928,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1, // Déjà synchronisé
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -959,7 +976,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1004,7 +1023,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1049,7 +1070,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1093,7 +1116,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1137,7 +1162,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1181,7 +1208,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1227,7 +1256,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1274,7 +1305,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1317,7 +1350,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1361,7 +1396,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1407,7 +1444,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1450,7 +1489,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1493,7 +1534,9 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-            'synced': 1,
+            'synced': 0, // ← Donnée téléchargée, pas synchronisée
+            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'login_id': properties['login_id'] ?? 1,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
