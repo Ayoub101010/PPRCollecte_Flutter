@@ -42,7 +42,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-__pycache__/
+
 
 **/linux/flutter/
 **/macos/Flutter/
@@ -52,4 +52,8 @@ __pycache__/
 **/macos/Flutter/
 **/windows/flutter/
 **/__pycache__/
+
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
