@@ -5,7 +5,7 @@ import 'database_helper.dart';
 void main() async {
   // 1. Initialisation obligatoire pour Flutter
   WidgetsFlutterBinding.ensureInitialized();
-  await DatabaseHelper().resetDatabase();
+
   // 2. Initialisation de la base de données
 
   // 3. Lancement de l'application
