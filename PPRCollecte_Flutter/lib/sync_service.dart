@@ -15,33 +15,106 @@ class SyncResult {
 class SyncService {
   final DatabaseHelper dbHelper = DatabaseHelper();
 
-  Future<SyncResult> syncAllData() async {
+  Future<SyncResult> syncAllData({Function(double, String, int, int)? onProgress}) async {
     final result = SyncResult();
+    int totalItems = 0;
+    int processedItems = 0;
 
-    // Synchroniser chaque table
-    await _syncTable('localites', 'localites', result);
-    await _syncTable('ecoles', 'ecoles', result);
-    await _syncTable('marches', 'marches', result);
-    await _syncTable('services_santes', 'services_santes', result);
-    await _syncTable('batiments_administratifs', 'batiments_administratifs', result);
-    await _syncTable('infrastructures_hydrauliques', 'infrastructures_hydrauliques', result);
-    await _syncTable('autres_infrastructures', 'autres_infrastructures', result);
-    await _syncTable('ponts', 'ponts', result);
-    await _syncTable('bacs', 'bacs', result);
-    await _syncTable('buses', 'buses', result);
-    await _syncTable('dalots', 'dalots', result);
-    await _syncTable('passages_submersibles', 'passages_submersibles', result);
-    await _syncTable('points_critiques', 'points_critiques', result);
-    await _syncTable('points_coupures', 'points_coupures', result);
+    // ⭐⭐ CODE SÉCURISÉ - DEBUT ⭐⭐
+    if (onProgress != null) {
+      onProgress(0.0, "Démarrage de la synchronisation...", 0, 1);
+    }
+
+    // Compter le total des items d'abord
+    final tables = [
+      'localites',
+      'ecoles',
+      'marches',
+      'services_santes',
+      'batiments_administratifs',
+      'infrastructures_hydrauliques',
+      'autres_infrastructures',
+      'ponts',
+      'bacs',
+      'buses',
+      'dalots',
+      'passages_submersibles',
+      'points_critiques',
+      'points_coupures'
+    ];
+
+    for (var table in tables) {
+      final data = await dbHelper.getUnsyncedEntities(table);
+      totalItems += data.length;
+    }
+
+    // ⭐⭐ CORRECTION: Éviter division par zéro
+    final safeTotalItems = totalItems > 0 ? totalItems : 1;
+
+    if (onProgress != null) {
+      onProgress(0.0, "Préparation...", 0, safeTotalItems);
+    }
+
+    // Synchroniser chaque table avec progression
+    for (var i = 0; i < tables.length; i++) {
+      final table = tables[i];
+      final apiEndpoint = table;
+
+      // ⭐⭐ CORRECTION: Calcul sécurisé du progrès
+      double safeProgress = safeTotalItems > 0 ? processedItems / safeTotalItems : 0.0;
+      safeProgress = safeProgress.isNaN || safeProgress.isInfinite ? 0.0 : safeProgress.clamp(0.0, 1.0);
+
+      if (onProgress != null) {
+        onProgress(safeProgress, "Synchronisation des ${_getFrenchTableName(table)}...", processedItems, safeTotalItems);
+      }
+
+      await _syncTable(table, apiEndpoint, result, onProgress: (processed, total) {
+        if (onProgress != null) {
+          // ⭐⭐ CORRECTION: Calcul sécurisé du progrès
+          double safeInnerProgress = safeTotalItems > 0 ? (processedItems + processed) / safeTotalItems : 0.0;
+          safeInnerProgress = safeInnerProgress.isNaN || safeInnerProgress.isInfinite ? 0.0 : safeInnerProgress.clamp(0.0, 1.0);
+
+          onProgress(safeInnerProgress, "Synchronisation des ${_getFrenchTableName(table)}...", processedItems + processed, safeTotalItems);
+        }
+      });
+
+      processedItems += (await dbHelper.getUnsyncedEntities(table)).length;
+    }
+
+    if (onProgress != null) {
+      onProgress(1.0, "Synchronisation terminée!", processedItems, safeTotalItems);
+    }
+    // ⭐⭐ CODE SÉCURISÉ - FIN ⭐⭐
 
     return result;
   }
 
-  Future<void> _syncTable(String tableName, String apiEndpoint, SyncResult result) async {
+  // Méthode pour les noms français des tables
+  String _getFrenchTableName(String tableName) {
+    const frenchNames = {
+      'localites': 'localités',
+      'ecoles': 'écoles',
+      'marches': 'marchés',
+      'services_santes': 'services de santé',
+      'batiments_administratifs': 'bâtiments administratifs',
+      'infrastructures_hydrauliques': 'infrastructures hydrauliques',
+      'autres_infrastructures': 'autres infrastructures',
+      'ponts': 'ponts',
+      'bacs': 'bacs',
+      'buses': 'buses',
+      'dalots': 'dalots',
+      'passages_submersibles': 'passages submersibles',
+      'points_critiques': 'points critiques',
+      'points_coupures': 'points de coupure',
+    };
+    return frenchNames[tableName] ?? tableName;
+  }
+
+  Future<void> _syncTable(String tableName, String apiEndpoint, SyncResult result, {Function(int, int)? onProgress}) async {
     try {
       print('🔄 Synchronisation de $tableName...');
 
-      // 1. Récupérer données locales non synchronisées
+      // 1. Récupérer UNIQUEMENT les données non synchronisées ET non téléchargées
       final localData = await dbHelper.getUnsyncedEntities(tableName);
 
       if (localData.isEmpty) {
@@ -51,12 +124,22 @@ class SyncService {
 
       print('📊 ${localData.length} enregistrement(s) à synchroniser pour $tableName');
 
-      // 2. Envoyer chaque enregistrement à l'API
-      for (var data in localData) {
+      // 2. FILTRE SUPPLÉMENTAIRE : vérifier le code_piste
+      for (var i = 0; i < localData.length; i++) {
+        var data = localData[i];
+        // ⭐⭐ VÉRIFICATION CRITIQUE : code_piste ne doit pas être "Non spécifié"
+        final codePiste = data['code_piste']?.toString().trim();
+        if (codePiste == null || codePiste.isEmpty || codePiste == 'Non spécifié' || codePiste == 'Non spÃ©cifiÃ©') {
+          print('⏭️ Skipping ${tableName} ID ${data['id']} - code_piste invalide: "$codePiste"');
+          result.failedCount++;
+          result.errors.add('$tableName ID ${data['id']}: code_piste invalide');
+          continue; // Passer au suivant
+        }
+
+        // 3. Envoyer seulement si code_piste est valide
         final success = await _sendDataToApi(apiEndpoint, data);
 
         if (success) {
-          // 3. Marquer comme synchronisé
           await dbHelper.markAsSynced(tableName, data['id']);
           result.successCount++;
           print('✅ $tableName ID ${data['id']} synchronisé');
@@ -65,9 +148,13 @@ class SyncService {
           result.errors.add('Échec synchronisation $tableName ID ${data['id']}');
           print('❌ Échec synchronisation $tableName ID ${data['id']}');
         }
+// ⭐⭐ FIN DE VOTRE LOGIQUE EXISTANTE ⭐⭐
 
-        // Petite pause pour éviter de surcharger l'API
-        await Future.delayed(const Duration(milliseconds: 100));
+        // ⭐⭐ AJOUTEZ LE CALLBACK DE PROGRESSION ICI ⭐⭐
+        if (onProgress != null) {
+          onProgress(i + 1, localData.length);
+        }
+        await Future.delayed(const Duration(milliseconds: 50));
       }
     } catch (e) {
       result.errors.add('$tableName: $e');

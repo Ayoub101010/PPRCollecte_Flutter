@@ -7,7 +7,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper().resetDatabase();
   // 2. Initialisation de la base de données
-  await DatabaseHelper().database;
 
   // 3. Lancement de l'application
   runApp(const MyApp());

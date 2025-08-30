@@ -43,6 +43,10 @@ class _HomePageState extends State<HomePage> {
   String _currentOperation = "Préparation de la sauvegarde...";
   int _totalItems = 0;
   int _processedItems = 0;
+  double _syncProgressValue = 0.0;
+  String _currentSyncOperation = "Préparation de la synchronisation...";
+  int _syncTotalItems = 0;
+  int _syncProcessedItems = 0;
 
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _lastCameraPosition;
@@ -365,7 +369,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmation de synchronisation'),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -436,7 +440,7 @@ class _HomePageState extends State<HomePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmation de sauvegarde'),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -597,18 +601,37 @@ class _HomePageState extends State<HomePage> {
 
   // Méthode AVEC Future pour la logique async
   Future<void> _performSync() async {
-    setState(() => isSyncing = true);
+    setState(() {
+      isSyncing = true;
+      _syncProgressValue = 0.0;
+      _syncProcessedItems = 0;
+      _syncTotalItems = 1; // Valeur initiale
+    });
 
     try {
-      final result = await SyncService().syncAllData();
+      final result = await SyncService().syncAllData(
+        onProgress: (progress, currentOperation, processed, total) {
+          // ⭐⭐ VALIDATION DES VALEURS ⭐⭐
+          double safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : progress.clamp(0.0, 1.0);
+          int safeProcessed = processed.isNaN || processed.isInfinite ? 0 : processed;
+          int safeTotal = total.isNaN || total.isInfinite ? 1 : total;
+          setState(() {
+            _syncProgressValue = safeProgress;
+            _currentSyncOperation = currentOperation;
+            _syncProcessedItems = safeProcessed;
+            _syncTotalItems = safeTotal;
+          });
+        },
+      );
       setState(() => lastSyncResult = result);
+      // Cacher la progression avant de montrer le résultat
+      setState(() => isSyncing = false);
       _showSyncResult(result);
     } catch (e) {
+      setState(() => isSyncing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur: $e')),
       );
-    } finally {
-      setState(() => isSyncing = false);
     }
   }
 
@@ -624,15 +647,21 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-// Ajoutez cette méthode pour afficher la progression
-  Widget _buildProgressIndicator() {
+// Ajoutez cette méthode
+  Widget _buildSyncProgressIndicator() {
+    // ⭐⭐ VALIDATION DES VALEURS NUMÉRIQUES ⭐⭐
+    double safeProgress = _syncProgressValue.isNaN || _syncProgressValue.isInfinite ? 0.0 : _syncProgressValue.clamp(0.0, 1.0);
+
+    int safeProcessed = _syncProcessedItems.isNaN || _syncProcessedItems.isInfinite ? 0 : _syncProcessedItems;
+
+    int safeTotal = _syncTotalItems.isNaN || _syncTotalItems.isInfinite ? 1 : _syncTotalItems;
     return Container(
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.grey[100], // Même couleur que la boîte "Sauvegarde terminée"
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue[100]!), // Bordure bleue claire
+        border: Border.all(color: Colors.orange[100]!),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,
@@ -647,19 +676,19 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              Icon(Icons.cloud_download, color: Colors.blue),
+              Icon(Icons.cloud_upload, color: Colors.orange),
               SizedBox(width: 10),
               Text(
-                'Sauvegarde en cours',
+                'Synchronisation en cours',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           SizedBox(height: 12),
           LinearProgressIndicator(
-            value: _progressValue,
+            value: safeProgress,
             backgroundColor: Colors.grey[300],
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
             minHeight: 8,
             borderRadius: BorderRadius.circular(4),
           ),
@@ -668,8 +697,73 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${(_progressValue * 100).toStringAsFixed(0)}%',
+                '${(safeProgress * 100).toStringAsFixed(0)}%',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              Text(
+                '$safeProcessed/${safeTotal == 0 ? 1 : safeTotal}',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            _currentSyncOperation,
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+// Ajoutez cette méthode pour afficher la progression
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.grey[100], // Même couleur que la boîte "Sauvegarde terminée"
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[100]!), // Bordure bleue claire
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.cloud_download, color: Colors.blue),
+              SizedBox(width: 10),
+              Text(
+                'Sauvegarde en cours',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: _progressValue,
+            backgroundColor: Colors.grey[300],
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+            minHeight: 8,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${(_progressValue * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
               Text(
                 '$_processedItems/$_totalItems',
@@ -677,7 +771,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             _currentOperation,
             style: TextStyle(fontSize: 13, color: Colors.grey[700]),
@@ -760,6 +854,14 @@ class _HomePageState extends State<HomePage> {
                     onMapCreated: _onMapCreated,
                     formMarkers: formMarkers,
                   ),
+                  if (isSyncing)
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                      child: Container(
+                        color: Colors.black.withOpacity(0.2),
+                      ),
+                    ),
+
                   if (isDownloading)
                     BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
@@ -803,13 +905,29 @@ class _HomePageState extends State<HomePage> {
                       left: 0,
                       right: 0,
                       child: AnimatedSlide(
-                        duration: Duration(milliseconds: 300),
+                        duration: const Duration(milliseconds: 300),
                         curve: Curves.easeOut,
-                        offset: isDownloading ? Offset.zero : Offset(0, -1),
+                        offset: isDownloading ? Offset.zero : const Offset(0, -1),
                         child: AnimatedOpacity(
-                          duration: Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 300),
                           opacity: isDownloading ? 1.0 : 0.0,
                           child: _buildProgressIndicator(),
+                        ),
+                      ),
+                    ),
+                  if (isSyncing)
+                    Positioned(
+                      top: 70, // Position sous la top bar
+                      left: 0,
+                      right: 0,
+                      child: AnimatedSlide(
+                        duration: Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                        offset: isSyncing ? Offset.zero : Offset(0, -1),
+                        child: AnimatedOpacity(
+                          duration: Duration(milliseconds: 300),
+                          opacity: isSyncing ? 1.0 : 0.0,
+                          child: _buildSyncProgressIndicator(),
                         ),
                       ),
                     ),

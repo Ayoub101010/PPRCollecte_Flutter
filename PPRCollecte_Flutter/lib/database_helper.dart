@@ -848,17 +848,25 @@ class DatabaseHelper {
   Future<List<Map<String, dynamic>>> getUnsyncedEntities(String tableName) async {
     final db = await database;
 
-    // Vérifier si la table a une colonne 'synced'
+    // VÉRIFIER TOUTES LES COLONNES EXISTENT
     final columns = await db.rawQuery('PRAGMA table_info($tableName)');
     final hasSyncedColumn = columns.any((col) => col['name'] == 'synced');
+    final hasDownloadedColumn = columns.any((col) => col['name'] == 'downloaded');
 
-    if (hasSyncedColumn) {
-      return await db.query(tableName, where: 'synced = ? OR synced IS NULL', whereArgs: [
+    if (hasSyncedColumn && hasDownloadedColumn) {
+      // ⭐⭐ CORRECTION CRITIQUE : seulement les NON synchronisées ET NON téléchargées
+      return await db.query(tableName, where: 'synced = ? AND downloaded = ?', whereArgs: [
+        0,
+        0
+      ] // ← SEULEMENT 0 et 0 !
+          );
+    } else if (hasSyncedColumn) {
+      return await db.query(tableName, where: 'synced = ?', whereArgs: [
         0
       ]);
     } else {
-      // Si la table n'a pas de colonne synced, retourner toutes les données
-      return await db.query(tableName);
+      // Si pas de colonne synced, retourner vide
+      return [];
     }
   }
 
