@@ -169,7 +169,7 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       });
-      homeController.refreshFormMarkers();
+      // homeController.refreshFormMarkers();
     }
   }
 

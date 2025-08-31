@@ -204,7 +204,7 @@ class _LoginPageState extends State<LoginPage> {
                         return;
                       }
 
-                      final db = DatabaseHelper();
+                      //final db = DatabaseHelper();
 
                       try {
                         print('Tentative connexion API...');
@@ -214,8 +214,7 @@ class _LoginPageState extends State<LoginPage> {
                         final nom = userData['nom'] ?? '';
                         final prenom = userData['prenom'] ?? '';
                         final fullName = '$prenom $nom';
-
-                        await db.insertUser(prenom, nom, email, password);
+                        await DatabaseHelper().insertUser(prenom, nom, email, password);
 
                         print('Utilisateur sauvegardé localement.');
 
@@ -235,12 +234,11 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       } catch (e) {
                         print('Connexion API échouée, essai base locale...');
-                        bool isValidLocal = await db.validateUser(email, password);
+                        bool isValidLocal = await DatabaseHelper().validateUser(email, password);
 
                         if (isValidLocal) {
                           print('Connexion locale réussie.');
-                          final fullName = await db.getAgentFullName(email) ?? 'Utilisateur Local';
-                          // Ici on ne peut pas utiliser fullName, donc on met juste un fallback
+                          final fullName = await DatabaseHelper().getAgentFullName(email) ?? 'Utilisateur Local'; // Ici on ne peut pas utiliser fullName, donc on met juste un fallback
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(

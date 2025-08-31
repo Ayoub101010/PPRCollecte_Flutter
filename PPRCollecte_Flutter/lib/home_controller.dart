@@ -91,12 +91,14 @@ class HomeController extends ChangeNotifier {
   /// Charge les marqueurs des formulaires enregistrés
   Future<void> loadFormMarkers() async {
     try {
-      final markers = await _formMarkerService.getAllFormMarkers();
+      // ⭐⭐ UTILISEZ getUnsyncedMarkers() AU LIEU DE L'ANCIENNE MÉTHODE ⭐⭐
+      final markers = await _formMarkerService.getUnsyncedMarkers();
+
       formMarkers = markers;
+      print('✅ ${markers.length} marqueurs NON synchronisés chargés');
       notifyListeners();
-      print('✅ ${markers.length} marqueurs de formulaires chargés');
     } catch (e) {
-      print('❌ Erreur lors du chargement des marqueurs: $e');
+      print('❌ Erreur lors du chargement des marqueurs non synchronisés: $e');
     }
   }
 

@@ -5,10 +5,13 @@ import 'api_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-  factory DatabaseHelper() => _instance;
+  //factory DatabaseHelper() => _instance;
   static Database? _database;
   static bool _isInitializing = false;
-
+// ⭐⭐ EMPÊCHEZ LES INSTANCES MULTIPLES ⭐⭐
+  factory DatabaseHelper() {
+    return _instance;
+  }
   DatabaseHelper._internal();
 
   Future<Database> get database async {
@@ -619,47 +622,86 @@ class DatabaseHelper {
     return maps;
   }
 
-  Future<List<Map<String, dynamic>>> getAllPoints() async {
-    final db = await database;
-    // CORRECTION: Utilisation du bon chemin
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'app_database.db');
-    print('🗂️ Scan complet depuis: $path');
+  Future<bool> _tableExists(Database db, String tableName) async {
+    try {
+      final result = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='$tableName'");
+      return result.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
+  }
 
-    final List<Map<String, dynamic>> allPoints = [];
-    final tables = [
-      'localites',
-      'ecoles',
-      'marches',
-      'services_santes',
-      'batiments_administratifs',
-      'infrastructures_hydrauliques',
-      'autres_infrastructures',
-      'ponts',
-      'bacs',
-      'buses',
-      'dalots',
-      'passages_submersibles',
-      'points_critiques',
-      'points_coupures'
-    ];
-
-    for (var table in tables) {
-      try {
-        final points = await db.query(table);
-        for (var point in points) {
-          point['table_name'] = table;
-          point['entity_type'] = _getEntityTypeFromTable(table);
-          point.addAll(_getCoordinatesMapFromPoint(point));
-          allPoints.add(point);
-        }
-        print("📍 ${points.length} point(s) récupérés de $table");
-      } catch (e) {
-        print("⚠️ Table $table non trouvée ou erreur: $e");
-      }
+// Dans database_helper.dart
+  Future<void> resetAndRecreateDatabase({bool force = false}) async {
+    if (!force) {
+      // Demander confirmation en production
+      print('⚠️ Méthode dangereuse - utilisez avec caution');
+      return;
     }
 
-    print("🎯 Total des points récupérés: ${allPoints.length}");
+    try {
+      if (_database != null) {
+        await _database!.close();
+        _database = null;
+      }
+
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, 'app_database.db');
+
+      if (await databaseExists(path)) {
+        await deleteDatabase(path);
+        print('✅ Base corrompue supprimée');
+      }
+
+      _database = await _initDatabase();
+      print('✅ Nouvelle base créée');
+    } catch (e) {
+      print('❌ Erreur réinitialisation: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllPoints() async {
+    final List<Map<String, dynamic>> allPoints = [];
+
+    print('🔍 Début scan sécurisé de la base...');
+
+    try {
+      final db = await database;
+
+      // ⭐⭐ LISTE RACCOURCIE POUR TEST ⭐⭐
+      final criticalTables = [
+        'points_critiques',
+        'points_coupures',
+        'localites',
+        'ecoles'
+      ];
+
+      for (var table in criticalTables) {
+        try {
+          print('🔎 Scan table: $table');
+
+          // ⭐⭐ MÉTHODE SÉCURISÉE ⭐⭐
+          final points = await db.rawQuery('SELECT * FROM $table LIMIT 100');
+
+          print('📍 ${points.length} point(s) récupérés de $table');
+
+          for (var point in points) {
+            point['table_name'] = table;
+            point['entity_type'] = _getEntityTypeFromTable(table);
+            point.addAll(_getCoordinatesMapFromPoint(point));
+            allPoints.add(point);
+          }
+        } catch (e) {
+          print("⚠️ Erreur table $table: $e");
+          // Continue avec les autres tables
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur grave accès base: $e');
+    }
+
+    print("🎯 Total points récupérés: ${allPoints.length}");
     return allPoints;
   }
 
