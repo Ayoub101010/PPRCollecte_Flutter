@@ -15,6 +15,7 @@ import 'sync_service.dart';
 import 'dart:ui'; // Pour ImageFilter
 import 'login_page.dart';
 import 'data_categories_page.dart';
+import 'package:flutter/foundation.dart'; // Pour kDebugMode
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -169,7 +170,7 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       });
-      // homeController.refreshFormMarkers();
+      homeController.refreshFormMarkers();
     }
   }
 
@@ -249,6 +250,7 @@ class _HomePageState extends State<HomePage> {
           provisionalCode: result['codePiste'], // ✅ Nom correct du paramètre
           startTime: result['startTime'],
           endTime: result['endTime'],
+          agentName: widget.agentName,
         ),
       ),
     );
@@ -869,6 +871,32 @@ class _HomePageState extends State<HomePage> {
                         color: Colors.black.withOpacity(0.2),
                       ),
                     ),
+
+                  // === AJOUTEZ ICI === //
+                  Positioned(
+                    bottom: 160,
+                    right: 16,
+                    child: Visibility(
+                      visible: kDebugMode && homeController.hasActiveCollection,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          homeController.addSimulatedPointsToCollection(2);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('2 points simulés ajoutés'),
+                              backgroundColor: Colors.blue,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        backgroundColor: Colors.orange,
+                        child: const Icon(Icons.add_location_alt, color: Colors.white),
+                        mini: true,
+                        heroTag: 'dev_button',
+                      ),
+                    ),
+                  ),
+                  // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(
                     controller: homeController,

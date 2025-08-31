@@ -8,6 +8,7 @@ class FormulaireLignePage extends StatefulWidget {
   final String? provisionalCode;
   final DateTime? startTime; // 🆕 Heure de début de collecte
   final DateTime? endTime; // 🆕 Heure de fin de collecte
+  final String? agentName;
 
   const FormulaireLignePage({
     super.key,
@@ -15,6 +16,7 @@ class FormulaireLignePage extends StatefulWidget {
     this.provisionalCode, // AJOUTER cette ligne
     this.startTime, // 🆕 Passé depuis la page de collecte GPS
     this.endTime, // 🆕 Passé depuis la page de collecte GPS
+    this.agentName,
   });
 
   @override
@@ -95,7 +97,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       _codeController.text = widget.provisionalCode!;
     }
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
-    _userLoginController.text = _getCurrentUser(); // À implémenter selon votre système d'auth
+    _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
     if (widget.startTime != null) {
       final startTime = TimeOfDay.fromDateTime(widget.startTime!);
       _heureDebutController.text = "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
@@ -262,6 +264,30 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     }
   }
 
+  void _confirmExit() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Abandonner la saisie ?"),
+        content: const Text("Les données non sauvegardées seront perdues."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Abandonner"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -269,7 +295,8 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Remplacer tout le header actuel par ceci :
+// Header du formulaire - Style React Native
             Container(
               decoration: const BoxDecoration(
                 color: Color(0xFF1976D2),
@@ -285,7 +312,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => _confirmExit(), // ← On va créer cette méthode
                     icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
                     padding: const EdgeInsets.all(8),
                   ),
@@ -300,7 +327,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  const SizedBox(width: 40), // Équilibrer avec le bouton back
                 ],
               ),
             ),
@@ -329,12 +356,11 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           onChanged: (value) => setState(() => _communeRurale = value),
                           required: true,
                         ),
-                        _buildTextField(
-                          controller: _userLoginController,
-                          label: 'Utilisateur *',
-                          hint: 'Utilisateur connecté',
-                          required: true,
-                          enabled: false, // Champ en lecture seule
+                        // Remplacer le TextField "Utilisateur" par :
+                        _buildReadOnlyField(
+                          label: 'Agent enquêteur',
+                          icon: Icons.person,
+                          value: _userLoginController.text,
                         ),
                         //  la section des heures - les deux en lecture seule
                         Row(
@@ -572,6 +598,58 @@ class _FormulairePageState extends State<FormulaireLignePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required IconData icon,
+    required String value,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

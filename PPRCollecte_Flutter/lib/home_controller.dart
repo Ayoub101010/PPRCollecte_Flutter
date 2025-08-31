@@ -114,6 +114,35 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+//  Une methode pour tester les  pistes dans l'emulateur à supprimer après
+  void addSimulatedPointsToCollection(int numberOfPoints) {
+    if (!hasActiveCollection) {
+      print('❌ Aucune collecte active pour ajouter des points');
+      return;
+    }
+
+    print('🛠️ Ajout de $numberOfPoints points simulés...');
+
+    final random = Random();
+    for (int i = 0; i < numberOfPoints; i++) {
+      final offset = random.nextDouble() * 0.001;
+      final point = LatLng(
+        userPosition.latitude + offset,
+        userPosition.longitude + offset,
+      );
+
+      // Utilisez la méthode existante
+      if (ligneCollection != null) {
+        addManualPointToCollection(CollectionType.ligne);
+      } else if (chausseeCollection != null) {
+        addManualPointToCollection(CollectionType.chaussee);
+      }
+    }
+
+    print('✅ $numberOfPoints points simulés ajoutés');
+    notifyListeners();
+  }
+
   void startLocationTracking() {
     stopLocationTracking();
     _locationSub = _locationService.onLocationChanged().listen((loc) {
