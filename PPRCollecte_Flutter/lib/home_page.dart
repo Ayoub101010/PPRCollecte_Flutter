@@ -16,6 +16,7 @@ import 'dart:ui'; // Pour ImageFilter
 import 'login_page.dart';
 import 'data_categories_page.dart';
 import 'package:flutter/foundation.dart'; // Pour kDebugMode
+import 'piste_chaussee_db_helper.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -36,6 +37,8 @@ class _HomePageState extends State<HomePage> {
 
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
+  List<Polyline> _finishedPistes = []; // ← AJOUTEZ ICI
+
   Set<Marker> formMarkers = {};
   bool isSyncing = false;
   bool isDownloading = false;
@@ -57,7 +60,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     homeController = HomeController();
-
+    _loadDisplayedPistes();
     homeController.addListener(() {
       setState(() {
         userPosition = homeController.userPosition;
@@ -257,14 +260,16 @@ class _HomePageState extends State<HomePage> {
 
     if (formResult != null) {
       setState(() {
-        collectedPolylines.add(Polyline(
-          polylineId: PolylineId('piste_${collectedPolylines.length + 1}'),
+        // ✅ AJOUTEZ LA PISTE TERMINÉE (NOUVEAU)
+        _finishedPistes.add(Polyline(
+          polylineId: PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
           points: result['points'],
           color: Colors.blue,
           width: 4,
         ));
       });
-
+      final storageHelper = SimpleStorageHelper();
+      await storageHelper.saveDisplayedPiste(result['points'], Colors.blue, 4.0);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Piste enregistrée avec succès'),
@@ -272,6 +277,15 @@ class _HomePageState extends State<HomePage> {
         ),
       );
     }
+  }
+
+// Pour charger au démarrage
+  Future<void> _loadDisplayedPistes() async {
+    final storageHelper = SimpleStorageHelper();
+    final displayedPistes = await storageHelper.loadDisplayedPistes();
+    setState(() {
+      _finishedPistes = displayedPistes;
+    });
   }
 
   // === GESTION DE LA COLLECTE CHAUSSÉE ===
@@ -800,7 +814,7 @@ class _HomePageState extends State<HomePage> {
 
     // Préparer les polylines
     final allPolylines = Set<Polyline>.from(collectedPolylines);
-
+    allPolylines.addAll(_finishedPistes); // ← CORRECTION SIMPLE
     // Ajouter la ligne en cours si active (nouveau système)
     if (homeController.ligneCollection != null) {
       final lignePoints = homeController.ligneCollection!.points;
@@ -880,10 +894,10 @@ class _HomePageState extends State<HomePage> {
                       visible: kDebugMode && homeController.hasActiveCollection,
                       child: FloatingActionButton(
                         onPressed: () {
-                          homeController.addSimulatedPointsToCollection(2);
+                          homeController.addRealisticPisteSimulation();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('2 points simulés ajoutés'),
+                              content: Text('Points réalistes simulés'), // ← MESSAGE MODIFIÉ
                               backgroundColor: Colors.blue,
                               duration: Duration(seconds: 2),
                             ),

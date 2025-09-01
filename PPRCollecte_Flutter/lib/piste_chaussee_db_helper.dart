@@ -3,6 +3,9 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'piste_model.dart';
 import 'chaussee_model.dart';
+import 'dart:convert'; // Pour jsonEncode/jsonDecode
+import 'package:flutter/material.dart'; // Pour Color
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng et Polyline
 
 class SimpleStorageHelper {
   static final SimpleStorageHelper _instance = SimpleStorageHelper._internal();
@@ -77,10 +80,81 @@ class SimpleStorageHelper {
             created_at TEXT NOT NULL
           )
         ''');
+        // Table pour le cache des pistes affichées
+        await db.execute('''
+  CREATE TABLE IF NOT EXISTS displayed_pistes (
+    id INTEGER PRIMARY KEY,
+    points_json TEXT NOT NULL,
+    color INTEGER NOT NULL,
+    width INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  )
+''');
 
         print('✅ Tables créées avec succès');
       },
     );
+  }
+
+// Sauvegarder une piste affichée
+  Future<void> saveDisplayedPiste(List<LatLng> points, Color color, double width) async {
+    try {
+      final db = await database;
+      final pointsJson = jsonEncode(points
+          .map((p) => {
+                'lat': p.latitude,
+                'lng': p.longitude
+              })
+          .toList());
+
+      await db.insert('displayed_pistes', {
+        'points_json': pointsJson,
+        'color': color.value,
+        'width': width.toInt(),
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      print('✅ Piste affichée sauvegardée (${points.length} points)');
+    } catch (e) {
+      print('❌ Erreur sauvegarde piste affichée: $e');
+    }
+  }
+
+  // Charger toutes les pistes affichées
+  Future<List<Polyline>> loadDisplayedPistes() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query('displayed_pistes');
+
+      final List<Polyline> polylines = [];
+
+      for (final map in maps) {
+        final pointsData = jsonDecode(map['points_json']) as List;
+        final List<LatLng> points = [];
+
+        for (final p in pointsData) {
+          final lat = p['lat'] as double?;
+          final lng = p['lng'] as double?;
+          if (lat != null && lng != null) {
+            points.add(LatLng(lat, lng));
+          }
+        }
+
+        if (points.isNotEmpty) {
+          polylines.add(Polyline(
+            polylineId: PolylineId('displayed_piste_${map['id']}'),
+            points: points,
+            color: Color(map['color'] as int),
+            width: map['width'] as int, // ← ICI: Supprimez .toDouble()
+          ));
+        }
+      }
+
+      return polylines;
+    } catch (e) {
+      print('❌ Erreur chargement pistes affichées: $e');
+      return [];
+    }
   }
 
   /// Sauvegarder une piste depuis le formulaire

@@ -115,34 +115,52 @@ class HomeController extends ChangeNotifier {
   }
 
 //  Une methode pour tester les  pistes dans l'emulateur à supprimer après
-  void addSimulatedPointsToCollection(int numberOfPoints) {
-    if (!hasActiveCollection) {
-      print('❌ Aucune collecte active pour ajouter des points');
-      return;
-    }
-
-    print('🛠️ Ajout de $numberOfPoints points simulés...');
+  void addRealisticPisteSimulation() {
+    if (!hasActiveCollection) return;
 
     final random = Random();
+    final numberOfPoints = 80;
+
+    double currentLat = userPosition.latitude;
+    double currentLng = userPosition.longitude;
+
+    // Simulation de mouvement réaliste
     for (int i = 0; i < numberOfPoints; i++) {
-      final offset = random.nextDouble() * 0.001;
-      final point = LatLng(
-        userPosition.latitude + offset,
-        userPosition.longitude + offset,
-      );
+      Future.delayed(Duration(milliseconds: 100 * i), () {
+        if (!hasActiveCollection) return;
 
-      // Utilisez la méthode existante
-      if (ligneCollection != null) {
-        addManualPointToCollection(CollectionType.ligne);
-      } else if (chausseeCollection != null) {
-        addManualPointToCollection(CollectionType.chaussee);
-      }
+        // Courbe sinusoidale + variation aléatoire
+        final curve = sin(i * 0.3) * 0.0001;
+        final randomVariation = (random.nextDouble() - 0.5) * 0.00005;
+
+        currentLat += 0.0001 + curve + randomVariation;
+        currentLng += 0.0001 - curve + randomVariation;
+
+        final point = LatLng(currentLat, currentLng);
+
+        // ✅ UTILISEZ LA MÉTHODE EXISTANTE
+        addManualPointToCollection(activeCollectionType == 'ligne' ? CollectionType.ligne : CollectionType.chaussee);
+
+        if (i == numberOfPoints - 1) {
+          print('✅ $numberOfPoints points en courbe simulés');
+        }
+      });
     }
-
-    print('✅ $numberOfPoints points simulés ajoutés');
-    notifyListeners();
   }
 
+  double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000.0;
+    final double dLat = _degToRad(lat2 - lat1);
+    final double dLon = _degToRad(lon2 - lon1);
+
+    final double a = sin(dLat / 2) * sin(dLat / 2) + cos(_degToRad(lat1)) * cos(_degToRad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
+
+    final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  double _degToRad(double deg) => deg * (pi / 180.0);
   void startLocationTracking() {
     stopLocationTracking();
     _locationSub = _locationService.onLocationChanged().listen((loc) {
@@ -319,17 +337,6 @@ class HomeController extends ChangeNotifier {
     final hh = now.hour.toString().padLeft(2, '0');
     final mm = now.minute.toString().padLeft(2, '0');
     return '$hh:$mm';
-  }
-
-  double _deg2rad(double deg) => deg * (pi / 180.0);
-
-  double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371000.0;
-    final dLat = _deg2rad(lat2 - lat1);
-    final dLon = _deg2rad(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) + cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return R * c;
   }
 
   void updateStatus() {

@@ -103,7 +103,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     _dateCreation = DateTime.now();
 
     // Date de modification = maintenant (automatique)
-    _dateModification = DateTime.now();
+    _dateModification = null;
     if (widget.startTime != null) {
       final startTime = TimeOfDay.fromDateTime(widget.startTime!);
       _heureDebutController.text = "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
@@ -227,35 +227,41 @@ class _FormulairePageState extends State<FormulaireLignePage> {
 
       final pisteData = {
         // ✅ L'ID sera auto-généré par la BDD, ne pas l'inclure ici
-        'code_piste': _codeController.text, // ✅ Code piste saisi par l'utilisateur
+        'code_piste': _codeController.text,
         'commune_rurale_id': _communeRurale,
         'user_login': _userLoginController.text,
         'heure_debut': _heureDebutController.text,
         'heure_fin': _heureFinController.text,
         'nom_origine_piste': _nomOrigineController.text,
-        'x_origine': double.tryParse(_xOrigineController.text),
-        'y_origine': double.tryParse(_yOrigineController.text),
         'nom_destination_piste': _nomDestinationController.text,
-        'x_destination': double.tryParse(_xDestinationController.text),
-        'y_destination': double.tryParse(_yDestinationController.text),
         'type_occupation': _typeOccupation,
         'debut_occupation': _debutOccupation?.toIso8601String(),
         'fin_occupation': _finOccupation?.toIso8601String(),
         'largeur_emprise': _largeurEmprise,
         'frequence_trafic': _frequenceTrafic,
         'type_trafic': _typeTrafic,
-
         'travaux_realises': _travauxRealisesController.text.isNotEmpty ? _travauxRealisesController.text : null,
         'date_travaux': _dateDebutTravaux?.toIso8601String(),
-        'entreprise': _entrepriseController.text.isNotEmpty ? _entrepriseController.text : null, // Seulement si travaux réalisés
+        'entreprise': _entrepriseController.text.isNotEmpty ? _entrepriseController.text : null,
+
+        // ✅ TOUS les points de la piste (MultiLineString)
         'points': widget.linePoints
             .map((p) => {
                   'latitude': p.latitude,
                   'longitude': p.longitude,
                 })
             .toList(),
+
+        // ✅ Coordonnées EXTRACTIVES (depuis les points, pas les TextFields)
+        'x_origine': widget.linePoints.first.latitude, // ← Premier point
+        'y_origine': widget.linePoints.first.longitude, // ← Premier point
+        'x_destination': widget.linePoints.last.latitude, // ← Dernier point
+        'y_destination': widget.linePoints.last.longitude, // ← Dernier point
+
+        // ✅ Dates
         'created_at': _dateCreation?.toIso8601String() ?? DateTime.now().toIso8601String(),
-        'updated_at': _dateModification?.toIso8601String(),
+        'updated_at': null,
+
         'sync_status': 'pending',
       };
       final storageHelper = SimpleStorageHelper();
