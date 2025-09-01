@@ -25,6 +25,7 @@ class PisteModel {
   final String? entreprise;
   final String pointsJson;
   final String createdAt;
+  final String? updatedAt;
 
   PisteModel({
     this.id,
@@ -50,6 +51,7 @@ class PisteModel {
     this.entreprise,
     required this.pointsJson,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   factory PisteModel.fromFormData(Map<String, dynamic> formData) {
@@ -79,6 +81,7 @@ class PisteModel {
       entreprise: formData['entreprise'],
       pointsJson: pointsJson,
       createdAt: formData['created_at'] ?? DateTime.now().toIso8601String(),
+      updatedAt: formData['updated_at'],
     );
   }
 
@@ -107,6 +110,7 @@ class PisteModel {
       'entreprise': entreprise,
       'points_json': pointsJson,
       'created_at': createdAt,
+      'updated_at': updatedAt,
     };
   }
 
@@ -135,6 +139,7 @@ class PisteModel {
       entreprise: map['entreprise'],
       pointsJson: map['points_json'] ?? '[]',
       createdAt: map['created_at'] ?? DateTime.now().toIso8601String(),
+      updatedAt: map['updated_at'] ?? DateTime.now().toIso8601String(), // ← NOUVEAU
     );
   }
 

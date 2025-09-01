@@ -49,7 +49,8 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   String? _frequenceTrafic;
   String? _typeTrafic;
   DateTime? _dateDebutTravaux;
-
+  DateTime? _dateCreation; // ← NOUVEAU
+  DateTime? _dateModification;
   // Options pour les dropdowns
   final List<String> _communesRuralesOptions = [
     "Beyla",
@@ -98,6 +99,11 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     }
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
     _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
+    // Date de création = maintenant par défaut
+    _dateCreation = DateTime.now();
+
+    // Date de modification = maintenant (automatique)
+    _dateModification = DateTime.now();
     if (widget.startTime != null) {
       final startTime = TimeOfDay.fromDateTime(widget.startTime!);
       _heureDebutController.text = "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
@@ -158,6 +164,21 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
 
     return 6371000 * c; // Rayon de la Terre en mètres
+  }
+
+  Future<void> _selectDateCreation(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dateCreation ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dateCreation = picked;
+      });
+    }
   }
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
@@ -233,14 +254,15 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                   'longitude': p.longitude,
                 })
             .toList(),
-        'created_at': DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'created_at': _dateCreation?.toIso8601String() ?? DateTime.now().toIso8601String(),
+        'updated_at': _dateModification?.toIso8601String(),
         'sync_status': 'pending',
       };
       final storageHelper = SimpleStorageHelper();
       final savedId = await storageHelper.savePiste(pisteData);
       if (savedId != null) {
         print('✅ Piste sauvegardée en local avec ID: $savedId');
+        await storageHelper.debugPrintAllPistes();
       }
 
       if (mounted) {
@@ -356,6 +378,8 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           onChanged: (value) => setState(() => _communeRurale = value),
                           required: true,
                         ),
+                        _buildDateCreationField(),
+                        _buildDateModificationField(),
                         // Remplacer le TextField "Utilisateur" par :
                         _buildReadOnlyField(
                           label: 'Agent enquêteur',
@@ -647,6 +671,98 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateCreationField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Date de création *',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _selectDateCreation(context),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _dateCreation != null ? "${_dateCreation!.day.toString().padLeft(2, '0')}/${_dateCreation!.month.toString().padLeft(2, '0')}/${_dateCreation!.year}" : "Sélectionner une date",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _dateCreation != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateModificationField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Date de modification',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: null,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE0E0E0)),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _dateModification != null ? "${_dateModification!.day.toString().padLeft(2, '0')}/${_dateModification!.month.toString().padLeft(2, '0')}/${_dateModification!.year}" : (_dateModification?.toString().substring(0, 10) ?? DateTime.now().toString().substring(0, 10)), // ← CORRECTION ICI
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

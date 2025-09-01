@@ -52,7 +52,9 @@ class SimpleStorageHelper {
             date_travaux TEXT,
             entreprise TEXT,
             points_json TEXT NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT ,
+            updated_at TEXT,
+            sync_status TEXT DEFAULT 'pending'
           )
         ''');
 
@@ -84,15 +86,72 @@ class SimpleStorageHelper {
   /// Sauvegarder une piste depuis le formulaire
   Future<int?> savePiste(Map<String, dynamic> formData) async {
     try {
+      print('🔄 Début sauvegarde piste...');
+      print('📋 Données reçues:');
+      formData.forEach((key, value) {
+        // Ne pas logger les données trop longues (comme points_json)
+        if (key != 'points' && key != 'points_json') {
+          print('   $key: $value');
+        }
+      });
+
       final piste = PisteModel.fromFormData(formData);
       final db = await database;
       final id = await db.insert('pistes', piste.toMap());
 
       print('✅ Piste "${piste.codePiste}" sauvegardée avec ID: $id');
+
+      // AFFICHER TOUS LES CHAMPS DE LA PISTE
+      print('📊 Détails de la piste enregistrée:');
+      final pisteMap = piste.toMap();
+      pisteMap.forEach((key, value) {
+        if (key != 'points_json') {
+          // Éviter le JSON trop long
+          print('   $key: $value');
+        } else {
+          print('   $key: [JSON contenant ${piste.pointsJson.length} caractères]');
+        }
+      });
+
       return id;
     } catch (e) {
       print('❌ Erreur sauvegarde piste: $e');
+      print('📋 Données qui ont causé l\'erreur:');
+      formData.forEach((key, value) {
+        print('   $key: $value (type: ${value.runtimeType})');
+      });
       return null;
+    }
+  }
+
+// Dans SimpleStorageHelper, ajoutez cette méthode
+  Future<void> debugPrintAllPistes() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> pistes = await db.query('pistes');
+
+      print('📊 === LISTE COMPLÈTE DES PISTES ===');
+      print('📈 Nombre total de pistes: ${pistes.length}');
+
+      for (var i = 0; i < pistes.length; i++) {
+        final piste = pistes[i];
+        print('\n🎯 PISTE #${i + 1}');
+        piste.forEach((key, value) {
+          if (key != 'points_json') {
+            print('   $key: $value');
+          } else {
+            final pointsJson = value.toString();
+            print('   $key: [${pointsJson.length} caractères]');
+            // Pour voir un extrait du JSON :
+            if (pointsJson.length > 50) {
+              print('        Extrait: ${pointsJson.substring(0, 50)}...');
+            }
+          }
+        });
+      }
+      print('====================================');
+    } catch (e) {
+      print('❌ Erreur lecture pistes: $e');
     }
   }
 
