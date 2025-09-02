@@ -30,6 +30,7 @@ class PisteModel {
   final double? xIntersection;
   final double? yIntersection;
   final String? intersectionPisteCode;
+  final int? loginId;
 
   PisteModel({
     this.id,
@@ -60,6 +61,7 @@ class PisteModel {
     this.xIntersection, // ← Nouveau
     this.yIntersection, // ← Nouveau
     this.intersectionPisteCode,
+    this.loginId,
   });
 
   factory PisteModel.fromFormData(Map<String, dynamic> formData) {
@@ -94,6 +96,7 @@ class PisteModel {
       xIntersection: formData['x_intersection'] != null ? double.parse(formData['x_intersection'].toString()) : null,
       yIntersection: formData['y_intersection'] != null ? double.parse(formData['y_intersection'].toString()) : null,
       intersectionPisteCode: formData['intersection_piste_code'],
+      loginId: formData['login_id'],
     );
   }
 
@@ -127,6 +130,7 @@ class PisteModel {
       'x_intersection': xIntersection,
       'y_intersection': yIntersection,
       'intersection_piste_code': intersectionPisteCode,
+      'login_id': loginId,
     };
   }
 
@@ -160,6 +164,7 @@ class PisteModel {
       xIntersection: _parseDouble(map['x_intersection']),
       yIntersection: _parseDouble(map['y_intersection']),
       intersectionPisteCode: map['intersection_piste_code'],
+      loginId: map['login_id'],
     );
   }
 

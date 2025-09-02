@@ -6,6 +6,7 @@ import 'chaussee_model.dart';
 import 'dart:convert'; // Pour jsonEncode/jsonDecode
 import 'package:flutter/material.dart'; // Pour Color
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng et Polyline
+import 'api_service.dart';
 
 class SimpleStorageHelper {
   static final SimpleStorageHelper _instance = SimpleStorageHelper._internal();
@@ -61,7 +62,8 @@ class SimpleStorageHelper {
             points_json TEXT NOT NULL,
             created_at TEXT ,
             updated_at TEXT,
-            sync_status TEXT DEFAULT 'pending'
+            sync_status TEXT DEFAULT 'pending',
+            login_id INTEGER
           )
         ''');
 
@@ -164,6 +166,11 @@ class SimpleStorageHelper {
   /// Sauvegarder une piste depuis le formulaire
   Future<int?> savePiste(Map<String, dynamic> formData) async {
     try {
+      final loginId = ApiService.userId;
+
+      // Ajouter le login_id aux données du formulaire
+      final formDataWithLoginId = Map<String, dynamic>.from(formData);
+      formDataWithLoginId['login_id'] = loginId;
       print('🔄 Début sauvegarde piste...');
       print('📋 Données reçues:');
       formData.forEach((key, value) {

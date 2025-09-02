@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 import 'piste_chaussee_db_helper.dart';
+import 'api_service.dart';
 
 class FormulaireLignePage extends StatefulWidget {
   final List<LatLng> linePoints;
@@ -263,6 +264,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'updated_at': null,
 
         'sync_status': 'pending',
+        'login_id': ApiService.userId,
       };
       final storageHelper = SimpleStorageHelper();
       final savedId = await storageHelper.savePiste(pisteData);
