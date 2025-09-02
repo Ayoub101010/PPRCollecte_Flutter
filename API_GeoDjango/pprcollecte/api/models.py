@@ -72,16 +72,10 @@ class CommuneRurale(models.Model):
         return self.nom
     
 class Piste(models.Model):
-    communes_rurales_id = models.ForeignKey(
-        CommuneRurale, 
-        on_delete=models.SET_NULL,
-        null=True, 
-        blank=True, 
-        db_column='communes_rurales_id'
-    )
-    code_piste = models.CharField(max_length=50, unique=True, null=True, blank=True)  # texte
-    geom = models.MultiLineStringField(srid=32628, null=True, blank=True)  # aligné avec PostGIS
-    heure_debut = models.TimeField(null=True, blank=True)  # time dans PostgreSQL
+    communes_rurales_id = models.IntegerField(null=True, blank=True)  # plus de FK
+    code_piste = models.CharField(max_length=50, unique=True)
+    geom = models.MultiLineStringField(srid=32628, null=True, blank=True)
+    heure_debut = models.TimeField(null=True, blank=True)
     heure_fin = models.TimeField(null=True, blank=True)
     nom_origine_piste = models.TextField(null=True, blank=True)
     x_origine = models.FloatField(null=True, blank=True)
@@ -96,24 +90,25 @@ class Piste(models.Model):
     debut_occupation = models.DateTimeField(null=True, blank=True)
     fin_occupation = models.DateTimeField(null=True, blank=True)
     largeur_emprise = models.FloatField(null=True, blank=True)
-    frequence_trafic = models.CharField(max_length=50, null=True, blank=True)  # texte
+    frequence_trafic = models.CharField(max_length=50, null=True, blank=True)
     type_trafic = models.TextField(null=True, blank=True)
     travaux_realises = models.TextField(null=True, blank=True)
     date_travaux = models.TextField(null=True, blank=True)
     entreprise = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    login_id = models.ForeignKey(
-        'Login', 
+    created_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
+    login = models.ForeignKey(
+        'Login',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         db_column='login_id'
     )
+    commune_rurale_nom = models.CharField(max_length=80, null=True, blank=True)
 
     class Meta:
         db_table = 'pistes'
-        managed = True
+        managed = False
 
     def __str__(self):
         return f"Piste {self.code_piste} - {self.nom_origine_piste} → {self.nom_destination_piste}"
