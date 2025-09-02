@@ -116,33 +116,72 @@ class HomeController extends ChangeNotifier {
 
 //  Une methode pour tester les  pistes dans l'emulateur à supprimer après
   void addRealisticPisteSimulation() {
-    if (!hasActiveCollection) return;
+    if (!hasActiveCollection) {
+      print('❌ Aucune collecte active pour la simulation');
+      return;
+    }
 
     final random = Random();
-    final numberOfPoints = 80;
+    final numberOfPoints = 40;
 
-    double currentLat = userPosition.latitude;
-    double currentLng = userPosition.longitude;
+    // Point de départ
+    LatLng currentPoint;
+    if (ligneCollection != null && ligneCollection!.points.isNotEmpty) {
+      currentPoint = ligneCollection!.points.last;
+    } else if (chausseeCollection != null && chausseeCollection!.points.isNotEmpty) {
+      currentPoint = chausseeCollection!.points.last;
+    } else {
+      currentPoint = userPosition;
+    }
 
-    // Simulation de mouvement réaliste
+    double currentLat = currentPoint.latitude;
+    double currentLng = currentPoint.longitude;
+
+    final curveType = random.nextInt(3); // 0: courbe douce, 1: zigzag, 2: spirale
+    print('🎯 Simulation type: $curveType');
+
     for (int i = 0; i < numberOfPoints; i++) {
-      Future.delayed(Duration(milliseconds: 100 * i), () {
+      Future.delayed(Duration(milliseconds: 600 * i), () {
         if (!hasActiveCollection) return;
 
-        // Courbe sinusoidale + variation aléatoire
-        final curve = sin(i * 0.3) * 0.0001;
-        final randomVariation = (random.nextDouble() - 0.5) * 0.00005;
+        double latVariation = 0;
+        double lngVariation = 0;
 
-        currentLat += 0.0001 + curve + randomVariation;
-        currentLng += 0.0001 - curve + randomVariation;
+        switch (curveType) {
+          case 0: // Courbe douce sinusoïdale
+            latVariation = sin(i * 0.4) * 0.00015; // ~15 m
+            lngVariation = cos(i * 0.4) * 0.00015;
+            break;
 
-        final point = LatLng(currentLat, currentLng);
+          case 1: // Zigzag léger
+            latVariation = (i % 2 == 0 ? 0.0002 : -0.0002); // ~20 m
+            lngVariation = 0.00015;
+            break;
 
-        // ✅ UTILISEZ LA MÉTHODE EXISTANTE
-        addManualPointToCollection(activeCollectionType == 'ligne' ? CollectionType.ligne : CollectionType.chaussee);
+          case 2: // Spirale douce
+            final angle = i * 0.4;
+            final radius = 0.0001 * i; // rayon augmente doucement (~10 m par point)
+            latVariation = sin(angle) * radius;
+            lngVariation = cos(angle) * radius;
+            break;
+        }
+
+        // Déplacement plus réaliste (avance toujours un peu en longitude)
+        currentLat += latVariation;
+        currentLng += 0.0002 + lngVariation;
+
+        final newPoint = LatLng(currentLat, currentLng);
+
+        // Ajouter au type actif
+        final activeType = activeCollectionType;
+        if (activeType == 'ligne') {
+          _collectionManager.addManualPoint(CollectionType.ligne, newPoint);
+        } else if (activeType == 'chaussée') {
+          _collectionManager.addManualPoint(CollectionType.chaussee, newPoint);
+        }
 
         if (i == numberOfPoints - 1) {
-          print('✅ $numberOfPoints points en courbe simulés');
+          print('✅ Simulation terminée avec courbes réalistes');
         }
       });
     }

@@ -45,6 +45,10 @@ class SimpleStorageHelper {
             nom_destination_piste TEXT NOT NULL,
             x_destination REAL NOT NULL,
             y_destination REAL NOT NULL,
+            existence_intersection INTEGER DEFAULT 0, -- ← NOUVEAU
+      x_intersection REAL,                      -- ← NOUVEAU
+      y_intersection REAL,                      -- ← NOUVEAU
+      intersection_piste_code TEXT,             -- ← NOUVEAU
             type_occupation TEXT,
             debut_occupation TEXT,
             fin_occupation TEXT,

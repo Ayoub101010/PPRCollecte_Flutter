@@ -26,6 +26,10 @@ class PisteModel {
   final String pointsJson;
   final String createdAt;
   final String? updatedAt;
+  final int? existenceIntersection;
+  final double? xIntersection;
+  final double? yIntersection;
+  final String? intersectionPisteCode;
 
   PisteModel({
     this.id,
@@ -52,6 +56,10 @@ class PisteModel {
     required this.pointsJson,
     required this.createdAt,
     required this.updatedAt,
+    this.existenceIntersection = 0, // ← Nouveau
+    this.xIntersection, // ← Nouveau
+    this.yIntersection, // ← Nouveau
+    this.intersectionPisteCode,
   });
 
   factory PisteModel.fromFormData(Map<String, dynamic> formData) {
@@ -82,6 +90,10 @@ class PisteModel {
       pointsJson: pointsJson,
       createdAt: formData['created_at'] ?? DateTime.now().toIso8601String(),
       updatedAt: formData['updated_at'],
+      existenceIntersection: formData['existence_intersection'] ?? 0,
+      xIntersection: formData['x_intersection'] != null ? double.parse(formData['x_intersection'].toString()) : null,
+      yIntersection: formData['y_intersection'] != null ? double.parse(formData['y_intersection'].toString()) : null,
+      intersectionPisteCode: formData['intersection_piste_code'],
     );
   }
 
@@ -111,6 +123,10 @@ class PisteModel {
       'points_json': pointsJson,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'existence_intersection': existenceIntersection,
+      'x_intersection': xIntersection,
+      'y_intersection': yIntersection,
+      'intersection_piste_code': intersectionPisteCode,
     };
   }
 
@@ -140,6 +156,10 @@ class PisteModel {
       pointsJson: map['points_json'] ?? '[]',
       createdAt: map['created_at'] ?? DateTime.now().toIso8601String(),
       updatedAt: map['updated_at'] ?? DateTime.now().toIso8601String(), // ← NOUVEAU
+      existenceIntersection: map['existence_intersection'] ?? 0,
+      xIntersection: _parseDouble(map['x_intersection']),
+      yIntersection: _parseDouble(map['y_intersection']),
+      intersectionPisteCode: map['intersection_piste_code'],
     );
   }
 
