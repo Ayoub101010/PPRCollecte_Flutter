@@ -95,6 +95,15 @@ class _HomePageState extends State<HomePage> {
     ));
   }
 
+  String generateCodePiste() {
+    final now = DateTime.now();
+    final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}'
+        '${now.second.toString().padLeft(2, '0')}';
+
+    return 'Piste_$timestamp';
+  }
+
   Future<void> _onMapCreated(GoogleMapController controller) async {
     if (!_controller.isCompleted) {
       _controller.complete(controller);
@@ -178,6 +187,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   // === GESTION DE LA COLLECTE LIGNE/PISTE ===
+  // home_page.dart - Modifiez la méthode startLigneCollection
+
+// home_page.dart - Méthode startLigneCollection modifiée
+
   Future<void> startLigneCollection() async {
     if (!homeController.gpsEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +199,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Vérifier si une collecte est active
     if (homeController.hasActiveCollection) {
       final activeType = homeController.activeCollectionType;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -197,13 +209,22 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
-    // Afficher le formulaire provisoire
-    final provisionalData = await ProvisionalFormDialog.show(context: context);
+
+    // ⭐⭐ GÉNÉRER le code piste automatiquement
+    final codePisteAuto = generateCodePiste();
+
+    // ⭐⭐ Afficher le dialogue AVEC code pré-rempli et IMMODIFIABLE
+    final provisionalData = await ProvisionalFormDialog.show(
+      context: context,
+      initialCode: codePisteAuto,
+    );
+
+    // ⭐⭐ Plus besoin de vérifier si null, car le code est toujours fourni
     if (provisionalData == null) return;
 
     try {
       await homeController.startLigneCollection(
-        provisionalData['code_piste']!, // ✅ Un seul paramètre
+        provisionalData['code_piste']!,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

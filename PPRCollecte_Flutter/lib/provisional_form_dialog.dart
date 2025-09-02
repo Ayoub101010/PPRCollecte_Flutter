@@ -1,12 +1,11 @@
-// lib/provisional_form_dialog.dart - VERSION OPTIMISÉE
+// lib/provisional_form_dialog.dart - VERSION CHAMP IMMODIFIABLE
 import 'package:flutter/material.dart';
 
 class ProvisionalFormDialog {
   static Future<Map<String, String>?> show({
     required BuildContext context,
+    String initialCode = '',
   }) async {
-    final codeController = TextEditingController();
-
     return showDialog<Map<String, String>>(
       context: context,
       barrierDismissible: false,
@@ -18,19 +17,17 @@ class ProvisionalFormDialog {
           title: Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: Color(0xFF1976D2), // ✅ Ajout de const
+              color: Color(0xFF1976D2),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(15),
                 topRight: Radius.circular(15),
               ),
             ),
             child: const Row(
-              // ✅ Ajout de const
               children: [
                 Icon(Icons.route, color: Colors.white, size: 28),
                 SizedBox(width: 12),
                 Expanded(
-                  // ✅ Ajout d'Expanded pour éviter l'overflow
                   child: Text(
                     'Nouvelle Piste',
                     style: TextStyle(
@@ -47,33 +44,28 @@ class ProvisionalFormDialog {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: codeController,
-                autofocus: true,
-                textCapitalization:
-                    TextCapitalization.characters, // ✅ Majuscules auto
+              // ⭐⭐ REMPLACER TextField PAR TextFormField en lecture seule
+              TextFormField(
+                initialValue: initialCode, // ⭐⭐ Utiliser initialValue au lieu de controller
+                readOnly: true, // ⭐⭐ CHAMP EN LECTURE SEULE
                 decoration: InputDecoration(
                   labelText: 'Code Piste *',
                   hintText: 'Ex: 1B-02CR03P01',
-                  prefixIcon: const Icon(Icons.qr_code,
-                      color: Color(0xFF1976D2)), // ✅ const
+                  prefixIcon: const Icon(Icons.qr_code, color: Color(0xFF1976D2)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                        color: Color(0xFF1976D2), width: 2), // ✅ const
+                    borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
                   ),
+                  filled: true,
+                  fillColor: Colors.grey[100], // ⭐⭐ Fond gris pour indiquer lecture seule
                 ),
-                onSubmitted: (value) {
-                  // ✅ Validation sur Enter
-                  if (value.trim().isNotEmpty) {
-                    Navigator.of(context).pop({
-                      'code_piste': value.trim(),
-                    });
-                  }
-                },
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[800], // ⭐⭐ Style pour indiquer que c'est auto-généré
+                ),
               ),
               const SizedBox(height: 12),
               Container(
@@ -85,20 +77,20 @@ class ProvisionalFormDialog {
                     color: const Color(0xFF1976D2).withOpacity(0.3),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.info_outline,
                       size: 18,
                       color: Color(0xFF1976D2),
-                    ), // ✅ const
-                    const SizedBox(width: 8),
+                    ),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Format: [REGION][BTGR]-[PREFECTURE]CR[COMMUNE]P[NUMERO]',
+                        'Code généré automatiquement - Non modifiable',
                         style: TextStyle(
                           fontSize: 11,
-                          color: const Color(0xFF1976D2).withOpacity(0.8),
+                          color: Color(0xFF1976D2),
                         ),
                       ),
                     ),
@@ -115,24 +107,14 @@ class ProvisionalFormDialog {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1976D2),
-                foregroundColor: Colors.white, // ✅ Couleur texte explicite
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               onPressed: () {
-                final code = codeController.text.trim();
-                if (code.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Le code piste est obligatoire'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
                 Navigator.of(context).pop({
-                  'code_piste': code,
+                  'code_piste': initialCode, // ⭐⭐ Utiliser directement initialCode
                 });
               },
               child: const Text('Commencer la collecte'),

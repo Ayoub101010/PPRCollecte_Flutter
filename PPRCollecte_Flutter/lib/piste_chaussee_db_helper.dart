@@ -34,7 +34,7 @@ class SimpleStorageHelper {
         // Table Pistes
         await db.execute('''
           CREATE TABLE pistes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY ,
             code_piste TEXT NOT NULL,
             commune_rurale_id TEXT,
             user_login TEXT NOT NULL,

@@ -1,6 +1,24 @@
 // lib/piste_model.dart
 import 'dart:convert';
 
+int generateTimestampId() {
+  final now = DateTime.now();
+  final idString = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+      '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}'
+      '${now.second.toString().padLeft(2, '0')}${now.millisecond.toString().padLeft(3, '0')}';
+
+  return int.parse(idString);
+}
+
+String generateCodePiste() {
+  final now = DateTime.now();
+  final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+      '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}'
+      '${now.second.toString().padLeft(2, '0')}${now.millisecond.toString().padLeft(3, '0')}';
+
+  return 'Piste_$timestamp';
+}
+
 class PisteModel {
   final int? id;
   final String codePiste;
@@ -33,8 +51,8 @@ class PisteModel {
   final int? loginId;
 
   PisteModel({
-    this.id,
-    required this.codePiste,
+    int? id,
+    String? codePiste,
     this.communeRuraleId,
     required this.userLogin,
     required this.heureDebut,
@@ -62,14 +80,16 @@ class PisteModel {
     this.yIntersection, // ← Nouveau
     this.intersectionPisteCode,
     this.loginId,
-  });
+  })  : id = id ?? generateTimestampId(),
+        codePiste = codePiste ?? generateCodePiste();
 
   factory PisteModel.fromFormData(Map<String, dynamic> formData) {
     final pointsData = formData['points'] as List<dynamic>? ?? [];
     final pointsJson = jsonEncode(pointsData);
 
     return PisteModel(
-      codePiste: formData['code_piste'] ?? '',
+      id: formData['id'] ?? generateTimestampId(),
+      codePiste: formData['code_piste'] ?? generateCodePiste(),
       communeRuraleId: formData['commune_rurale_id'],
       userLogin: formData['user_login'] ?? '',
       heureDebut: formData['heure_debut'] ?? '',
