@@ -230,7 +230,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         // ✅ L'ID sera auto-généré par la BDD, ne pas l'inclure ici
         'code_piste': _codeController.text,
         'commune_rurale_id': _communeRurale,
-        'user_login': _userLoginController.text,
+        'user_login': widget.agentName,
         'heure_debut': _heureDebutController.text,
         'heure_fin': _heureFinController.text,
         'nom_origine_piste': _nomOrigineController.text,

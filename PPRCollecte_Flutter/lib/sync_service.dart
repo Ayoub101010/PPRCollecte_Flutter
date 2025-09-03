@@ -1,5 +1,7 @@
 import 'api_service.dart';
 import 'database_helper.dart';
+import 'piste_chaussee_db_helper.dart';
+import 'dart:convert';
 
 class SyncResult {
   int successCount = 0;
@@ -19,7 +21,9 @@ class SyncService {
     final result = SyncResult();
     int totalItems = 0;
     int processedItems = 0;
-
+    final storageHelper = SimpleStorageHelper();
+    final pisteCount = await storageHelper.getUnsyncedPistesCount();
+    totalItems += pisteCount;
     // ⭐⭐ CODE SÉCURISÉ - DEBUT ⭐⭐
     if (onProgress != null) {
       onProgress(0.0, "Démarrage de la synchronisation...", 0, 1);
@@ -40,7 +44,8 @@ class SyncService {
       'dalots',
       'passages_submersibles',
       'points_critiques',
-      'points_coupures'
+      'points_coupures',
+      'pistes'
     ];
 
     for (var table in tables) {
@@ -54,7 +59,25 @@ class SyncService {
     if (onProgress != null) {
       onProgress(0.0, "Préparation...", 0, safeTotalItems);
     }
+    if (pisteCount > 0) {
+      double safeProgress = safeTotalItems > 0 ? processedItems / safeTotalItems : 0.0;
+      safeProgress = safeProgress.isNaN || safeProgress.isInfinite ? 0.0 : safeProgress.clamp(0.0, 1.0);
 
+      if (onProgress != null) {
+        onProgress(safeProgress, "Synchronisation des pistes...", processedItems, safeTotalItems);
+      }
+
+      await _syncTable('pistes', 'pistes', result, onProgress: (processed, total) {
+        if (onProgress != null) {
+          double safeInnerProgress = safeTotalItems > 0 ? (processedItems + processed) / safeTotalItems : 0.0;
+          safeInnerProgress = safeInnerProgress.isNaN || safeInnerProgress.isInfinite ? 0.0 : safeInnerProgress.clamp(0.0, 1.0);
+
+          onProgress(safeInnerProgress, "Synchronisation des pistes...", processedItems + processed, safeTotalItems);
+        }
+      });
+
+      processedItems += pisteCount;
+    }
     // Synchroniser chaque table avec progression
     for (var i = 0; i < tables.length; i++) {
       final table = tables[i];
@@ -106,6 +129,7 @@ class SyncService {
       'passages_submersibles': 'passages submersibles',
       'points_critiques': 'points critiques',
       'points_coupures': 'points de coupure',
+      'pistes': 'pistes',
     };
     return frenchNames[tableName] ?? tableName;
   }
@@ -115,7 +139,13 @@ class SyncService {
       print('🔄 Synchronisation de $tableName...');
 
       // 1. Récupérer UNIQUEMENT les données non synchronisées ET non téléchargées
-      final localData = await dbHelper.getUnsyncedEntities(tableName);
+      List<Map<String, dynamic>> localData;
+      if (tableName == 'pistes') {
+        final storageHelper = SimpleStorageHelper();
+        localData = await storageHelper.getUnsyncedPistes();
+      } else {
+        localData = await dbHelper.getUnsyncedEntities(tableName);
+      }
 
       if (localData.isEmpty) {
         print('ℹ️ Aucune donnée à synchroniser pour $tableName');
@@ -127,6 +157,14 @@ class SyncService {
       // 2. FILTRE SUPPLÉMENTAIRE : vérifier le code_piste
       for (var i = 0; i < localData.length; i++) {
         var data = localData[i];
+
+        Map<String, dynamic> dataToSend;
+        if (tableName == 'pistes') {
+          dataToSend = _mapPisteToApi(data);
+        } else {
+          dataToSend = data; // Ancienne logique pour les autres tables
+        }
+
         // ⭐⭐ VÉRIFICATION CRITIQUE : code_piste ne doit pas être "Non spécifié"
         final codePiste = data['code_piste']?.toString().trim();
         if (codePiste == null || codePiste.isEmpty || codePiste == 'Non spécifié' || codePiste == 'Non spÃ©cifiÃ©') {
@@ -140,7 +178,12 @@ class SyncService {
         final success = await _sendDataToApi(apiEndpoint, data);
 
         if (success) {
-          await dbHelper.markAsSynced(tableName, data['id']);
+          if (tableName == 'pistes') {
+            final storageHelper = SimpleStorageHelper();
+            await storageHelper.markPisteAsSynced(data['id']);
+          } else {
+            await dbHelper.markAsSynced(tableName, data['id']);
+          }
           result.successCount++;
           print('✅ $tableName ID ${data['id']} synchronisé');
         } else {
@@ -162,8 +205,138 @@ class SyncService {
     }
   }
 
+  Map<String, dynamic> _mapPisteToApi(Map<String, dynamic> localData) {
+    // Convertir les points JSON en format GeoJSON MultiLineString
+
+    final pointsJson = localData['points_json'];
+    List<dynamic> points = [];
+    print('🔄 Mapping piste - login_id reçu: ${localData['login_id']} (type: ${localData['login_id']?.runtimeType})');
+    print('🔄 Mapping piste - code_piste: ${localData['code_piste']}');
+    try {
+      points = jsonDecode(pointsJson); // ⭐⭐ jsonDecode fonctionnera maintenant
+    } catch (e) {
+      print('❌ Erreur décodage points JSON: $e');
+    }
+
+    // Convertir en format GeoJSON coordinates
+    final coordinates = points.map((point) {
+      return [
+        point['longitude'] ?? point['lng'] ?? 0.0,
+        point['latitude'] ?? point['lat'] ?? 0.0
+      ];
+    }).toList();
+
+    return {
+      'type': 'Feature',
+      'geometry': {
+        'type': 'MultiLineString',
+        'coordinates': [
+          coordinates
+        ]
+      },
+      'properties': {
+        'sqlite_id': localData['id'],
+        'code_piste': localData['code_piste'],
+        'communes_rurales_id': _parseInt(localData['commune_rurale_id']),
+        'heure_debut': localData['heure_debut'],
+        'heure_fin': localData['heure_fin'],
+        'nom_origine_piste': localData['nom_origine_piste'],
+        'x_origine': _parseDouble(localData['x_origine']),
+        'y_origine': _parseDouble(localData['y_origine']),
+        'nom_destination_piste': localData['nom_destination_piste'],
+        'x_destination': _parseDouble(localData['x_destination']),
+        'y_destination': _parseDouble(localData['y_destination']),
+        'existence_intersection': _parseInt(localData['existence_intersection']),
+        'x_intersection': _parseDouble(localData['x_intersection']),
+        'y_intersection': _parseDouble(localData['y_intersection']),
+        'intersection_piste_code': localData['intersection_piste_code'],
+        'type_occupation': localData['type_occupation'],
+        'debut_occupation': _formatDateTime(localData['debut_occupation']),
+        'fin_occupation': _formatDateTime(localData['fin_occupation']),
+        'largeur_emprise': _parseDouble(localData['largeur_emprise']),
+        'frequence_trafic': localData['frequence_trafic'],
+        'type_trafic': localData['type_trafic'],
+        'travaux_realises': localData['travaux_realises'],
+        'date_travaux': localData['date_travaux'],
+        'entreprise': localData['entreprise'],
+        'created_at': _formatDateTime(localData['created_at']),
+        'updated_at': _formatDateTime(localData['updated_at']),
+        'login': _parseInt(localData['login_id']),
+      }
+    };
+  }
+
+  double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.tryParse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      try {
+        return int.tryParse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  String? _formatDateTime(dynamic dateValue) {
+    if (dateValue == null) return null;
+
+    try {
+      if (dateValue is String) {
+        // Si c'est déjà une string ISO, la retourner telle quelle
+        if (dateValue.contains('T')) {
+          return dateValue;
+        }
+        // Sinon, parser et formater
+        final date = DateTime.parse(dateValue);
+        return date.toIso8601String();
+      }
+      if (dateValue is DateTime) {
+        return dateValue.toIso8601String();
+      }
+    } catch (e) {
+      print('❌ Erreur formatage date: $e');
+    }
+
+    return null;
+  }
+
+  Future<bool> syncPiste(Map<String, dynamic> data) async {
+    try {
+      final apiData = _mapPisteToApi(data);
+
+      // ⭐⭐ LOG COMPLET des données envoyées
+      print('📤 DONNÉES COMPLÈTES envoyées à l\'API:');
+      apiData['properties'].forEach((key, value) {
+        print('   $key: $value (type: ${value?.runtimeType})');
+      });
+      return await ApiService.postData('pistes', apiData);
+    } catch (e) {
+      print('❌ Erreur synchronisation piste: $e');
+      print('📋 Données problématiques: $data');
+      return false;
+    }
+  }
+
   Future<bool> _sendDataToApi(String endpoint, Map<String, dynamic> data) async {
     switch (endpoint) {
+      case 'pistes':
+        return await syncPiste(data);
       case 'localites':
         return await ApiService.syncLocalite(data);
       case 'ecoles':

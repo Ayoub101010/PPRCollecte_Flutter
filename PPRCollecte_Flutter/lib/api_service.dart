@@ -47,7 +47,8 @@ class ApiService {
   static Future<bool> postData(String endpoint, Map<String, dynamic> data) async {
     try {
       final url = Uri.parse('$baseUrl/api/$endpoint/');
-
+      print('🌐 Envoi à $endpoint:');
+      print('   Données: ${jsonEncode(data)}');
       final response = await http.post(
         url,
         headers: {
@@ -56,7 +57,9 @@ class ApiService {
         },
         body: jsonEncode(data),
       );
-
+// ⭐⭐ LOG de la réponse
+      print('🌐 Réponse de $endpoint: ${response.statusCode}');
+      print('🌐 Body: ${response.body}');
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ Données envoyées avec succès à $endpoint');
         return true;
@@ -73,6 +76,10 @@ class ApiService {
 // Dans votre api_service.dart
 
   /// Méthodes spécifiques pour chaque type de données
+  static Future<bool> syncPiste(Map<String, dynamic> data) async {
+    return await postData('pistes', data);
+  }
+
   static Future<bool> syncLocalite(Map<String, dynamic> data) async {
     return await postData('localites', _mapLocaliteToApi(data));
   }

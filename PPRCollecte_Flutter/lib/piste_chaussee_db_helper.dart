@@ -63,7 +63,10 @@ class SimpleStorageHelper {
             created_at TEXT ,
             updated_at TEXT,
             sync_status TEXT DEFAULT 'pending',
-            login_id INTEGER
+            login_id INTEGER,
+            synced INTEGER DEFAULT 0,
+            date_sync TEXT
+            
           )
         ''');
 
@@ -298,6 +301,73 @@ class SimpleStorageHelper {
         'chaussees': 0,
         'total': 0
       };
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getUnsyncedPistes() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'pistes',
+        where: 'synced = ? OR synced IS NULL',
+        whereArgs: [
+          0
+        ],
+        columns: [
+          // ⭐⭐ SPÉCIFIEZ EXPLICITEMENT TOUTES LES COLONNES
+          'id', 'code_piste', 'commune_rurale_id', 'user_login',
+          'heure_debut', 'heure_fin', 'nom_origine_piste', 'x_origine',
+          'y_origine', 'nom_destination_piste', 'x_destination', 'y_destination',
+          'existence_intersection', 'x_intersection', 'y_intersection',
+          'intersection_piste_code', 'type_occupation', 'debut_occupation',
+          'fin_occupation', 'largeur_emprise', 'frequence_trafic', 'type_trafic',
+          'travaux_realises', 'date_travaux', 'entreprise', 'points_json',
+          'created_at', 'updated_at', 'login_id', 'synced', 'date_sync' // ⭐⭐ AJOUTEZ login_id ICI
+        ],
+      );
+
+      // ⭐⭐ LOG POUR VÉRIFIER
+      print('📊 Pistes non synchronisées trouvées: ${maps.length}');
+      if (maps.isNotEmpty) {
+        print('🔍 Premier piste - login_id: ${maps.first['login_id']}');
+      }
+
+      return maps;
+    } catch (e) {
+      print('❌ Erreur lecture pistes non synchronisées: $e');
+      return [];
+    }
+  }
+
+  Future<void> markPisteAsSynced(int pisteId) async {
+    try {
+      final db = await database;
+      await db.update(
+        'pistes',
+        {
+          'synced': 1,
+          'date_sync': DateTime.now().toIso8601String(),
+          'sync_status': 'synced',
+        },
+        where: 'id = ?',
+        whereArgs: [
+          pisteId
+        ],
+      );
+      print('✅ Piste $pisteId marquée comme synchronisée');
+    } catch (e) {
+      print('❌ Erreur marquage piste synchronisée: $e');
+    }
+  }
+
+  Future<int> getUnsyncedPistesCount() async {
+    try {
+      final db = await database;
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes WHERE synced = 0 OR synced IS NULL'));
+      return count ?? 0;
+    } catch (e) {
+      print('❌ Erreur comptage pistes non synchronisées: $e');
+      return 0;
     }
   }
 }
