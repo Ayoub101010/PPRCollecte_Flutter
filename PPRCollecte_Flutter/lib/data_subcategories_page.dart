@@ -57,6 +57,15 @@ class DataSubcategoriesPage extends StatelessWidget {
                     color: const Color(0xFF4CAF50),
                     onTap: () {
                       // Navigation vers les données des pistes
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DataCategoriesDisplay(
+                            mainCategory: "Pistes",
+                            dataFilter: dataFilter,
+                          ),
+                        ),
+                      );
                     },
                   ),
                   _buildSubcategoryCard(

@@ -27,8 +27,20 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   @override
   void initState() {
     super.initState();
-    // Définir automatiquement la catégorie en fonction de mainCategory
+
+    // POUR TOUTES LES CATÉGORIES: définir selectedCategory
     selectedCategory = widget.mainCategory;
+
+    // UNIQUEMENT pour Pistes/Chaussées: définir aussi selectedType
+    if (widget.mainCategory == "Pistes" || widget.mainCategory == "Chaussées") {
+      selectedType = widget.mainCategory;
+      // Charger les données après un petit délai
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _fetchData();
+        }
+      });
+    }
   }
 
   void _onCategorySelected(String category) {
@@ -47,18 +59,30 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   }
 
   void _onBackToCategories() {
-    setState(() {
-      selectedCategory = null;
-      selectedType = null;
-      currentData = [];
-    });
+    // CAS SPÉCIAL: Pour Pistes/Chaussées, retour direct à l'écran précédent
+    if (selectedCategory == "Pistes" || selectedCategory == "Chaussées") {
+      Navigator.pop(context); // ← Retour direct sans refresh
+    } else {
+      // CAS NORMAL: Comportement existant pour autres catégories
+      setState(() {
+        selectedCategory = null;
+        selectedType = null;
+        currentData = [];
+      });
+    }
   }
 
   void _onBackToTypes() {
-    setState(() {
-      selectedType = null;
-      currentData = [];
-    });
+    // CAS SPÉCIAL: Pour Pistes/Chaussées, retour direct à l'écran précédent
+    if (selectedCategory == "Pistes" || selectedCategory == "Chaussées") {
+      Navigator.pop(context); // ← Retour direct sans refresh
+    } else {
+      // CAS NORMAL: Comportement existant pour autres catégories
+      setState(() {
+        selectedType = null;
+        currentData = [];
+      });
+    }
   }
 
   void _showDataViewMessage(String type) {
@@ -229,40 +253,107 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   }
 
   Widget _buildContent() {
-    if (selectedCategory == null) {
-      return CategorySelectorWidget(
-        onCategorySelected: _onCategorySelected,
-      );
-    } else if (selectedType == null) {
-      return TypeSelectorWidget(
-        category: selectedCategory!,
-        onTypeSelected: _onTypeSelected,
-        onBack: _onBackToCategories,
-      );
+    // POUR TOUTES LES CATÉGORIES: même logique
+    if (selectedType == null) {
+      // Afficher le sélecteur de type
+      return _buildTypeSelector();
     } else {
+      // Afficher la liste des données
       return _buildDataView();
     }
   }
 
-  Widget _buildDataView() {
+  Widget _buildTypeSelector() {
+    // CAS SPÉCIAL: Pistes/Chaussées - afficher directement
+    if (selectedCategory == "Pistes" || selectedCategory == "Chaussées") {
+      return _buildDirectTypeView();
+    }
+
+    // CAS NORMAL: autres catégories - sélecteur normal
+    return TypeSelectorWidget(
+      category: selectedCategory!,
+      onTypeSelected: _onTypeSelected,
+      onBack: _onBackToCategories,
+    );
+  }
+
+  Widget _buildDirectTypeView() {
     return Column(
       children: [
-        // En-tête avec le type sélectionné
+        // EN-TÊTE UNIFORME pour toutes les catégories
         Container(
           padding: const EdgeInsets.all(16),
           color: _getAppBarColor().withOpacity(0.1),
           child: Row(
             children: [
+              // FLÈCHE DE RETOUR UNIFIÉE
               IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: _onBackToTypes,
+                onPressed: _onBackToCategories, // ← Même comportement partout
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  selectedType!,
+                  selectedCategory!,
                   style: const TextStyle(
                     fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // CONTENU SPÉCIFIQUE
+        const Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Chargement des données...',
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 20),
+                CircularProgressIndicator(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDataView() {
+    return Column(
+      children: [
+        // EN-TÊTE UNIFORME avec chemin de navigation
+        Container(
+          padding: const EdgeInsets.all(16),
+          color: _getAppBarColor().withOpacity(0.1),
+          child: Row(
+            children: [
+              // FLÈCHE DE RETOUR - COMPORTEMENT DIFFÉRENTIÉ
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  // COMPORTEMENT DIFFÉRENTIÉ
+                  if (selectedCategory == "Pistes" || selectedCategory == "Chaussées") {
+                    Navigator.pop(context); // ← Retour direct pour pistes/chaussées
+                  } else {
+                    _onBackToTypes(); // ← Comportement normal pour autres
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  selectedCategory == "Pistes" || selectedCategory == "Chaussées"
+                      ? selectedCategory! // ← Juste le nom pour pistes/chaussées
+                      : '$selectedCategory > $selectedType', // ← Chemin complet pour autres
+                  style: const TextStyle(
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -274,6 +365,8 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
             ],
           ),
         ),
+
+        // LISTE DES DONNÉES
         Expanded(
           child: DataListView(
             data: currentData,
@@ -284,14 +377,6 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildTypeSelector() {
-    return TypeSelectorWidget(
-      category: selectedCategory!,
-      onTypeSelected: _onTypeSelected,
-      onBack: _onBackToCategories,
     );
   }
 }
