@@ -37,15 +37,15 @@ class SimpleStorageHelper {
             id INTEGER PRIMARY KEY ,
             code_piste TEXT NOT NULL,
             commune_rurale_id TEXT,
-            user_login TEXT NOT NULL,
-            heure_debut TEXT NOT NULL,
-            heure_fin TEXT NOT NULL,
-            nom_origine_piste TEXT NOT NULL,
-            x_origine REAL NOT NULL,
-            y_origine REAL NOT NULL,
-            nom_destination_piste TEXT NOT NULL,
-            x_destination REAL NOT NULL,
-            y_destination REAL NOT NULL,
+            user_login TEXT ,
+            heure_debut TEXT ,
+            heure_fin TEXT ,
+            nom_origine_piste TEXT ,
+            x_origine REAL ,
+            y_origine REAL ,
+            nom_destination_piste TEXT ,
+            x_destination REAL ,
+            y_destination REAL ,
             existence_intersection INTEGER DEFAULT 0, -- ← NOUVEAU
       x_intersection REAL,                      -- ← NOUVEAU
       y_intersection REAL,                      -- ← NOUVEAU
@@ -65,7 +65,8 @@ class SimpleStorageHelper {
             sync_status TEXT DEFAULT 'pending',
             login_id INTEGER,
             synced INTEGER DEFAULT 0,
-            date_sync TEXT
+            date_sync TEXT,
+            downloaded INTEGER DEFAULT 0
             
           )
         ''');
@@ -304,13 +305,40 @@ class SimpleStorageHelper {
     }
   }
 
+// Récupérer seulement les pistes créées par l'utilisateur (à synchroniser)
+  Future<List<Map<String, dynamic>>> getUserPistes() async {
+    final db = await database;
+    return await db.query(
+      'pistes',
+      where: 'synced = ? AND downloaded = ?',
+      whereArgs: [
+        0,
+        0
+      ], // Créées par user, pas encore synchronisées
+    );
+  }
+
+// Récupérer seulement les pistes téléchargées (autres users)
+  Future<List<Map<String, dynamic>>> getDownloadedPistes() async {
+    final db = await database;
+    return await db.query(
+      'pistes',
+      where: 'synced = ? AND downloaded = ?',
+      whereArgs: [
+        0,
+        1
+      ], // Téléchargées, pas créées par cet user
+    );
+  }
+
   Future<List<Map<String, dynamic>>> getUnsyncedPistes() async {
     try {
       final db = await database;
       final List<Map<String, dynamic>> maps = await db.query(
         'pistes',
-        where: 'synced = ? OR synced IS NULL',
+        where: 'synced = ? AND downloaded = ?',
         whereArgs: [
+          0,
           0
         ],
         columns: [
@@ -346,6 +374,7 @@ class SimpleStorageHelper {
         'pistes',
         {
           'synced': 1,
+          'downloaded': 0,
           'date_sync': DateTime.now().toIso8601String(),
           'sync_status': 'synced',
         },
@@ -363,11 +392,129 @@ class SimpleStorageHelper {
   Future<int> getUnsyncedPistesCount() async {
     try {
       final db = await database;
-      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes WHERE synced = 0 OR synced IS NULL'));
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes WHERE synced = 0 AND downloaded = 0'));
       return count ?? 0;
     } catch (e) {
       print('❌ Erreur comptage pistes non synchronisées: $e');
       return 0;
+    }
+  }
+
+  // Ajouter cette méthode dans la classe SimpleStorageHelper
+  Future<void> saveOrUpdatePiste(Map<String, dynamic> pisteData) async {
+    try {
+      final db = await database;
+      final properties = pisteData['properties'];
+      final geometry = pisteData['geometry'];
+
+      // Extraire les coordonnées du MultiLineString GeoJSON
+      final coordinates = geometry['coordinates'][0];
+      final pointsJson = jsonEncode(coordinates
+          .map((coord) => {
+                'longitude': coord[0],
+                'latitude': coord[1]
+              })
+          .toList());
+
+      // Convertir les dates du format PostgreSQL
+      String formatDate(String? dateString) {
+        if (dateString == null) return '';
+        return dateString.replaceFirst('T', ' ');
+      }
+
+      // Vérifier si la piste existe déjà (par id PostgreSQL)
+      final existing = await db.query(
+        'pistes',
+        where: 'id = ?',
+        whereArgs: [
+          pisteData['id']
+        ], // ID PostgreSQL
+      );
+
+      if (existing.isEmpty) {
+        // Insertion nouvelle piste avec ID PostgreSQL
+        await db.insert('pistes', {
+          'id': pisteData['id'], // ← ID PostgreSQL devient ID SQLite
+          'code_piste': properties['code_piste'],
+          'commune_rurale_id': properties['communes_rurales_id']?.toString(),
+          'user_login': properties['user_login'] ?? '',
+          'heure_debut': properties['heure_debut'],
+          'heure_fin': properties['heure_fin'],
+          'nom_origine_piste': properties['nom_origine_piste'],
+          'x_origine': properties['x_origine'],
+          'y_origine': properties['y_origine'],
+          'nom_destination_piste': properties['nom_destination_piste'],
+          'x_destination': properties['x_destination'],
+          'y_destination': properties['y_destination'],
+          'existence_intersection': properties['existence_intersection'] ?? 0,
+          'x_intersection': properties['x_intersection'],
+          'y_intersection': properties['y_intersection'],
+          'intersection_piste_code': properties['intersection_piste_code'],
+          'type_occupation': properties['type_occupation'],
+          'debut_occupation': formatDate(properties['debut_occupation']),
+          'fin_occupation': formatDate(properties['fin_occupation']),
+          'largeur_emprise': properties['largeur_emprise'],
+          'frequence_trafic': properties['frequence_trafic'],
+          'type_trafic': properties['type_trafic'],
+          'travaux_realises': properties['travaux_realises'],
+          'date_travaux': properties['date_travaux'],
+          'entreprise': properties['entreprise'],
+          'points_json': pointsJson,
+          'created_at': formatDate(properties['created_at']),
+          'updated_at': formatDate(properties['updated_at']),
+          'login_id': properties['login_id'],
+          'sync_status': 'downloaded',
+          'synced': 0,
+          'date_sync': DateTime.now().toIso8601String(),
+          'downloaded': 1,
+        });
+        print('✅ Piste ${properties['code_piste']} sauvegardée (ID: ${pisteData['id']})');
+      } else {
+        // Mise à jour piste existante
+        await db.update(
+          'pistes',
+          {
+            'code_piste': properties['code_piste'],
+            'commune_rurale_id': properties['communes_rurales_id']?.toString(),
+            'heure_debut': properties['heure_debut'],
+            'heure_fin': properties['heure_fin'],
+            'nom_origine_piste': properties['nom_origine_piste'],
+            'x_origine': properties['x_origine'],
+            'y_origine': properties['y_origine'],
+            'nom_destination_piste': properties['nom_destination_piste'],
+            'x_destination': properties['x_destination'],
+            'y_destination': properties['y_destination'],
+            'existence_intersection': properties['existence_intersection'] ?? 0,
+            'x_intersection': properties['x_intersection'],
+            'y_intersection': properties['y_intersection'],
+            'intersection_piste_code': properties['intersection_piste_code'],
+            'type_occupation': properties['type_occupation'],
+            'debut_occupation': formatDate(properties['debut_occupation']),
+            'fin_occupation': formatDate(properties['fin_occupation']),
+            'largeur_emprise': properties['largeur_emprise'],
+            'frequence_trafic': properties['frequence_trafic'],
+            'type_trafic': properties['type_trafic'],
+            'travaux_realises': properties['travaux_realises'],
+            'date_travaux': properties['date_travaux'],
+            'entreprise': properties['entreprise'],
+            'points_json': pointsJson,
+            'updated_at': DateTime.now().toIso8601String(),
+            'login_id': properties['login_id'],
+            'sync_status': 'downloaded',
+            'synced': 0,
+            'date_sync': DateTime.now().toIso8601String(),
+            'downloaded': 1,
+          },
+          where: 'id = ?',
+          whereArgs: [
+            pisteData['id']
+          ],
+        );
+        print('🔄 Piste ${properties['code_piste']} mise à jour (ID: ${pisteData['id']})');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde piste: $e');
+      print('📋 Données problématiques: ${jsonEncode(pisteData)}');
     }
   }
 }

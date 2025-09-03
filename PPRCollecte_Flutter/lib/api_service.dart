@@ -737,4 +737,29 @@ class ApiService {
       'id': geoJson['id'],
     };
   }
+
+  // Dans ApiService, ajouter cette méthode
+  static Future<List<dynamic>> fetchPistes() async {
+    try {
+      final url = Uri.parse('$baseUrl/api/pistes/');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (authToken != null) 'Authorization': 'Bearer $authToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['features']; // Extraire les features du GeoJSON
+      } else {
+        print('❌ Erreur GET (pistes): ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception lors de la récupération des pistes: $e');
+      return [];
+    }
+  }
 }

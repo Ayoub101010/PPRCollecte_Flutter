@@ -384,6 +384,7 @@ class SyncService {
 
 // Compter le nombre total d'éléments à télécharger
       final operations = [
+        ApiService.fetchPistes,
         ApiService.fetchLocalites,
         ApiService.fetchEcoles,
         ApiService.fetchMarches,
@@ -650,6 +651,24 @@ class SyncService {
 
         if (onProgress != null) {
           onProgress(processedItems / totalItems, "Sauvegarde des points de coupure...", processedItems, totalItems);
+        }
+      }
+
+      // ============ PISTES ============
+      if (onProgress != null) {
+        onProgress(processedItems / totalItems, "Téléchargement des pistes...", processedItems, totalItems);
+      }
+      print('📥 Téléchargement des pistes...');
+      final pistes = await ApiService.fetchPistes();
+      print('🛤️ ${pistes.length} pistes à traiter');
+      for (var piste in pistes) {
+        final storageHelper = SimpleStorageHelper();
+        await storageHelper.saveOrUpdatePiste(piste);
+        result.successCount++;
+        processedItems++;
+
+        if (onProgress != null) {
+          onProgress(processedItems / totalItems, "Sauvegarde des pistes...", processedItems, totalItems);
         }
       }
 
