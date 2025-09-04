@@ -10,6 +10,8 @@ class FormulaireLignePage extends StatefulWidget {
   final DateTime? startTime; // 🆕 Heure de début de collecte
   final DateTime? endTime; // 🆕 Heure de fin de collecte
   final String? agentName;
+  final Map<String, dynamic>? initialData; // ← NOUVEAU: Données existantes
+  final bool isEditingMode; // ← NOUVEAU: Mode édition
 
   const FormulaireLignePage({
     super.key,
@@ -18,6 +20,8 @@ class FormulaireLignePage extends StatefulWidget {
     this.startTime, // 🆕 Passé depuis la page de collecte GPS
     this.endTime, // 🆕 Passé depuis la page de collecte GPS
     this.agentName,
+    this.initialData, // ← NOUVEAU
+    this.isEditingMode = false, // ← NOUVEAU
   });
 
   @override
@@ -95,6 +99,9 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   }
 
   void _initializeForm() {
+    if (widget.isEditingMode && widget.initialData != null) {
+      _fillFormWithExistingData();
+    }
     if (widget.provisionalCode != null) {
       _codeController.text = widget.provisionalCode!;
     }
@@ -134,6 +141,35 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       _xDestinationController.text = lastPoint.longitude.toStringAsFixed(6);
       _yDestinationController.text = lastPoint.latitude.toStringAsFixed(6);
     }
+  }
+
+  void _fillFormWithExistingData() {
+    final data = widget.initialData!;
+
+    setState(() {
+      _codeController.text = data['code_piste'] ?? '';
+      _communeRurale = data['commune_rurale_id'];
+      _userLoginController.text = data['user_login'] ?? '';
+      _heureDebutController.text = data['heure_debut'] ?? '';
+      _heureFinController.text = data['heure_fin'] ?? '';
+      _nomOrigineController.text = data['nom_origine_piste'] ?? '';
+      _xOrigineController.text = data['x_origine']?.toString() ?? '';
+      _yOrigineController.text = data['y_origine']?.toString() ?? '';
+      _nomDestinationController.text = data['nom_destination_piste'] ?? '';
+      _xDestinationController.text = data['x_destination']?.toString() ?? '';
+      _yDestinationController.text = data['y_destination']?.toString() ?? '';
+      _typeOccupation = data['type_occupation'];
+      _debutOccupation = data['debut_occupation'] != null ? DateTime.parse(data['debut_occupation']) : null;
+      _finOccupation = data['fin_occupation'] != null ? DateTime.parse(data['fin_occupation']) : null;
+      _largeurEmprise = data['largeur_emprise'];
+      _frequenceTrafic = data['frequence_trafic'];
+      _typeTrafic = data['type_trafic'];
+      _travauxRealisesController.text = data['travaux_realises'] ?? '';
+      _dateDebutTravaux = data['date_travaux'] != null ? DateTime.parse(data['date_travaux']) : null;
+      _entrepriseController.text = data['entreprise'] ?? '';
+      _dateCreation = data['created_at'] != null ? DateTime.parse(data['created_at']) : null;
+      _dateModification = DateTime.now(); // ← Date modif actuelle
+    });
   }
 
   // Méthode pour récupérer l'utilisateur actuel
@@ -228,6 +264,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
 
       final pisteData = {
         // ✅ L'ID sera auto-généré par la BDD, ne pas l'inclure ici
+        if (widget.isEditingMode) 'id': widget.initialData!['id'],
         'code_piste': _codeController.text,
         'commune_rurale_id': _communeRurale,
         'user_login': widget.agentName,
@@ -261,16 +298,23 @@ class _FormulairePageState extends State<FormulaireLignePage> {
 
         // ✅ Dates
         'created_at': _dateCreation?.toIso8601String() ?? DateTime.now().toIso8601String(),
-        'updated_at': null,
+        'updated_at': _dateModification?.toIso8601String(),
+        'is_editing': widget.isEditingMode,
 
         'sync_status': 'pending',
         'login_id': ApiService.userId,
       };
       final storageHelper = SimpleStorageHelper();
-      final savedId = await storageHelper.savePiste(pisteData);
-      if (savedId != null) {
-        print('✅ Piste sauvegardée en local avec ID: $savedId');
-        await storageHelper.debugPrintAllPistes();
+      if (widget.isEditingMode) {
+        // ✅ MODE ÉDITION: Mise à jour
+        await storageHelper.updatePiste(pisteData);
+        print('✅ Piste "${pisteData['code_piste']}" mise à jour (ID: ${pisteData['id']})');
+      } else {
+        final savedId = await storageHelper.savePiste(pisteData);
+        if (savedId != null) {
+          print('✅ Piste sauvegardée en local avec ID: $savedId');
+          await storageHelper.debugPrintAllPistes();
+        }
       }
 
       if (mounted) {
@@ -291,6 +335,21 @@ class _FormulairePageState extends State<FormulaireLignePage> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _selectDateModification(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dateModification ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dateModification = picked;
+      });
     }
   }
 
@@ -743,29 +802,33 @@ class _FormulairePageState extends State<FormulaireLignePage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Colors.grey,
+              color: Color(0xFF374151),
             ),
           ),
           const SizedBox(height: 8),
           GestureDetector(
-            onTap: null,
+            onTap: widget.isEditingMode ? () => _selectDateModification(context) : null,
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: widget.isEditingMode ? const Color(0xFFF9FAFB) : const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE0E0E0)),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
               ),
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 20, color: Colors.grey),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 20,
+                    color: widget.isEditingMode ? const Color(0xFF1976D2) : Colors.grey,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _dateModification != null ? "${_dateModification!.day.toString().padLeft(2, '0')}/${_dateModification!.month.toString().padLeft(2, '0')}/${_dateModification!.year}" : (_dateModification?.toString().substring(0, 10) ?? DateTime.now().toString().substring(0, 10)), // ← CORRECTION ICI
-                      style: const TextStyle(
+                      _dateModification != null ? "${_dateModification!.day.toString().padLeft(2, '0')}/${_dateModification!.month.toString().padLeft(2, '0')}/${_dateModification!.year}" : "Sélectionner une date",
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: _dateModification != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
                       ),
                     ),
                   ),

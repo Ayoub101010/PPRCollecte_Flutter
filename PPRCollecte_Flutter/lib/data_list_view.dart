@@ -144,16 +144,29 @@ class _DataListViewState extends State<DataListView> {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         title: Text(
-          item['nom'] ?? 'Sans nom',
+          item['nom'] ?? item['code_piste'] ?? 'Sans nom',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('ID: ${item['id']}'),
+            if (item['code_piste'] != null) Text('Code: ${item['code_piste']}'),
+
             if (item['type'] != null) Text('Type: ${item['type']}'),
-            if (item['date_creation'] != null) Text('Créé: ${_formatDate(item['date_creation'])}'),
-            if (item['synced'] == 1) Text('Synchronisé: ${_formatDate(item['date_sync'])}', style: const TextStyle(color: Colors.green)),
+
+            // ✅ DATES IMPORTANTES
+            if (item['created_at'] != null) Text('Créé: ${_formatDate(item['created_at'])}'),
+
+            if (item['updated_at'] != null && item['updated_at'] != item['created_at']) Text('Modifié: ${_formatDate(item['updated_at'])}', style: const TextStyle(color: Colors.green)),
+
+            if (item['commune_rurale_id'] != null) Text('Commune: ${item['commune_rurale_id']}'),
+
+            // ✅ STATUT DE SYNCHRO - SOLUTION 1 (OPÉRATEUR CONDITIONNEL)
+            item['synced'] == 1
+                ? const Text('Status: Synchronisé ✅', style: TextStyle(color: Colors.green))
+                : item['downloaded'] == 1
+                    ? const Text('Status: Téléchargé 📥', style: TextStyle(color: Colors.blue))
+                    : const Text('Status: Non synchronisé ⏳', style: TextStyle(color: Colors.orange)),
           ],
         ),
         trailing: widget.dataFilter == "unsynced"
@@ -201,6 +214,16 @@ class _DataListViewState extends State<DataListView> {
   }
 
   void _showDetails(Map<String, dynamic> item, BuildContext context) {
+    // ✅ FILTRER LES CHAMPS TECHNIQUES INUTILES
+    final filteredEntries = item.entries
+        .where((entry) =>
+            entry.key != 'points_json' && // ← Cacher le JSON
+            entry.key != 'sqlite_id' &&
+            entry.key != 'sync_status' &&
+            !entry.key.contains('_json') &&
+            entry.value != null)
+        .toList();
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -208,10 +231,27 @@ class _DataListViewState extends State<DataListView> {
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: item.entries.map((entry) {
+            children: filteredEntries.map((entry) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text('${entry.key}: ${entry.value}'),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        '${_getFieldLabel(entry.key)}:',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        _formatValue(entry.value, entry.key),
+                        softWrap: true,
+                      ),
+                    ),
+                  ],
+                ),
               );
             }).toList(),
           ),
@@ -226,11 +266,43 @@ class _DataListViewState extends State<DataListView> {
     );
   }
 
+  String _getFieldLabel(String key) {
+    final labels = {
+      'code_piste': 'Code Piste',
+      'commune_rurale_id': 'Commune',
+      'user_login': 'Utilisateur',
+      'heure_debut': 'Heure Début',
+      'heure_fin': 'Heure Fin',
+      'created_at': 'Date Création',
+      'updated_at': 'Date Modification',
+      'nom_origine_piste': 'Origine',
+      'nom_destination_piste': 'Destination',
+      'type_occupation': 'Type Occupation',
+      // ... ajouter d'autres traductions
+    };
+    return labels[key] ?? key;
+  }
+
+  String _formatValue(dynamic value, String key) {
+    if (value == null) return 'N/A';
+
+    if (key.contains('date') || key.contains('_at')) {
+      return _formatDate(value.toString());
+    }
+
+    if (value is DateTime) {
+      return _formatDate(value.toString());
+    }
+
+    return value.toString();
+  }
+
   String _formatDate(String? dateString) {
     if (dateString == null) return 'N/A';
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
+      return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
+          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return dateString;
     }

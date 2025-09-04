@@ -5,6 +5,10 @@ import 'type_selector_widget.dart';
 import 'database_helper.dart';
 import 'point_form_widget.dart';
 import 'data_list_view.dart';
+import 'piste_chaussee_db_helper.dart';
+import 'dart:convert'; // Pour jsonDecode
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng
+import 'formulaire_ligne_page.dart'; // Pour FormulaireLignePage
 
 class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
@@ -95,95 +99,215 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   }
 
   Future<void> _fetchData() async {
-    if (selectedCategory == null || selectedType == null) return;
+    if (selectedCategory == null) return;
 
-    final dbHelper = DatabaseHelper();
-    final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
-    final tableName = config?['tableName'] ?? '';
-
-    if (tableName.isEmpty) {
-      setState(() => currentData = []);
-      return;
-    }
+    // ✅ Initialiser avec liste vide
+    List<Map<String, dynamic>> filteredData = [];
 
     try {
-      // Récupérer toutes les données de la table
-      List<Map<String, dynamic>> allData = await dbHelper.getEntities(tableName);
+      // CAS SPÉCIAL PISTES/CHAUSSÉES
+      if (selectedCategory == "Pistes" || selectedCategory == "Chaussées") {
+        final storageHelper = SimpleStorageHelper();
 
-      // Filtrer selon le type de données
-      List<Map<String, dynamic>> filteredData;
-      switch (widget.dataFilter) {
-        case "unsynced": // Données enregistrées
-          filteredData = allData
-              .where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null) // ← Non téléchargées
-                  )
-              .toList();
-          break;
-        case "synced": // Données synchronisées
-          filteredData = allData
-              .where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null) // ← Créées par l'utilisateur
-                  )
-              .toList();
-          break;
-        case "saved": // Données sauvegardées
-          filteredData = allData
-              .where((item) => item['downloaded'] == 1 // ← Uniquement les données téléchargées
-                  )
-              .toList();
-          break;
-        default:
+        if (selectedCategory == "Pistes") {
+          List<Map<String, dynamic>> allPistes = await storageHelper.getAllPistesMaps();
+
+          // FILTRAGE PISTES
+          if (widget.dataFilter == "unsynced") {
+            filteredData = allPistes.where((piste) => (piste['synced'] == 0 || piste['synced'] == null) && (piste['downloaded'] == 0 || piste['downloaded'] == null)).toList();
+          } else if (widget.dataFilter == "synced") {
+            filteredData = allPistes.where((piste) => piste['synced'] == 1 && (piste['downloaded'] == 0 || piste['downloaded'] == null)).toList();
+          } else if (widget.dataFilter == "saved") {
+            filteredData = allPistes.where((piste) => piste['downloaded'] == 1).toList();
+          } else {
+            filteredData = allPistes;
+          }
+
+          print('📊 Pistes ${widget.dataFilter}: ${filteredData.length}');
+        } else if (selectedCategory == "Chaussées") {
+          List<Map<String, dynamic>> allChaussees = await storageHelper.getAllChausseesMaps();
+
+          // FILTRAGE CHAUSSÉES
+          if (widget.dataFilter == "unsynced") {
+            filteredData = allChaussees.where((ch) => (ch['synced'] == 0 || ch['synced'] == null) && (ch['downloaded'] == 0 || ch['downloaded'] == null)).toList();
+          } else if (widget.dataFilter == "synced") {
+            filteredData = allChaussees.where((ch) => ch['synced'] == 1 && (ch['downloaded'] == 0 || ch['downloaded'] == null)).toList();
+          } else if (widget.dataFilter == "saved") {
+            filteredData = allChaussees.where((ch) => ch['downloaded'] == 1).toList();
+          } else {
+            filteredData = allChaussees;
+          }
+
+          print('📊 Chaussées ${widget.dataFilter}: ${filteredData.length}');
+        }
+      }
+      // ✅ CAS NORMAL - POINTS (LOGIQUE EXISTANTE)
+      else {
+        final dbHelper = DatabaseHelper();
+        final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
+        final tableName = config?['tableName'] ?? '';
+
+        if (tableName.isEmpty) {
+          setState(() => currentData = []);
+          return;
+        }
+
+        List<Map<String, dynamic>> allData = await dbHelper.getEntities(tableName);
+
+        // FILTRAGE STANDARD POUR POINTS
+        if (widget.dataFilter == "unsynced") {
+          filteredData = allData.where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null)).toList();
+        } else if (widget.dataFilter == "synced") {
+          filteredData = allData.where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null)).toList();
+        } else if (widget.dataFilter == "saved") {
+          filteredData = allData.where((item) => item['downloaded'] == 1).toList();
+        } else {
           filteredData = allData;
+        }
       }
 
+      // ✅ METTRE À JOUR L'ÉTAT
       setState(() => currentData = filteredData);
     } catch (e) {
-      print('Erreur lors de la récupération des données: $e');
+      print('❌ Erreur récupération ${selectedCategory}: $e');
       setState(() => currentData = []);
     }
+  }
+
+// TEMPORAIRE - Pour compilation seulement
+  Future<void> _editChaussee(Map<String, dynamic> chaussee) async {
+    print('Édition chaussée à implémenter: ${chaussee['id']}');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Édition des chaussées à venir')),
+    );
+  }
+
+  Future<void> _deleteChaussee(int id) async {
+    print('Suppression chaussée à implémenter: $id');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Suppression des chaussées à venir')),
+    );
   }
 
   Future<void> _editItem(Map<String, dynamic> item) async {
-    final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
-    final tableName = config?['tableName'] ?? '';
+    if (selectedCategory == "Pistes") {
+      await _editPiste(item);
+    } else if (selectedCategory == "Chaussées") {
+      await _editChaussee(item);
+    } else {
+      final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
+      final tableName = config?['tableName'] ?? '';
 
-    if (tableName.isEmpty) return;
-    final String agentName = item['enqueteur'] ?? 'Agent';
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          // ✅ Ajout du Scaffold ici
-          body: PointFormWidget(
-            category: selectedCategory!,
-            type: selectedType!,
-            pointData: item, // ✅ Données à modifier
-            onBack: () => Navigator.pop(context),
-            onSaved: () {
-              _fetchData();
-              Navigator.pop(context);
-            },
-            agentName: agentName,
+      if (tableName.isEmpty) return;
+      final String agentName = item['enqueteur'] ?? 'Agent';
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            // ✅ Ajout du Scaffold ici
+            body: PointFormWidget(
+              category: selectedCategory!,
+              type: selectedType!,
+              pointData: item, // ✅ Données à modifier
+              onBack: () => Navigator.pop(context),
+              onSaved: () {
+                _fetchData();
+                Navigator.pop(context);
+              },
+              agentName: agentName,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    if (result != null) {
-      _fetchData();
+      if (result != null) {
+        _fetchData();
+      }
     }
   }
 
-  Future<void> _deleteItem(int id) async {
-    final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
-    final tableName = config?['tableName'] ?? '';
+  Future<void> _editPiste(Map<String, dynamic> piste) async {
+    try {
+      // Convertir les points JSON en List<LatLng>
+      final pointsJson = piste['points_json'];
+      List<LatLng> points = [];
 
-    if (tableName.isEmpty) return;
+      if (pointsJson != null && pointsJson is String) {
+        try {
+          final pointsData = jsonDecode(pointsJson) as List;
+          points = pointsData.map((p) => LatLng(p['latitude'] ?? p['lat'] ?? 0.0, p['longitude'] ?? p['lng'] ?? 0.0)).toList();
+        } catch (e) {
+          print('❌ Erreur décodage points: $e');
+        }
+      }
 
+      // Préparer les données pour le formulaire
+      final formData = {
+        'id': piste['id'],
+        'code_piste': piste['code_piste'],
+        'commune_rurale_id': piste['commune_rurale_id'],
+        'user_login': piste['user_login'],
+        'heure_debut': piste['heure_debut'],
+        'heure_fin': piste['heure_fin'],
+        'nom_origine_piste': piste['nom_origine_piste'],
+        'x_origine': piste['x_origine'],
+        'y_origine': piste['y_origine'],
+        'nom_destination_piste': piste['nom_destination_piste'],
+        'x_destination': piste['x_destination'],
+        'y_destination': piste['y_destination'],
+        'existence_intersection': piste['existence_intersection'],
+        'x_intersection': piste['x_intersection'],
+        'y_intersection': piste['y_intersection'],
+        'intersection_piste_code': piste['intersection_piste_code'],
+        'type_occupation': piste['type_occupation'],
+        'debut_occupation': piste['debut_occupation'],
+        'fin_occupation': piste['fin_occupation'],
+        'largeur_emprise': piste['largeur_emprise'],
+        'frequence_trafic': piste['frequence_trafic'],
+        'type_trafic': piste['type_trafic'],
+        'travaux_realises': piste['travaux_realises'],
+        'date_travaux': piste['date_travaux'],
+        'entreprise': piste['entreprise'],
+        'points': points,
+        'created_at': piste['created_at'],
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FormulaireLignePage(
+            linePoints: points,
+            provisionalCode: piste['code_piste'],
+            startTime: piste['created_at'] != null ? DateTime.parse(piste['created_at']) : DateTime.now(),
+            endTime: DateTime.now(),
+            agentName: piste['user_login'] ?? 'Utilisateur',
+            initialData: formData,
+            isEditingMode: true,
+          ),
+        ),
+      );
+
+      if (result != null) {
+        _fetchData(); // Rafraîchir la liste
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Piste modifiée avec succès')),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur édition piste: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la modification: $e')),
+      );
+    }
+  }
+
+  Future<void> _deletePiste(int id) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmer la suppression'),
-        content: const Text('Êtes-vous sûr de vouloir supprimer cet élément ?'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer cette piste ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -200,17 +324,63 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
     if (confirmed == true) {
       try {
-        final dbHelper = DatabaseHelper();
-        await dbHelper.deleteEntity(tableName, id);
+        final storageHelper = SimpleStorageHelper();
+        await storageHelper.deletePiste(id);
         _fetchData(); // Rafraîchir la liste
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Élément supprimé avec succès')),
+          const SnackBar(content: Text('Piste supprimée avec succès')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur lors de la suppression: $e')),
         );
+      }
+    }
+  }
+
+  Future<void> _deleteItem(int id) async {
+    if (selectedCategory == "Pistes") {
+      await _deletePiste(id);
+    } else {
+      final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
+      final tableName = config?['tableName'] ?? '';
+
+      if (tableName.isEmpty) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Confirmer la suppression'),
+          content: const Text('Êtes-vous sûr de vouloir supprimer cet élément ?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Supprimer'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        try {
+          final dbHelper = DatabaseHelper();
+          await dbHelper.deleteEntity(tableName, id);
+          _fetchData(); // Rafraîchir la liste
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Élément supprimé avec succès')),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur lors de la suppression: $e')),
+          );
+        }
       }
     }
   }

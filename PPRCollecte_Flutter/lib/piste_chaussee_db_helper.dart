@@ -517,4 +517,90 @@ class SimpleStorageHelper {
       print('📋 Données problématiques: ${jsonEncode(pisteData)}');
     }
   }
+
+  // Dans SimpleStorageHelper class
+  Future<List<Map<String, dynamic>>> getAllPistesMaps() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query('pistes', orderBy: 'created_at DESC');
+      return maps;
+    } catch (e) {
+      print('❌ Erreur lecture pistes: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAllChausseesMaps() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query('chaussees', orderBy: 'created_at DESC');
+      return maps;
+    } catch (e) {
+      print('❌ Erreur lecture chaussées: $e');
+      return [];
+    }
+  }
+
+  Future<void> updatePiste(Map<String, dynamic> pisteData) async {
+    try {
+      final db = await database;
+
+      // ✅ PRÉPARER UNIQUEMENT LES CHAMPS MODIFIABLES
+      final updateData = {
+        'code_piste': pisteData['code_piste'],
+        'commune_rurale_id': pisteData['commune_rurale_id'],
+        'user_login': pisteData['user_login'],
+        'heure_debut': pisteData['heure_debut'],
+        'heure_fin': pisteData['heure_fin'],
+        'nom_origine_piste': pisteData['nom_origine_piste'],
+        'x_origine': pisteData['x_origine'],
+        'y_origine': pisteData['y_origine'],
+        'nom_destination_piste': pisteData['nom_destination_piste'],
+        'x_destination': pisteData['x_destination'],
+        'y_destination': pisteData['y_destination'],
+        'existence_intersection': pisteData['existence_intersection'],
+        'x_intersection': pisteData['x_intersection'],
+        'y_intersection': pisteData['y_intersection'],
+        'intersection_piste_code': pisteData['intersection_piste_code'],
+        'type_occupation': pisteData['type_occupation'],
+        'debut_occupation': pisteData['debut_occupation'],
+        'fin_occupation': pisteData['fin_occupation'],
+        'largeur_emprise': pisteData['largeur_emprise'],
+        'frequence_trafic': pisteData['frequence_trafic'],
+        'type_trafic': pisteData['type_trafic'],
+        'travaux_realises': pisteData['travaux_realises'],
+        'date_travaux': pisteData['date_travaux'],
+        'entreprise': pisteData['entreprise'],
+        'points_json': jsonEncode(pisteData['points']), // ← CONVERTIR en JSON
+        'updated_at': pisteData['updated_at'],
+        'login_id': pisteData['login_id'],
+      };
+
+      // ✅ NE PAS METTRE À JOUR L'ID - juste l'utiliser pour WHERE
+      await db.update(
+        'pistes',
+        updateData, // ← SEULEMENT les champs modifiables
+        where: 'id = ?',
+        whereArgs: [
+          pisteData['id']
+        ], // ← ID seulement pour WHERE
+      );
+
+      print('✅ Piste ${pisteData['id']} mise à jour avec succès');
+    } catch (e) {
+      print('❌ Erreur mise à jour piste: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deletePiste(int id) async {
+    final db = await database;
+    await db.delete(
+      'pistes',
+      where: 'id = ?',
+      whereArgs: [
+        id
+      ],
+    );
+  }
 }
