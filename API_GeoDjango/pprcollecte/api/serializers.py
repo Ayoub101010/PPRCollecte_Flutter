@@ -5,9 +5,11 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
 )
 from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import GEOSGeometry, MultiLineString
+
 
 class RegionSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -258,4 +260,32 @@ class PisteSerializer(GeoFeatureModelSerializer):
             geom = GEOSGeometry(str(data['geom']))
             geom.srid = 32628  # forcer SRID UTM
             data['geom'] = geom
+        return super().to_internal_value(data)
+    
+
+class ChausseesTestSerializer(GeoFeatureModelSerializer):
+
+   
+    class Meta:
+        model = ChausseesTest
+        geo_field = "geom"
+        fields = '__all__'
+        read_only_fields = ('fid',)
+
+    def to_internal_value(self, data):
+        """
+        Permet de transformer les données d'entrée pour créer la géométrie MultiLineString
+        à partir d'une représentation GeoJSON ou d'une liste de coordonnées.
+        """
+        data = data.copy()
+
+        if 'geom' in data and data['geom'] is not None:
+            # Forcer la géométrie en MultiLineString et SRID 32628
+            geom = GEOSGeometry(str(data['geom']))
+            geom.srid = 32628
+            if geom.geom_type != 'MultiLineString':
+                # Convertir LineString en MultiLineString si besoin
+                geom = MultiLineString(geom) if geom.geom_type == 'LineString' else geom
+            data['geom'] = geom
+
         return super().to_internal_value(data)

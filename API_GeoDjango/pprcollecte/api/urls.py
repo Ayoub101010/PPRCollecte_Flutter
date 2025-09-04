@@ -6,12 +6,13 @@ from .views import (
     ServicesSantesListCreateAPIView, AutresInfrastructuresListCreateAPIView, BacsListCreateAPIView,
     BatimentsAdministratifsListCreateAPIView, BusesListCreateAPIView, DalotsListCreateAPIView,
     EcolesListCreateAPIView, InfrastructuresHydrauliquesListCreateAPIView, LocalitesListCreateAPIView,
-    MarchesListCreateAPIView, PassagesSubmersiblesListCreateAPIView, PontsListCreateAPIView, CommunesRuralesListCreateAPIView, PrefecturesListCreateAPIView, RegionsListCreateAPIView
+    MarchesListCreateAPIView, PassagesSubmersiblesListCreateAPIView, PontsListCreateAPIView, CommunesRuralesListCreateAPIView, PrefecturesListCreateAPIView, RegionsListCreateAPIView, ChausseesTestListCreateAPIView
 )
 
 urlpatterns = [
     path('api/login/', LoginAPIView.as_view(), name='api-login'),
     path('api/pistes/', PisteListCreateAPIView.as_view(), name='api-pistes'),
+    path('api/chaussees_test/', ChausseesTestListCreateAPIView.as_view(), name='chaussees_test_list_create'),
     path('api/services_santes/', ServicesSantesListCreateAPIView.as_view(), name='api-services-santes'),
     path('api/autres_infrastructures/', AutresInfrastructuresListCreateAPIView.as_view(), name='api-autres-infrastructures'),
     path('api/bacs/', BacsListCreateAPIView.as_view(), name='api-bacs'),

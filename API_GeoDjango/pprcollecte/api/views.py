@@ -12,13 +12,13 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
 )
 from .serializers import (
     ServicesSantesSerializer, AutresInfrastructuresSerializer, BacsSerializer,
     BatimentsAdministratifsSerializer, BusesSerializer, DalotsSerializer,
     EcolesSerializer, InfrastructuresHydrauliquesSerializer, LocalitesSerializer,
-    MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer, CommuneRuraleSerializer, PrefectureSerializer, RegionSerializer
+    MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer, CommuneRuraleSerializer, PrefectureSerializer, RegionSerializer, ChausseesTestSerializer
 )
 
 class RegionsListCreateAPIView(generics.ListCreateAPIView):
@@ -114,6 +114,13 @@ class LoginAPIView(APIView):
 class PisteListCreateAPIView(generics.ListCreateAPIView):
     queryset = Piste.objects.all()
     serializer_class = PisteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+class ChausseesTestListCreateAPIView(generics.ListCreateAPIView):
+    queryset = ChausseesTest.objects.all()
+    serializer_class = ChausseesTestSerializer
 
     def perform_create(self, serializer):
         serializer.save()

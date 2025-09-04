@@ -113,6 +113,37 @@ class Piste(models.Model):
     def __str__(self):
         return f"Piste {self.code_piste} - {self.nom_origine_piste} → {self.nom_destination_piste}"
 
+from django.contrib.gis.db import models
+
+class ChausseesTest(models.Model):
+    fid = models.BigAutoField(primary_key=True)  # correspond à la PK PostgreSQL
+    id = models.FloatField(null=True, blank=True)  # juste le champ id de la table
+    geom = models.MultiLineStringField(srid=32628, null=True, blank=True)
+    x_debut_ch = models.FloatField(null=True, blank=True)
+    y_fin_chau = models.FloatField(null=True, blank=True)
+    type_chaus = models.CharField(max_length=254, null=True, blank=True)
+    etat_piste = models.CharField(max_length=254, null=True, blank=True)
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+    endroit = models.CharField(max_length=32, null=True, blank=True)
+    code_piste = models.IntegerField(null=True, blank=True)
+    
+    login = models.ForeignKey(
+        'Login',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='login_id'
+    )
+
+    class Meta:
+        db_table = 'chaussees_test'
+        managed = False
+
+    def __str__(self):
+        return f"Chaussee {self.fid} - {self.type_chaus} ({self.etat_piste})"
+
 
 
 class ServicesSantes(models.Model):
