@@ -22,8 +22,13 @@ class SyncService {
     int totalItems = 0;
     int processedItems = 0;
     final storageHelper = SimpleStorageHelper();
+
+    // ⭐⭐ COMPTER LES PISTES ET CHAUSSÉES NON SYNCHRONISÉES
     final pisteCount = await storageHelper.getUnsyncedPistesCount();
+    final chausseeCount = await storageHelper.getUnsyncedChausseesCount(); // ← NOUVEAU
     totalItems += pisteCount;
+    totalItems += chausseeCount; // ← NOUVEAU
+
     // ⭐⭐ CODE SÉCURISÉ - DEBUT ⭐⭐
     if (onProgress != null) {
       onProgress(0.0, "Démarrage de la synchronisation...", 0, 1);
@@ -44,8 +49,7 @@ class SyncService {
       'dalots',
       'passages_submersibles',
       'points_critiques',
-      'points_coupures',
-      'pistes'
+      'points_coupures'
     ];
 
     for (var table in tables) {
@@ -59,6 +63,8 @@ class SyncService {
     if (onProgress != null) {
       onProgress(0.0, "Préparation...", 0, safeTotalItems);
     }
+
+    // ⭐⭐ SYNCHRONISATION DES PISTES
     if (pisteCount > 0) {
       double safeProgress = safeTotalItems > 0 ? processedItems / safeTotalItems : 0.0;
       safeProgress = safeProgress.isNaN || safeProgress.isInfinite ? 0.0 : safeProgress.clamp(0.0, 1.0);
@@ -78,6 +84,28 @@ class SyncService {
 
       processedItems += pisteCount;
     }
+
+    // ⭐⭐ SYNCHRONISATION DES CHAUSSÉES (NOUVEAU)
+    if (chausseeCount > 0) {
+      double safeProgress = safeTotalItems > 0 ? processedItems / safeTotalItems : 0.0;
+      safeProgress = safeProgress.isNaN || safeProgress.isInfinite ? 0.0 : safeProgress.clamp(0.0, 1.0);
+
+      if (onProgress != null) {
+        onProgress(safeProgress, "Synchronisation des chaussées...", processedItems, safeTotalItems);
+      }
+
+      await _syncTable('chaussees', 'chaussees_test', result, onProgress: (processed, total) {
+        if (onProgress != null) {
+          double safeInnerProgress = safeTotalItems > 0 ? (processedItems + processed) / safeTotalItems : 0.0;
+          safeInnerProgress = safeInnerProgress.isNaN || safeInnerProgress.isInfinite ? 0.0 : safeInnerProgress.clamp(0.0, 1.0);
+
+          onProgress(safeInnerProgress, "Synchronisation des chaussées...", processedItems + processed, safeTotalItems);
+        }
+      });
+
+      processedItems += chausseeCount;
+    }
+
     // Synchroniser chaque table avec progression
     for (var i = 0; i < tables.length; i++) {
       final table = tables[i];
@@ -134,6 +162,71 @@ class SyncService {
     return frenchNames[tableName] ?? tableName;
   }
 
+// Dans SyncService
+  Future<bool> syncChaussee(Map<String, dynamic> data) async {
+    try {
+      final apiData = _mapChausseeToApi(data);
+
+      // ⭐⭐ LOG des données envoyées
+      print('📤 DONNÉES CHAUSSÉE envoyées à l\'API:');
+      apiData['properties'].forEach((key, value) {
+        print('   $key: $value (type: ${value?.runtimeType})');
+      });
+
+      return await ApiService.postData('chaussees_test', apiData);
+    } catch (e) {
+      print('❌ Erreur synchronisation chaussée: $e');
+      print('📋 Données problématiques: $data');
+      return false;
+    }
+  }
+
+// Dans la classe SyncService
+  Map<String, dynamic> _mapChausseeToApi(Map<String, dynamic> localData) {
+    // Convertir les points JSON en format GeoJSON MultiLineString
+    final pointsJson = localData['points_json'];
+    List<dynamic> points = [];
+
+    try {
+      points = jsonDecode(pointsJson);
+    } catch (e) {
+      print('❌ Erreur décodage points JSON chaussée: $e');
+    }
+
+    // Convertir en format GeoJSON coordinates
+    final coordinates = points.map((point) {
+      return [
+        point['longitude'] ?? point['lng'] ?? 0.0,
+        point['latitude'] ?? point['lat'] ?? 0.0
+      ];
+    }).toList();
+
+    return {
+      'type': 'Feature',
+      'geometry': {
+        'type': 'MultiLineString',
+        'coordinates': [
+          coordinates
+        ]
+      },
+      'properties': {
+        'id': localData['id'],
+        'x_debut_ch': localData['x_debut_chaussee'],
+        'y_debut_ch': localData['y_debut_chaussee'],
+        'x_fin_ch': localData['x_fin_chaussee'],
+        'y_fin_chau': localData['y_fin_chaussee'],
+        'type_chaus': localData['type_chaussee'],
+        'etat_piste': localData['etat_piste'],
+        'created_at': _formatDateTime(localData['created_at']),
+        'updated_at': _formatDateTime(localData['updated_at']),
+        'code_gps': localData['code_gps'],
+        'endroit': localData['endroit'],
+        'code_piste': localData['code_piste'],
+        'login': localData['login_id'],
+      }
+    };
+  }
+
   Future<void> _syncTable(String tableName, String apiEndpoint, SyncResult result, {Function(int, int)? onProgress}) async {
     try {
       print('🔄 Synchronisation de $tableName...');
@@ -143,6 +236,9 @@ class SyncService {
       if (tableName == 'pistes') {
         final storageHelper = SimpleStorageHelper();
         localData = await storageHelper.getUnsyncedPistes();
+      } else if (tableName == 'chaussees') {
+        final storageHelper = SimpleStorageHelper();
+        localData = await storageHelper.getUnsyncedChaussees();
       } else {
         localData = await dbHelper.getUnsyncedEntities(tableName);
       }
@@ -161,26 +257,34 @@ class SyncService {
         Map<String, dynamic> dataToSend;
         if (tableName == 'pistes') {
           dataToSend = _mapPisteToApi(data);
+        } else if (tableName == 'chaussees') {
+          // ⭐⭐ NOUVEAU
+          dataToSend = _mapChausseeToApi(data);
         } else {
           dataToSend = data; // Ancienne logique pour les autres tables
         }
 
         // ⭐⭐ VÉRIFICATION CRITIQUE : code_piste ne doit pas être "Non spécifié"
-        final codePiste = data['code_piste']?.toString().trim();
+        final codePiste = dataToSend['code_piste']?.toString().trim() ?? dataToSend['properties']?['code_piste']?.toString().trim();
+
         if (codePiste == null || codePiste.isEmpty || codePiste == 'Non spécifié' || codePiste == 'Non spÃ©cifiÃ©') {
           print('⏭️ Skipping ${tableName} ID ${data['id']} - code_piste invalide: "$codePiste"');
           result.failedCount++;
           result.errors.add('$tableName ID ${data['id']}: code_piste invalide');
-          continue; // Passer au suivant
+          continue;
         }
 
         // 3. Envoyer seulement si code_piste est valide
-        final success = await _sendDataToApi(apiEndpoint, data);
+        final success = await _sendDataToApi(apiEndpoint, dataToSend);
 
         if (success) {
           if (tableName == 'pistes') {
             final storageHelper = SimpleStorageHelper();
             await storageHelper.markPisteAsSynced(data['id']);
+          } else if (tableName == 'chaussees') {
+            final storageHelper = SimpleStorageHelper();
+
+            await storageHelper.markChausseeAsSynced(data['id']);
           } else {
             await dbHelper.markAsSynced(tableName, data['id']);
           }
@@ -297,23 +401,23 @@ class SyncService {
     if (dateValue == null) return null;
 
     try {
+      DateTime date;
+
       if (dateValue is String) {
-        // Si c'est déjà une string ISO, la retourner telle quelle
-        if (dateValue.contains('T')) {
-          return dateValue;
-        }
-        // Sinon, parser et formater
-        final date = DateTime.parse(dateValue);
-        return date.toIso8601String();
+        date = DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        date = dateValue;
+      } else {
+        return null;
       }
-      if (dateValue is DateTime) {
-        return dateValue.toIso8601String();
-      }
+
+      // ⭐⭐ NOUVEAU FORMAT POUR POSTGRESQL ⭐⭐
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
+          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
     } catch (e) {
       print('❌ Erreur formatage date: $e');
+      return null;
     }
-
-    return null;
   }
 
   Future<bool> syncPiste(Map<String, dynamic> data) async {
@@ -337,6 +441,8 @@ class SyncService {
     switch (endpoint) {
       case 'pistes':
         return await syncPiste(data);
+      case 'chaussees':
+        return await syncChaussee(data);
       case 'localites':
         return await ApiService.syncLocalite(data);
       case 'ecoles':

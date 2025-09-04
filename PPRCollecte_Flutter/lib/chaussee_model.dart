@@ -1,5 +1,15 @@
 // lib/chaussee_model.dart
 import 'dart:convert';
+import 'api_service.dart';
+
+int generateTimestampChaussId() {
+  final now = DateTime.now();
+  final idString = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+      '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}'
+      '${now.second.toString().padLeft(2, '0')}${now.millisecond.toString().padLeft(3, '0')}';
+
+  return int.parse(idString);
+}
 
 class ChausseeModel {
   final int? id;
@@ -16,9 +26,11 @@ class ChausseeModel {
   final double distanceTotaleM;
   final int nombrePoints;
   final String createdAt;
+  final String? updatedAt; // ← NOUVEAU
+  final String userLogin; // ← NOUVEAU
 
   ChausseeModel({
-    this.id,
+    int? id,
     required this.codePiste,
     required this.codeGps,
     required this.endroit,
@@ -32,13 +44,16 @@ class ChausseeModel {
     required this.distanceTotaleM,
     required this.nombrePoints,
     required this.createdAt,
-  });
+    this.updatedAt, // ← NOUVEAU
+    required this.userLogin, // ← NOUVEAU
+  }) : id = id ?? generateTimestampChaussId();
 
   factory ChausseeModel.fromFormData(Map<String, dynamic> formData) {
     final pointsData = formData['points_collectes'] as List<dynamic>? ?? [];
     final pointsJson = jsonEncode(pointsData);
 
     return ChausseeModel(
+      id: formData['id'] ?? generateTimestampChaussId(),
       codePiste: formData['code_piste'] ?? '',
       codeGps: formData['code_gps'] ?? '',
       endroit: formData['endroit'] ?? '',
@@ -52,6 +67,8 @@ class ChausseeModel {
       distanceTotaleM: _parseDouble(formData['distance_totale_m']),
       nombrePoints: formData['nombre_points'] ?? 0,
       createdAt: formData['created_at'] ?? DateTime.now().toIso8601String(),
+      updatedAt: formData['updated_at'], // ← NOUVEAU
+      userLogin: formData['user_login'] ?? '',
     );
   }
 
@@ -71,6 +88,9 @@ class ChausseeModel {
       'distance_totale_m': distanceTotaleM,
       'nombre_points': nombrePoints,
       'created_at': createdAt,
+      'updated_at': updatedAt, // ← NOUVEAU
+      'user_login': userLogin,
+      'login_id': ApiService.userId, // ← NOUVEAU
     };
   }
 
@@ -90,6 +110,7 @@ class ChausseeModel {
       distanceTotaleM: _parseDouble(map['distance_totale_m']),
       nombrePoints: map['nombre_points'] ?? 0,
       createdAt: map['created_at'] ?? DateTime.now().toIso8601String(),
+      userLogin: map['user_login'] ?? '',
     );
   }
 

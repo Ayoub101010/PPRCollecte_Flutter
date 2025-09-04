@@ -377,7 +377,8 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(
         builder: (_) => FormulaireChausseePage(
           chausseePoints: result['points'],
-          provisionalId: result['id'], // ✅ Utiliser l'ID correct
+          provisionalId: result['id'],
+          agentName: widget.agentName, // ✅ Utiliser l'ID correct
         ),
       ),
     );

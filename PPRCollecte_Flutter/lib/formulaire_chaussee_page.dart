@@ -3,15 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 import 'piste_chaussee_db_helper.dart';
+import 'api_service.dart';
 
 class FormulaireChausseePage extends StatefulWidget {
   final List<LatLng> chausseePoints;
   final int? provisionalId;
-
+  final String? agentName;
+  final Map<String, dynamic>? initialData; // ← NOUVEAU: Données existantes
+  final bool isEditingMode; // ← NOUVEAU: Mode édition
   const FormulaireChausseePage({
     super.key,
     required this.chausseePoints,
     this.provisionalId,
+    this.agentName,
+    this.initialData, // ← NOUVEAU
+    this.isEditingMode = false, // ← NOUVEAU
   });
 
   @override
@@ -26,9 +32,12 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   final _codePisteController = TextEditingController();
   final _codeGpsController = TextEditingController();
   final _endroitController = TextEditingController();
+  final _userLoginController = TextEditingController();
 
   String? _typeChaussee; // Radio buttons
   String? _etatPiste; // Radio buttons
+  DateTime? _dateCreation; // ← NOUVEAU
+  DateTime? _dateModification;
 
   // ✅ OPTIONS SELON LA DOCUMENTATION OFFICIELLE
   final List<String> _typeChausseeOptions = [
@@ -52,8 +61,55 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   }
 
   void _initializeForm() {
+    if (widget.isEditingMode && widget.initialData != null) {
+      _fillFormWithExistingData();
+    }
+    // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
+    _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
+    // Date de création = maintenant par défaut
+    _dateCreation = DateTime.now();
+
+    // Date de modification = maintenant (automatique)
+    _dateModification = null;
     // Initialisation si nécessaire
     // Les coordonnées seront calculées automatiquement depuis chausseePoints
+  }
+
+  void _fillFormWithExistingData() {
+    final data = widget.initialData!;
+    setState(() {
+      _codePisteController.text = data['code_piste'] ?? '';
+      _codeGpsController.text = data['code_gps'] ?? '';
+      _endroitController.text = data['endroit'] ?? '';
+      _userLoginController.text = data['user_login'] ?? '';
+      _typeChaussee = data['type_chaussee'];
+      _etatPiste = data['etat_piste'];
+      _dateCreation = data['created_at'] != null ? DateTime.parse(data['created_at']) : null;
+      _dateModification = DateTime.now(); // Mise à jour à maintenant
+    });
+
+    setState(() {});
+  }
+
+  String _getCurrentUser() {
+    // je vais complèter ça après
+
+    return 'user_demo'; // Valeur temporaire pour test
+  }
+
+  Future<void> _selectDateCreation(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dateCreation ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dateCreation = picked;
+      });
+    }
   }
 
   double _calculateTotalDistance(List<LatLng> points) {
@@ -90,12 +146,13 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
         'endroit': _endroitController.text,
         'type_chaussee': _typeChaussee,
         'etat_piste': _etatPiste,
+        'user_login': _userLoginController.text,
 
         // ✅ Coordonnées auto-gérées (les 4)
-        'x_debut_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.longitude : null,
-        'y_debut_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.latitude : null,
-        'x_fin_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.longitude : null,
-        'y_fin_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.latitude : null,
+        'x_debut_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.latitude : 0.0, // ← LATITUDE
+        'y_debut_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.first.longitude : 0.0, // ← LONGITUDE
+        'x_fin_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.latitude : 0.0, // ← LATITUDE
+        'y_fin_chaussee': widget.chausseePoints.isNotEmpty ? widget.chausseePoints.last.longitude : 0.0, // ← LONGITUDE
 
         // Métadonnées de collecte
         'points_collectes': widget.chausseePoints
@@ -106,13 +163,18 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
             .toList(),
         'distance_totale_m': _calculateTotalDistance(widget.chausseePoints),
         'nombre_points': widget.chausseePoints.length,
-        'created_at': DateTime.now().toIso8601String(),
+        'created_at': _dateCreation?.toIso8601String() ?? DateTime.now().toIso8601String(),
+        'updated_at': _dateModification?.toIso8601String(),
+        'is_editing': widget.isEditingMode,
+
         'sync_status': 'pending',
+        'login_id': ApiService.userId,
       };
       final storageHelper = SimpleStorageHelper();
       final savedId = await storageHelper.saveChaussee(chausseeData);
       if (savedId != null) {
         print('✅ Chaussée sauvegardée en local avec ID: $savedId');
+        await storageHelper.debugPrintAllChaussees();
       }
 
       if (mounted) {
@@ -133,6 +195,21 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _selectDateModification(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dateModification ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dateModification = picked;
+      });
     }
   }
 
@@ -198,15 +275,15 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                         ),
                         _buildTextField(
                           controller: _codeGpsController,
-                          label: 'Code GPS *',
+                          label: 'Code GPS ',
                           hint: 'Identifiant GPS terrain',
-                          required: true,
+                          required: false,
                         ),
                         _buildTextField(
                           controller: _endroitController,
-                          label: 'Endroit *',
+                          label: 'Endroit ',
                           hint: 'Lieu/localisation',
-                          required: true,
+                          required: false,
                         ),
                       ],
                     ),
@@ -252,24 +329,30 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                         ),
                       ],
                     ),
-
+                    _buildDateCreationField(),
+                    _buildDateModificationField(),
+                    _buildReadOnlyField(
+                      label: 'Agent enquêteur',
+                      icon: Icons.person,
+                      value: _userLoginController.text,
+                    ),
                     // ✅ Section Caractéristiques (RADIO BUTTONS)
                     _buildFormSection(
                       title: '🛣️ Caractéristiques',
                       children: [
                         _buildRadioGroupField(
-                          label: 'Type de chaussée *',
+                          label: 'Type de chaussée ',
                           value: _typeChaussee,
                           options: _typeChausseeOptions,
                           onChanged: (value) => setState(() => _typeChaussee = value),
-                          required: true,
+                          required: false,
                         ),
                         _buildRadioGroupField(
-                          label: 'État de la piste *',
+                          label: 'État de la piste ',
                           value: _etatPiste,
                           options: _etatPisteOptions,
                           onChanged: (value) => setState(() => _etatPiste = value),
-                          required: true,
+                          required: false,
                         ),
                       ],
                     ),
@@ -610,6 +693,154 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
               color: Color(0xFF333333),
               fontWeight: FontWeight.w500,
               fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateCreationField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Date de création *',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _selectDateCreation(context),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _dateCreation != null ? "${_dateCreation!.day.toString().padLeft(2, '0')}/${_dateCreation!.month.toString().padLeft(2, '0')}/${_dateCreation!.year}" : "Sélectionner une date",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _dateCreation != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateModificationField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Date de modification',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: widget.isEditingMode ? () => _selectDateModification(context) : null,
+            child: Container(
+              decoration: BoxDecoration(
+                color: widget.isEditingMode ? const Color(0xFFF9FAFB) : const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 20,
+                    color: widget.isEditingMode ? const Color(0xFF1976D2) : Colors.grey,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _dateModification != null ? "${_dateModification!.day.toString().padLeft(2, '0')}/${_dateModification!.month.toString().padLeft(2, '0')}/${_dateModification!.year}" : "Sélectionner une date",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: _dateModification != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required IconData icon,
+    required String value,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

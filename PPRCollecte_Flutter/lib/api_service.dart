@@ -80,6 +80,11 @@ class ApiService {
     return await postData('pistes', data);
   }
 
+// Dans ApiService.dart
+  static Future<bool> syncChausseeTest(Map<String, dynamic> data) async {
+    return await postData('chaussees_test', data);
+  }
+
   static Future<bool> syncLocalite(Map<String, dynamic> data) async {
     return await postData('localites', _mapLocaliteToApi(data));
   }

@@ -74,9 +74,10 @@ class SimpleStorageHelper {
         // Table Chaussées
         await db.execute('''
           CREATE TABLE chaussees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id INTEGER PRIMARY KEY ,
             code_piste TEXT NOT NULL,
-            code_gps TEXT NOT NULL,
+            code_gps TEXT ,
+            user_login TEXT ,
             endroit TEXT NOT NULL,
             type_chaussee TEXT,
             etat_piste TEXT,
@@ -87,7 +88,15 @@ class SimpleStorageHelper {
             points_json TEXT NOT NULL,
             distance_totale_m REAL NOT NULL,
             nombre_points INTEGER NOT NULL,
-            created_at TEXT NOT NULL
+            created_at TEXT NOT NULL,
+             updated_at TEXT, -- ← NOUVEAU
+    
+    sync_status TEXT DEFAULT 'pending', 
+    login_id INTEGER, 
+    synced INTEGER DEFAULT 0,
+    date_sync TEXT,
+    downloaded INTEGER DEFAULT 0
+
           )
         ''');
         // Table pour le cache des pistes affichées
@@ -245,17 +254,77 @@ class SimpleStorageHelper {
   }
 
   /// Sauvegarder une chaussée depuis le formulaire
+  /// Sauvegarder une chaussée depuis le formulaire
   Future<int?> saveChaussee(Map<String, dynamic> formData) async {
     try {
       final chaussee = ChausseeModel.fromFormData(formData);
       final db = await database;
       final id = await db.insert('chaussees', chaussee.toMap());
 
-      print('✅ Chaussée "${chaussee.codePiste}" sauvegardée avec ID: $id');
+      // ✅ LOGS COMPLETS COMME POUR LES PISTES
+      print('✅ CHAUSSEE "${chaussee.codePiste}" SAUVEGARDEE AVEC ID: $id');
+      print('📊 Détails de la chaussée enregistrée:');
+
+      final chausseeMap = chaussee.toMap();
+      chausseeMap.forEach((key, value) {
+        if (key != 'points_json') {
+          // Éviter le JSON trop long
+          print('   $key: $value');
+        } else {
+          print('   $key: [JSON contenant ${chaussee.pointsJson.length} caractères]');
+        }
+      });
+
+      // ✅ AFFICHER UN RÉSUMÉ SYNTHÉTIQUE
+      print('🎯 RÉSUMÉ CHAUSSEE:');
+      print('   📍 Endroit: ${chaussee.endroit}');
+      print('   🛣️ Type: ${chaussee.typeChaussee}');
+      print('   📊 État: ${chaussee.etatPiste}');
+      print('   📏 Distance: ${chaussee.distanceTotaleM}m');
+      print('   📍 Points: ${chaussee.nombrePoints}');
+      print('   🆔 Code GPS: ${chaussee.codeGps}');
+      print('   👤 Utilisateur: ${chaussee.userLogin}');
+      print('   📅 Créée le: ${chaussee.createdAt}');
+
       return id;
     } catch (e) {
-      print('❌ Erreur sauvegarde chaussée: $e');
+      print('❌ ERREUR SAUVEGARDE CHAUSSEE: $e');
+      print('📋 Données qui ont causé l\'erreur:');
+      formData.forEach((key, value) {
+        print('   $key: $value (type: ${value.runtimeType})');
+      });
       return null;
+    }
+  }
+
+// Dans SimpleStorageHelper class
+  Future<void> debugPrintAllChaussees() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> chaussees = await db.query('chaussees');
+
+      print('📊 === LISTE COMPLÈTE DES CHAUSSÉES ===');
+      print('📈 Nombre total de chaussées: ${chaussees.length}');
+
+      for (var i = 0; i < chaussees.length; i++) {
+        final chaussee = chaussees[i];
+        print('\n🎯 CHAUSSÉE #${i + 1}');
+        chaussee.forEach((key, value) {
+          if (key != 'points_json') {
+            print('   $key: $value');
+          } else {
+            final pointsJson = value.toString();
+            print('   $key: [${pointsJson.length} caractères]');
+            // Pour voir un extrait du JSON :
+            if (pointsJson.length > 50) {
+              print('        Extrait: ${pointsJson.substring(0, 50)}...');
+            }
+          }
+        });
+      }
+      print('=====================================');
+    } catch (e) {
+      print('❌ Erreur lecture chaussées: $e');
     }
   }
 
@@ -602,5 +671,85 @@ class SimpleStorageHelper {
         id
       ],
     );
+  }
+
+  // Dans SimpleStorageHelper
+  Future<List<Map<String, dynamic>>> getUnsyncedChaussees() async {
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query(
+        'chaussees',
+        where: 'synced = ? AND downloaded = ?',
+        whereArgs: [
+          0,
+          0
+        ],
+        columns: [
+          // ⭐⭐ SPÉCIFIEZ EXPLICITEMENT LES COLONNES ⭐⭐
+          'id',
+          'code_piste',
+          'code_gps',
+          'user_login',
+          'endroit',
+          'type_chaussee',
+          'etat_piste',
+          'x_debut_chaussee',
+          'y_debut_chaussee',
+          'x_fin_chaussee',
+          'y_fin_chaussee',
+          'points_json',
+          'distance_totale_m',
+          'nombre_points',
+          'created_at',
+          'updated_at',
+          'sync_status',
+          'login_id',
+          'synced',
+          'date_sync'
+          // ⭐⭐ NE INCLUEZ PAS downloaded ⭐⭐
+        ],
+      );
+
+      print('📊 Chaussées non synchronisées trouvées: ${maps.length}');
+      return maps;
+    } catch (e) {
+      print('❌ Erreur lecture chaussées non synchronisées: $e');
+      return [];
+    }
+  }
+
+  // Dans SimpleStorageHelper
+  Future<void> markChausseeAsSynced(int chausseeId) async {
+    try {
+      final db = await database;
+      await db.update(
+        'chaussees',
+        {
+          'synced': 1,
+          'downloaded': 0,
+          'date_sync': DateTime.now().toIso8601String(),
+          'sync_status': 'synced',
+        },
+        where: 'id = ?',
+        whereArgs: [
+          chausseeId
+        ],
+      );
+      print('✅ Chaussée $chausseeId marquée comme synchronisée');
+    } catch (e) {
+      print('❌ Erreur marquage chaussée synchronisée: $e');
+    }
+  }
+
+  // Dans SimpleStorageHelper
+  Future<int> getUnsyncedChausseesCount() async {
+    try {
+      final db = await database;
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM chaussees WHERE synced = 0 AND downloaded = 0'));
+      return count ?? 0;
+    } catch (e) {
+      print('❌ Erreur comptage chaussées non synchronisées: $e');
+      return 0;
+    }
   }
 }
