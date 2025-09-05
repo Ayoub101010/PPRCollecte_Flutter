@@ -752,4 +752,98 @@ class SimpleStorageHelper {
       return 0;
     }
   }
+
+  Future<void> saveOrUpdateChausseeTest(Map<String, dynamic> chausseeData) async {
+    try {
+      final db = await database;
+      final properties = chausseeData['properties'];
+      final geometry = chausseeData['geometry'];
+
+      // Extraire les coordonnées du MultiLineString GeoJSON
+      final coordinates = geometry['coordinates'][0];
+      final pointsJson = jsonEncode(coordinates
+          .map((coord) => {
+                'longitude': coord[0],
+                'latitude': coord[1]
+              })
+          .toList());
+
+      // Vérifier si la chaussée existe déjà (par id PostgreSQL)
+      final existing = await db.query(
+        'chaussees',
+        where: 'id = ?',
+        whereArgs: [
+          chausseeData['id']
+        ], // ID PostgreSQL
+      );
+
+      if (existing.isEmpty) {
+        // Insertion nouvelle chaussée avec ID PostgreSQL
+        await db.insert('chaussees', {
+          'id': chausseeData['id'], // ← ID PostgreSQL
+          'code_piste': properties['code_piste'],
+          'code_gps': properties['code_gps'],
+          'user_login': properties['login']?.toString() ?? 'Autre utilisateur',
+          'endroit': properties['endroit'],
+          'type_chaussee': properties['type_chaus'],
+          'etat_piste': properties['etat_piste'],
+          'x_debut_chaussee': properties['x_debut_ch'],
+          'y_debut_chaussee': properties['y_debut_ch'],
+          'x_fin_chaussee': properties['x_fin_ch'],
+          'y_fin_chaussee': properties['y_fin_chau'],
+          'points_json': pointsJson,
+          'distance_totale_m': 0.0, // À calculer si nécessaire
+          'nombre_points': coordinates.length,
+          'created_at': properties['created_at'],
+          'updated_at': properties['updated_at'],
+          'sync_status': 'downloaded',
+          'login_id': properties['login'],
+          'synced': 0,
+          'date_sync': DateTime.now().toIso8601String(),
+          'downloaded': 1, // ← MARQUÉ COMME TÉLÉCHARGÉ
+        });
+        print('✅ Chaussée ${properties['code_piste']} téléchargée (ID: ${chausseeData['id']})');
+      } else {
+        // Mise à jour chaussée existante
+        await db.update(
+          'chaussees',
+          {
+            'code_piste': properties['code_piste'],
+            'code_gps': properties['code_gps'],
+            'user_login': properties['login']?.toString() ?? 'Autre utilisateur',
+            'endroit': properties['endroit'],
+            'type_chaussee': properties['type_chaus'],
+            'etat_piste': properties['etat_piste'],
+            'x_debut_chaussee': properties['x_debut_ch'],
+            'y_debut_chaussee': properties['y_debut_ch'],
+            'x_fin_chaussee': properties['x_fin_ch'],
+            'y_fin_chaussee': properties['y_fin_chau'],
+            'points_json': pointsJson,
+            'updated_at': properties['updated_at'],
+            'sync_status': 'downloaded',
+            'downloaded': 1,
+          },
+          where: 'id = ?',
+          whereArgs: [
+            chausseeData['id']
+          ],
+        );
+        print('🔄 Chaussée ${properties['code_piste']} mise à jour (ID: ${chausseeData['id']})');
+      }
+    } catch (e) {
+      print('❌ Erreur sauvegarde chaussée téléchargée: $e');
+    }
+  }
+
+  // Dans piste_chaussee_db_helper.dart
+  Future<void> deleteChaussee(int id) async {
+    final db = await database;
+    await db.delete(
+      'chaussees',
+      where: 'id = ?',
+      whereArgs: [
+        id
+      ],
+    );
+  }
 }

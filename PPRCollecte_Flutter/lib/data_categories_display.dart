@@ -9,6 +9,7 @@ import 'piste_chaussee_db_helper.dart';
 import 'dart:convert'; // Pour jsonDecode
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng
 import 'formulaire_ligne_page.dart'; // Pour FormulaireLignePage
+import 'formulaire_chaussee_page.dart';
 
 class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
@@ -174,19 +175,104 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     }
   }
 
-// TEMPORAIRE - Pour compilation seulement
+// Dans data_categories_display.dart
   Future<void> _editChaussee(Map<String, dynamic> chaussee) async {
-    print('Édition chaussée à implémenter: ${chaussee['id']}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Édition des chaussées à venir')),
-    );
+    try {
+      // Convertir les points JSON en List<LatLng>
+      final pointsJson = chaussee['points_json'];
+      List<LatLng> points = [];
+
+      if (pointsJson != null && pointsJson is String) {
+        try {
+          final pointsData = jsonDecode(pointsJson) as List;
+          points = pointsData.map((p) => LatLng(p['latitude'] ?? p['lat'] ?? 0.0, p['longitude'] ?? p['lng'] ?? 0.0)).toList();
+        } catch (e) {
+          print('❌ Erreur décodage points: $e');
+        }
+      }
+
+      // Préparer les données pour le formulaire
+      final formData = {
+        'id': chaussee['id'],
+        'code_piste': chaussee['code_piste'],
+        'code_gps': chaussee['code_gps'],
+        'endroit': chaussee['endroit'],
+        'type_chaussee': chaussee['type_chaussee'],
+        'etat_piste': chaussee['etat_piste'],
+        'x_debut_chaussee': chaussee['x_debut_chaussee'],
+        'y_debut_chaussee': chaussee['y_debut_chaussee'],
+        'x_fin_chaussee': chaussee['x_fin_chaussee'],
+        'y_fin_chaussee': chaussee['y_fin_chaussee'],
+        'points': points,
+        'distance_totale_m': chaussee['distance_totale_m'],
+        'nombre_points': chaussee['nombre_points'],
+        'created_at': chaussee['created_at'],
+        'updated_at': DateTime.now().toIso8601String(),
+        'user_login': chaussee['user_login'],
+      };
+
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FormulaireChausseePage(
+            chausseePoints: points,
+            provisionalId: chaussee['id'],
+            agentName: chaussee['user_login'] ?? 'Utilisateur',
+            initialData: formData,
+            isEditingMode: true,
+          ),
+        ),
+      );
+
+      if (result != null) {
+        _fetchData(); // Rafraîchir la liste
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chaussée modifiée avec succès')),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur édition chaussée: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la modification: $e')),
+      );
+    }
   }
 
   Future<void> _deleteChaussee(int id) async {
-    print('Suppression chaussée à implémenter: $id');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Suppression des chaussées à venir')),
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmer la suppression'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer cette chaussée ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
     );
+
+    if (confirmed == true) {
+      try {
+        final storageHelper = SimpleStorageHelper();
+        await storageHelper.deleteChaussee(id);
+        _fetchData(); // Rafraîchir la liste
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Chaussée supprimée avec succès')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la suppression: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _editItem(Map<String, dynamic> item) async {
@@ -342,6 +428,8 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   Future<void> _deleteItem(int id) async {
     if (selectedCategory == "Pistes") {
       await _deletePiste(id);
+    } else if (selectedCategory == "Chaussées") {
+      await _deleteChaussee(id); // ← APPELER LA NOUVELLE MÉTHODE
     } else {
       final config = InfrastructureConfig.getEntityConfig(selectedCategory!, selectedType!);
       final tableName = config?['tableName'] ?? '';

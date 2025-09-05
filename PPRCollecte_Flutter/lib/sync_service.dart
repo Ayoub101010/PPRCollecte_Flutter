@@ -491,6 +491,7 @@ class SyncService {
 // Compter le nombre total d'éléments à télécharger
       final operations = [
         ApiService.fetchPistes,
+        ApiService.fetchChausseesTest,
         ApiService.fetchLocalites,
         ApiService.fetchEcoles,
         ApiService.fetchMarches,
@@ -516,6 +517,27 @@ class SyncService {
       if (onProgress != null) {
         onProgress(0.0, "Préparation...", 0, totalItems);
       }
+
+      //================ CHAUSSÉES ======================
+      if (onProgress != null) {
+        onProgress(processedItems / totalItems, "Téléchargement des chaussées...", processedItems, totalItems);
+      }
+
+      print('📥 Téléchargement des chaussées...');
+      final chaussees = await ApiService.fetchChausseesTest();
+      print('🛣️ ${chaussees.length} chaussées à traiter');
+
+      for (var chaussee in chaussees) {
+        final storageHelper = SimpleStorageHelper();
+        await storageHelper.saveOrUpdateChausseeTest(chaussee);
+        result.successCount++;
+        processedItems++;
+
+        if (onProgress != null) {
+          onProgress(processedItems / totalItems, "Sauvegarde des chaussées...", processedItems, totalItems);
+        }
+      }
+
       // ============ LOCALITES ============
       if (onProgress != null) {
         onProgress(processedItems / totalItems, "Téléchargement des localités...", processedItems, totalItems);

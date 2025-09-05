@@ -75,6 +75,15 @@ class DataSubcategoriesPage extends StatelessWidget {
                     icon: Icons.route,
                     color: const Color(0xFF2196F3),
                     onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DataCategoriesDisplay(
+                            mainCategory: "Chaussées",
+                            dataFilter: dataFilter,
+                          ),
+                        ),
+                      );
                       // Navigation vers les données des chaussées
                     },
                   ),
