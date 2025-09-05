@@ -310,14 +310,36 @@ class SyncService {
   }
 
   Map<String, dynamic> _mapPisteToApi(Map<String, dynamic> localData) {
-    // Convertir les points JSON en format GeoJSON MultiLineString
+    print('🔄 Début mapping piste - Données reçues:');
+    localData.forEach((key, value) {
+      if (key != 'points_json') {
+        print('   $key: $value (type: ${value?.runtimeType})');
+      }
+    });
 
-    final pointsJson = localData['points_json'];
+    // ⭐⭐ CORRECTION: Vérifier que les données ne sont pas null
+    if (localData['code_piste'] == null) {
+      print('❌ ERREUR CRITIQUE: code_piste est null! Abandon du mapping.');
+      return {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'MultiLineString',
+          'coordinates': []
+        },
+        'properties': {}
+      };
+    }
+
+    // Convertir les points JSON
     List<dynamic> points = [];
-    print('🔄 Mapping piste - login_id reçu: ${localData['login_id']} (type: ${localData['login_id']?.runtimeType})');
-    print('🔄 Mapping piste - code_piste: ${localData['code_piste']}');
     try {
-      points = jsonDecode(pointsJson); // ⭐⭐ jsonDecode fonctionnera maintenant
+      final pointsJson = localData['points_json'];
+      if (pointsJson is String) {
+        points = jsonDecode(pointsJson);
+        print('✅ Points JSON décodés: ${points.length} points');
+      } else {
+        print('❌ points_json n\'est pas une String: ${pointsJson.runtimeType}');
+      }
     } catch (e) {
       print('❌ Erreur décodage points JSON: $e');
     }
@@ -330,6 +352,7 @@ class SyncService {
       ];
     }).toList();
 
+    // ⭐⭐ CORRECTION: Utiliser des valeurs par défaut pour éviter les null
     return {
       'type': 'Feature',
       'geometry': {
@@ -340,17 +363,17 @@ class SyncService {
       },
       'properties': {
         'sqlite_id': localData['id'],
-        'code_piste': localData['code_piste'],
+        'code_piste': localData['code_piste'] ?? 'INCONNU_${DateTime.now().millisecondsSinceEpoch}',
         'communes_rurales_id': _parseInt(localData['commune_rurale_id']),
-        'heure_debut': localData['heure_debut'],
-        'heure_fin': localData['heure_fin'],
-        'nom_origine_piste': localData['nom_origine_piste'],
-        'x_origine': _parseDouble(localData['x_origine']),
-        'y_origine': _parseDouble(localData['y_origine']),
-        'nom_destination_piste': localData['nom_destination_piste'],
-        'x_destination': _parseDouble(localData['x_destination']),
-        'y_destination': _parseDouble(localData['y_destination']),
-        'existence_intersection': _parseInt(localData['existence_intersection']),
+        'heure_debut': localData['heure_debut'] ?? '',
+        'heure_fin': localData['heure_fin'] ?? '',
+        'nom_origine_piste': localData['nom_origine_piste'] ?? '',
+        'x_origine': _parseDouble(localData['x_origine']) ?? 0.0,
+        'y_origine': _parseDouble(localData['y_origine']) ?? 0.0,
+        'nom_destination_piste': localData['nom_destination_piste'] ?? '',
+        'x_destination': _parseDouble(localData['x_destination']) ?? 0.0,
+        'y_destination': _parseDouble(localData['y_destination']) ?? 0.0,
+        'existence_intersection': _parseInt(localData['existence_intersection']) ?? 0,
         'x_intersection': _parseDouble(localData['x_intersection']),
         'y_intersection': _parseDouble(localData['y_intersection']),
         'intersection_piste_code': localData['intersection_piste_code'],
@@ -363,9 +386,9 @@ class SyncService {
         'travaux_realises': localData['travaux_realises'],
         'date_travaux': localData['date_travaux'],
         'entreprise': localData['entreprise'],
-        'created_at': _formatDateTime(localData['created_at']),
+        'created_at': _formatDateTime(localData['created_at']) ?? _formatDateTime(DateTime.now()),
         'updated_at': _formatDateTime(localData['updated_at']),
-        'login': _parseInt(localData['login_id']),
+        'login': _parseInt(localData['login_id']) ?? _parseInt(localData['login']),
       }
     };
   }
@@ -420,20 +443,229 @@ class SyncService {
     }
   }
 
-  Future<bool> syncPiste(Map<String, dynamic> data) async {
+  Future<bool> syncPiste(Map<String, dynamic> rawData) async {
     try {
-      final apiData = _mapPisteToApi(data);
+      // ⭐⭐ SIMPLE ET PROPRE COMME syncChaussee
+      print('🔄 Synchronisation piste ID: ${rawData['id']}');
 
-      // ⭐⭐ LOG COMPLET des données envoyées
-      print('📤 DONNÉES COMPLÈTES envoyées à l\'API:');
-      apiData['properties'].forEach((key, value) {
-        print('   $key: $value (type: ${value?.runtimeType})');
-      });
+      // Vérification minimale
+      if (rawData['code_piste'] == null) {
+        print('⏭️ Piste ignorée: code_piste manquant');
+        return false;
+      }
+
+      // Mapping vers format API
+      final apiData = _mapPisteToApi(rawData);
+
+      // Envoi à l'API
       return await ApiService.postData('pistes', apiData);
     } catch (e) {
-      print('❌ Erreur synchronisation piste: $e');
-      print('📋 Données problématiques: $data');
+      print('❌ Erreur syncPiste: $e');
       return false;
+    }
+  }
+
+  // Ajoutez cette méthode pour la synchronisation séquentielle
+  Future<SyncResult> syncAllDataSequential({Function(double, String, int, int)? onProgress}) async {
+    final result = SyncResult();
+    int totalItems = 0;
+    int processedItems = 0;
+    int safeTotalItems = 1; // ← DÉCLARER ICI en dehors du try/catch
+
+    try {
+      // === ÉTAPE 1: COMPTER LE TOTAL ===
+      final storageHelper = SimpleStorageHelper();
+      final pisteCount = await storageHelper.getUnsyncedPistesCount();
+      final chausseeCount = await storageHelper.getUnsyncedChausseesCount();
+
+      // Compter les autres tables
+      final tables = [
+        'localites',
+        'ecoles',
+        'marches',
+        'services_santes',
+        'batiments_administratifs',
+        'infrastructures_hydrauliques',
+        'autres_infrastructures',
+        'ponts',
+        'bacs',
+        'buses',
+        'dalots',
+        'passages_submersibles',
+        'points_critiques',
+        'points_coupures'
+      ];
+
+      for (var table in tables) {
+        final data = await dbHelper.getUnsyncedEntities(table);
+        totalItems += data.length;
+      }
+
+      totalItems += pisteCount + chausseeCount;
+      safeTotalItems = totalItems > 0 ? totalItems : 1; // ← MODIFIER ICI (pas de déclaration)
+
+      // === ÉTAPE 2: SYNCHRONISATION DES PISTES (PREMIÈRE) ===
+      if (onProgress != null) {
+        onProgress(0.0, "🚀 Démarrage synchronisation des PISTES...", 0, safeTotalItems);
+      }
+
+      if (pisteCount > 0) {
+        await _syncTableSequential('pistes', 'pistes', result, onProgress: (current, total) {
+          double progress = safeTotalItems > 0 ? (current / total * pisteCount / safeTotalItems) : 0;
+          progress = progress.clamp(0.0, 1.0);
+          if (onProgress != null) {
+            onProgress(progress, "📤 Envoi des pistes... ($current/$total)", current, total);
+          }
+        }, onComplete: (successCount) {
+          processedItems += successCount;
+          if (onProgress != null) {
+            onProgress(processedItems / safeTotalItems, "✅ Pistes synchronisées!", processedItems, safeTotalItems);
+          }
+        });
+      } else {
+        if (onProgress != null) {
+          onProgress(0.0, "✅ Aucune piste à synchroniser", 0, safeTotalItems);
+        }
+        await Future.delayed(Duration(seconds: 1));
+      }
+
+      // === ÉTAPE 3: CONFIRMATION PISTES TERMINÉES ===
+      if (onProgress != null) {
+        onProgress(processedItems / safeTotalItems, "🎯 Pistes synchronisées! Début chaussées...", processedItems, safeTotalItems);
+      }
+      await Future.delayed(Duration(seconds: 2));
+
+      // === ÉTAPE 4: SYNCHRONISATION DES CHAUSSÉES (DEUXIÈME) ===
+      if (chausseeCount > 0) {
+        await _syncTableSequential('chaussees', 'chaussees_test', result, onProgress: (current, total) {
+          double progress = safeTotalItems > 0 ? (processedItems + (current / total * chausseeCount)) / safeTotalItems : 0;
+          progress = progress.clamp(0.0, 1.0);
+          if (onProgress != null) {
+            onProgress(progress, "📤 Envoi des chaussées... ($current/$total)", processedItems + current, safeTotalItems);
+          }
+        }, onComplete: (successCount) {
+          processedItems += successCount;
+          if (onProgress != null) {
+            onProgress(processedItems / safeTotalItems, "✅ Chaussées synchronisées!", processedItems, safeTotalItems);
+          }
+        });
+      } else {
+        if (onProgress != null) {
+          onProgress(processedItems / safeTotalItems, "✅ Aucune chaussée à synchroniser", processedItems, safeTotalItems);
+        }
+        await Future.delayed(Duration(seconds: 1));
+      }
+
+      // === ÉTAPE 5: CONFIRMATION CHAUSSÉES TERMINÉES ===
+      if (onProgress != null) {
+        onProgress(processedItems / safeTotalItems, "🎯 Chaussées synchronisées! Début autres données...", processedItems, safeTotalItems);
+      }
+      await Future.delayed(Duration(seconds: 2));
+
+      // === ÉTAPE 6: SYNCHRONISATION DES AUTRES DONNÉES (TROISIÈME) ===
+      for (var i = 0; i < tables.length; i++) {
+        final table = tables[i];
+        final tableData = await dbHelper.getUnsyncedEntities(table);
+        final tableCount = tableData.length;
+
+        if (tableCount > 0) {
+          await _syncTableSequential(table, table, result, onProgress: (current, total) {
+            double progress = safeTotalItems > 0 ? (processedItems + (current / total * tableCount)) / safeTotalItems : 0;
+            progress = progress.clamp(0.0, 1.0);
+            if (onProgress != null) {
+              onProgress(progress, "📤 Envoi des ${_getFrenchTableName(table)}... ($current/$total)", processedItems + current, safeTotalItems);
+            }
+          }, onComplete: (successCount) {
+            processedItems += successCount;
+            if (onProgress != null) {
+              onProgress(processedItems / safeTotalItems, "✅ ${_getFrenchTableName(table)} synchronisés!", processedItems, safeTotalItems);
+            }
+          });
+        }
+      }
+
+      // === SYNCHRONISATION TERMINÉE ===
+      if (onProgress != null) {
+        onProgress(1.0, "🎉 Synchronisation terminée avec succès!", processedItems, safeTotalItems);
+      }
+    } catch (e) {
+      result.errors.add('Erreur synchronisation séquentielle: $e');
+      print('❌ Erreur synchronisation séquentielle: $e');
+      if (onProgress != null) {
+        onProgress(1.0, "❌ Erreur lors de la synchronisation", processedItems, safeTotalItems);
+      }
+    }
+
+    return result;
+  }
+
+// Nouvelle méthode pour la synchronisation séquentielle
+  Future<void> _syncTableSequential(String tableName, String apiEndpoint, SyncResult result, {Function(int, int)? onProgress, Function(int)? onComplete}) async {
+    try {
+      List<Map<String, dynamic>> localData;
+
+      if (tableName == 'pistes') {
+        final storageHelper = SimpleStorageHelper();
+        localData = await storageHelper.getUnsyncedPistes();
+      } else if (tableName == 'chaussees') {
+        final storageHelper = SimpleStorageHelper();
+        localData = await storageHelper.getUnsyncedChaussees();
+      } else {
+        localData = await dbHelper.getUnsyncedEntities(tableName);
+      }
+
+      if (localData.isEmpty) {
+        if (onComplete != null) onComplete(0);
+        return;
+      }
+
+      int successCount = 0;
+
+      for (var i = 0; i < localData.length; i++) {
+        var data = localData[i];
+
+        bool success;
+
+        // ⭐⭐ UTILISER LA MÊME MÉTHODE QUE POUR LES CHAUSSÉES
+        if (tableName == 'pistes') {
+          success = await syncPiste(data); // Comme pour syncChaussee(data)
+        } else if (tableName == 'chaussees') {
+          success = await syncChaussee(data);
+        } else {
+          success = await _sendDataToApi(apiEndpoint, data);
+        }
+
+        if (success) {
+          if (tableName == 'pistes') {
+            final storageHelper = SimpleStorageHelper();
+            await storageHelper.markPisteAsSynced(data['id']);
+          } else if (tableName == 'chaussees') {
+            final storageHelper = SimpleStorageHelper();
+            await storageHelper.markChausseeAsSynced(data['id']);
+          } else {
+            await dbHelper.markAsSynced(tableName, data['id']);
+          }
+          successCount++;
+          result.successCount++;
+          print('✅ $tableName ID ${data['id']} synchronisé');
+        } else {
+          result.failedCount++;
+          result.errors.add('Échec synchronisation $tableName ID ${data['id']}');
+          print('❌ Échec synchronisation $tableName ID ${data['id']}');
+        }
+
+        if (onProgress != null) {
+          onProgress(i + 1, localData.length);
+        }
+
+        await Future.delayed(Duration(milliseconds: 100));
+      }
+
+      if (onComplete != null) onComplete(successCount);
+    } catch (e) {
+      result.errors.add('$tableName: $e');
+      print('❌ Erreur synchronisation $tableName: $e');
+      if (onComplete != null) onComplete(0);
     }
   }
 

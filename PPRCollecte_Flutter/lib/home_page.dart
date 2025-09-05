@@ -638,21 +638,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Méthode AVEC Future pour la logique async
+  // Remplacer la méthode _performSync() par :
   Future<void> _performSync() async {
     setState(() {
       isSyncing = true;
       _syncProgressValue = 0.0;
       _syncProcessedItems = 0;
-      _syncTotalItems = 1; // Valeur initiale
+      _syncTotalItems = 1;
     });
 
     try {
-      final result = await SyncService().syncAllData(
+      final result = await SyncService().syncAllDataSequential(
         onProgress: (progress, currentOperation, processed, total) {
-          // ⭐⭐ VALIDATION DES VALEURS ⭐⭐
           double safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : progress.clamp(0.0, 1.0);
           int safeProcessed = processed.isNaN || processed.isInfinite ? 0 : processed;
           int safeTotal = total.isNaN || total.isInfinite ? 1 : total;
+
           setState(() {
             _syncProgressValue = safeProgress;
             _currentSyncOperation = currentOperation;
@@ -661,8 +662,8 @@ class _HomePageState extends State<HomePage> {
           });
         },
       );
+
       setState(() => lastSyncResult = result);
-      // Cacher la progression avant de montrer le résultat
       setState(() => isSyncing = false);
       _showSyncResult(result);
     } catch (e) {
@@ -685,14 +686,46 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  Widget _buildStepIndicator() {
+    String currentStep = "Pistes";
+    if (_currentSyncOperation.contains("chaussée") || _currentSyncOperation.contains("chaussee")) {
+      currentStep = "Chaussées";
+    } else if (_currentSyncOperation.contains("localité") || _currentSyncOperation.contains("école")) {
+      currentStep = "Points d'intérêt";
+    }
+
+    return Row(
+      children: [
+        Icon(Icons.check_circle, color: currentStep == "Pistes" ? Colors.grey : Colors.green, size: 16),
+        SizedBox(width: 4),
+        Text('Pistes', style: TextStyle(color: currentStep == "Pistes" ? Colors.orange : Colors.green, fontWeight: currentStep == "Pistes" ? FontWeight.bold : FontWeight.normal)),
+        SizedBox(width: 12),
+        Icon(Icons.check_circle,
+            color: currentStep == "Chaussées"
+                ? Colors.grey
+                : currentStep == "Pistes"
+                    ? Colors.grey
+                    : Colors.green,
+            size: 16),
+        SizedBox(width: 4),
+        Text('Chaussées',
+            style: TextStyle(
+                color: currentStep == "Chaussées"
+                    ? Colors.orange
+                    : currentStep == "Pistes"
+                        ? Colors.grey
+                        : Colors.green,
+                fontWeight: currentStep == "Chaussées" ? FontWeight.bold : FontWeight.normal)),
+        SizedBox(width: 12),
+        Icon(Icons.check_circle, color: currentStep == "Points d'intérêt" ? Colors.grey : Colors.green, size: 16),
+        SizedBox(width: 4),
+        Text('Points', style: TextStyle(color: currentStep == "Points d'intérêt" ? Colors.orange : Colors.grey, fontWeight: currentStep == "Points d'intérêt" ? FontWeight.bold : FontWeight.normal)),
+      ],
+    );
+  }
+
 // Ajoutez cette méthode
   Widget _buildSyncProgressIndicator() {
-    // ⭐⭐ VALIDATION DES VALEURS NUMÉRIQUES ⭐⭐
-    double safeProgress = _syncProgressValue.isNaN || _syncProgressValue.isInfinite ? 0.0 : _syncProgressValue.clamp(0.0, 1.0);
-
-    int safeProcessed = _syncProcessedItems.isNaN || _syncProcessedItems.isInfinite ? 0 : _syncProcessedItems;
-
-    int safeTotal = _syncTotalItems.isNaN || _syncTotalItems.isInfinite ? 1 : _syncTotalItems;
     return Container(
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(horizontal: 20),
@@ -701,47 +734,30 @@ class _HomePageState extends State<HomePage> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.orange[100]!),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
+          BoxShadow(color: Colors.black26, blurRadius: 10)
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.cloud_upload, color: Colors.orange),
-              SizedBox(width: 10),
-              Text(
-                'Synchronisation en cours',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+          Row(children: [
+            Icon(Icons.cloud_upload, color: Colors.orange),
+            SizedBox(width: 10),
+            Text('Synchronisation en cours', style: TextStyle(fontWeight: FontWeight.bold)),
+          ]),
           SizedBox(height: 12),
           LinearProgressIndicator(
-            value: safeProgress,
+            value: _syncProgressValue,
             backgroundColor: Colors.grey[300],
             valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
           ),
           SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${(safeProgress * 100).toStringAsFixed(0)}%',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                '$safeProcessed/${safeTotal == 0 ? 1 : safeTotal}',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
+              Text('${(_syncProgressValue * 100).toStringAsFixed(0)}%'),
+              Text('$_syncProcessedItems/$_syncTotalItems'),
             ],
           ),
           SizedBox(height: 8),
@@ -751,6 +767,9 @@ class _HomePageState extends State<HomePage> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
+          SizedBox(height: 8),
+          // Ajouter des indicateurs d'étapes
+          _buildStepIndicator(),
         ],
       ),
     );
