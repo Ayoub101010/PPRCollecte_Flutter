@@ -178,46 +178,37 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 // Dans data_categories_display.dart
   Future<void> _editChaussee(Map<String, dynamic> chaussee) async {
     try {
-      // Convertir les points JSON en List<LatLng>
-      final pointsJson = chaussee['points_json'];
-      List<LatLng> points = [];
-
-      if (pointsJson != null && pointsJson is String) {
-        try {
-          final pointsData = jsonDecode(pointsJson) as List;
-          points = pointsData.map((p) => LatLng(p['latitude'] ?? p['lat'] ?? 0.0, p['longitude'] ?? p['lng'] ?? 0.0)).toList();
-        } catch (e) {
-          print('❌ Erreur décodage points: $e');
-        }
-      }
-
-      // Préparer les données pour le formulaire
+      // Convertir les données SQLite vers format formulaire
       final formData = {
-        'id': chaussee['id'],
+        'id': chaussee['id'], // ← IMPORTANT: Inclure l'ID
         'code_piste': chaussee['code_piste'],
         'code_gps': chaussee['code_gps'],
         'endroit': chaussee['endroit'],
         'type_chaussee': chaussee['type_chaussee'],
         'etat_piste': chaussee['etat_piste'],
+        'user_login': chaussee['user_login'], // ← Utiliser user_login
         'x_debut_chaussee': chaussee['x_debut_chaussee'],
         'y_debut_chaussee': chaussee['y_debut_chaussee'],
         'x_fin_chaussee': chaussee['x_fin_chaussee'],
         'y_fin_chaussee': chaussee['y_fin_chaussee'],
-        'points': points,
+        'points_collectes': jsonDecode(chaussee['points_json']),
         'distance_totale_m': chaussee['distance_totale_m'],
         'nombre_points': chaussee['nombre_points'],
         'created_at': chaussee['created_at'],
-        'updated_at': DateTime.now().toIso8601String(),
-        'user_login': chaussee['user_login'],
+        'updated_at': chaussee['updated_at'],
+        'is_editing': true, // ← Flag pour mode édition
       };
+
+      // Convertir les points JSON en List<LatLng>
+      final pointsList = (formData['points_collectes'] as List).map((p) => LatLng(p['latitude'], p['longitude'])).toList();
 
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => FormulaireChausseePage(
-            chausseePoints: points,
-            provisionalId: chaussee['id'],
-            agentName: chaussee['user_login'] ?? 'Utilisateur',
+            chausseePoints: pointsList,
+            provisionalId: formData['id'],
+            agentName: formData['user_login'], // ← Utiliser user_login
             initialData: formData,
             isEditingMode: true,
           ),
@@ -225,7 +216,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
       );
 
       if (result != null) {
-        _fetchData(); // Rafraîchir la liste
+        _fetchData();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Chaussée modifiée avec succès')),
         );

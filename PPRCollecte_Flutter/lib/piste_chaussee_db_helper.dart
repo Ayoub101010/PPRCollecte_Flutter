@@ -257,43 +257,71 @@ class SimpleStorageHelper {
   /// Sauvegarder une chaussée depuis le formulaire
   Future<int?> saveChaussee(Map<String, dynamic> formData) async {
     try {
-      final chaussee = ChausseeModel.fromFormData(formData);
-      final db = await database;
-      final id = await db.insert('chaussees', chaussee.toMap());
+      final loginId = ApiService.userId;
 
-      // ✅ LOGS COMPLETS COMME POUR LES PISTES
-      print('✅ CHAUSSEE "${chaussee.codePiste}" SAUVEGARDEE AVEC ID: $id');
-      print('📊 Détails de la chaussée enregistrée:');
+      // Vérifier si on est en mode édition
+      final bool isEditing = formData['is_editing'] ?? false;
+      final int? existingId = formData['id'];
 
-      final chausseeMap = chaussee.toMap();
-      chausseeMap.forEach((key, value) {
-        if (key != 'points_json') {
-          // Éviter le JSON trop long
-          print('   $key: $value');
-        } else {
-          print('   $key: [JSON contenant ${chaussee.pointsJson.length} caractères]');
-        }
-      });
+      if (isEditing && existingId != null) {
+        // MODE ÉDITION: Mise à jour
+        await updateChaussee(formData);
+        print('✅ Chaussée "${formData['code_piste']}" mise à jour (ID: $existingId)');
+        return existingId;
+      } else {
+        // MODE CRÉATION: Insertion
+        final formDataWithLoginId = Map<String, dynamic>.from(formData);
+        formDataWithLoginId['login_id'] = loginId;
 
-      // ✅ AFFICHER UN RÉSUMÉ SYNTHÉTIQUE
-      print('🎯 RÉSUMÉ CHAUSSEE:');
-      print('   📍 Endroit: ${chaussee.endroit}');
-      print('   🛣️ Type: ${chaussee.typeChaussee}');
-      print('   📊 État: ${chaussee.etatPiste}');
-      print('   📏 Distance: ${chaussee.distanceTotaleM}m');
-      print('   📍 Points: ${chaussee.nombrePoints}');
-      print('   🆔 Code GPS: ${chaussee.codeGps}');
-      print('   👤 Utilisateur: ${chaussee.userLogin}');
-      print('   📅 Créée le: ${chaussee.createdAt}');
+        final chaussee = ChausseeModel.fromFormData(formDataWithLoginId);
+        final db = await database;
+        final id = await db.insert('chaussees', chaussee.toMap());
 
-      return id;
+        print('✅ Chaussée "${chaussee.codePiste}" sauvegardée avec ID: $id');
+        return id;
+      }
     } catch (e) {
-      print('❌ ERREUR SAUVEGARDE CHAUSSEE: $e');
-      print('📋 Données qui ont causé l\'erreur:');
-      formData.forEach((key, value) {
-        print('   $key: $value (type: ${value.runtimeType})');
-      });
+      print('❌ Erreur sauvegarde chaussée: $e');
       return null;
+    }
+  }
+
+  Future<void> updateChaussee(Map<String, dynamic> chausseeData) async {
+    try {
+      final db = await database;
+
+      // Préparer les données pour la mise à jour
+      final updateData = {
+        'code_piste': chausseeData['code_piste'],
+        'code_gps': chausseeData['code_gps'],
+        'endroit': chausseeData['endroit'],
+        'type_chaussee': chausseeData['type_chaussee'],
+        'etat_piste': chausseeData['etat_piste'],
+        'x_debut_chaussee': chausseeData['x_debut_chaussee'],
+        'y_debut_chaussee': chausseeData['y_debut_chaussee'],
+        'x_fin_chaussee': chausseeData['x_fin_chaussee'],
+        'y_fin_chaussee': chausseeData['y_fin_chaussee'],
+        'points_json': jsonEncode(chausseeData['points_collectes']),
+        'distance_totale_m': chausseeData['distance_totale_m'],
+        'nombre_points': chausseeData['nombre_points'],
+        'updated_at': DateTime.now().toIso8601String(), // ← FORCER l'heure actuelle
+        'user_login': chausseeData['user_login'],
+        'login_id': chausseeData['login_id'],
+      };
+
+      await db.update(
+        'chaussees',
+        updateData,
+        where: 'id = ?',
+        whereArgs: [
+          chausseeData['id']
+        ],
+      );
+
+      print('✅ Chaussée ${chausseeData['id']} mise à jour avec succès');
+    } catch (e) {
+      print('❌ Erreur mise à jour chaussée: $e');
+      rethrow;
     }
   }
 

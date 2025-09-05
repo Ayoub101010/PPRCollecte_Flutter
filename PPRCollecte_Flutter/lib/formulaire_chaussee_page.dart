@@ -163,13 +163,16 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
             .toList(),
         'distance_totale_m': _calculateTotalDistance(widget.chausseePoints),
         'nombre_points': widget.chausseePoints.length,
-        'created_at': _dateCreation?.toIso8601String() ?? DateTime.now().toIso8601String(),
-        'updated_at': _dateModification?.toIso8601String(),
+        'created_at': widget.isEditingMode && widget.initialData != null ? widget.initialData!['created_at'] : DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
         'is_editing': widget.isEditingMode,
 
         'sync_status': 'pending',
         'login_id': ApiService.userId,
       };
+      if (widget.isEditingMode && widget.initialData != null) {
+        chausseeData['id'] = widget.initialData!['id'];
+      }
       final storageHelper = SimpleStorageHelper();
       final savedId = await storageHelper.saveChaussee(chausseeData);
       if (savedId != null) {
