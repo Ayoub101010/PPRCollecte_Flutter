@@ -239,6 +239,18 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         // INSERTION d'une nouvelle entité
         id = await dbHelper.insertEntity(tableName, entityData);
         print('✅ Nouvelle entité enregistrée avec ID: $id');
+        final entityConfig = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
+        final originalTableName = entityConfig?['tableName'] ?? ''; // ← NOM DIFFÉRENT
+
+        await dbHelper.saveDisplayedPoint(
+          id: id,
+          tableName: originalTableName, // ← UTILISER LE NOUVEAU NOM
+          latitude: _formData['latitude'] ?? 0.0,
+          longitude: _formData['longitude'] ?? 0.0,
+          type: widget.type,
+          name: _formData['nom'] ?? 'Sans nom',
+          codePiste: _formData['code_piste'] ?? 'Non spécifié',
+        );
       }
 
       // ============ AJOUTER CE CODE POUR LA CONFIRMATION ============
@@ -263,8 +275,10 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Fermer la boîte de dialogue
-                  widget.onSaved(); // ← CETTE LIGNE EST CRUCIALE
+                  Navigator.of(context).pop();
+                  widget.onSaved();
+                  // Fermer la boîte de dialogue
+                  // ← CETTE LIGNE EST CRUCIALE
                 },
                 child: const Text('OK'),
               ),
@@ -290,6 +304,21 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       }
     }
   }
+
+// AJOUTEZ dans _PointFormWidgetState
+  void _refreshAndNavigate() {
+    // Fermer le formulaire
+    widget.onSaved();
+
+    // Optionnel: Afficher un message de rafraîchissement
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Carte rafraîchie avec le nouveau point'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+// AJOUTEZ cette méthode dans la classe _PointFormWidgetState
 
 // MÉTHODE COMPLÈTEMENT CORRIGÉE POUR LES PRÉFIXES :
   String _getCoordinatePrefix(String tableName) {

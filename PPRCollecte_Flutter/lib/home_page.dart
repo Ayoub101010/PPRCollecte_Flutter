@@ -17,6 +17,7 @@ import 'login_page.dart';
 import 'data_categories_page.dart';
 import 'package:flutter/foundation.dart'; // Pour kDebugMode
 import 'piste_chaussee_db_helper.dart';
+import 'database_helper.dart';
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -51,16 +52,21 @@ class _HomePageState extends State<HomePage> {
   String _currentSyncOperation = "Préparation de la synchronisation...";
   int _syncTotalItems = 0;
   int _syncProcessedItems = 0;
+  Set<Marker> _displayedPointsMarkers = {};
 
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _lastCameraPosition;
   late final HomeController homeController;
+  final DisplayedPointsService _pointsService = DisplayedPointsService();
 
   @override
   void initState() {
     super.initState();
     homeController = HomeController();
+    //_cleanupDisplayedPoints();
     _loadDisplayedPistes();
+    _loadDisplayedPoints();
+
     homeController.addListener(() {
       setState(() {
         userPosition = homeController.userPosition;
@@ -74,16 +80,16 @@ class _HomePageState extends State<HomePage> {
     homeController.initialize();
 
     // Données de test initiales
-    collectedMarkers.addAll([
+    /* collectedMarkers.addAll([
       Marker(
         markerId: const MarkerId('poi1'),
         position: const LatLng(34.021, -6.841),
         infoWindow: const InfoWindow(title: 'Point d\'intérêt 1', snippet: 'Infrastructure - Point'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       ),
-    ]);
+    ]);*/
 
-    collectedPolylines.add(const Polyline(
+    /* collectedPolylines.add(const Polyline(
       polylineId: PolylineId('piste1'),
       points: [
         LatLng(34.020, -6.840),
@@ -92,7 +98,16 @@ class _HomePageState extends State<HomePage> {
       ],
       color: Colors.blue,
       width: 3,
-    ));
+    ));*/
+  }
+
+  Future<void> _cleanupDisplayedPoints() async {
+    try {
+      final dbHelper = DatabaseHelper();
+      await dbHelper.cleanupDisplayedPoints();
+    } catch (e) {
+      print('❌ Erreur nettoyage points: $e');
+    }
   }
 
   String generateCodePiste() {
@@ -102,6 +117,34 @@ class _HomePageState extends State<HomePage> {
         '${now.second.toString().padLeft(2, '0')}';
 
     return 'Piste_$timestamp';
+  }
+
+// AJOUTEZ CETTE MÉTHODE DANS _HomePageState
+  /*void _setupRefreshListener() {
+    // Rafraîchir périodiquement toutes les 2 secondes
+    Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (mounted) {
+        _loadDisplayedPoints();
+        print('🔄 Rafraîchissement automatique des points');
+      }
+    });
+  }*/
+
+  Future<void> _loadDisplayedPoints() async {
+    // AJOUTEZ CE DEBUG pour voir QUI appelle
+    print('🛑 _loadDisplayedPoints appelée par:');
+    print(StackTrace.current.toString().split('\n').take(3).join('\n'));
+    print('---');
+
+    try {
+      final markers = await _pointsService.getDisplayedPointsMarkers();
+      setState(() {
+        _displayedPointsMarkers = markers;
+      });
+      print('📍 ${markers.length} points affichés chargés');
+    } catch (e) {
+      print('❌ Erreur chargement points: $e');
+    }
   }
 
   Future<void> _onMapCreated(GoogleMapController controller) async {
@@ -182,7 +225,7 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       });
-      homeController.refreshFormMarkers();
+      // homeController.refreshFormMarkers();
     }
   }
 
@@ -843,15 +886,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     // Préparer les markers
-    final Set<Marker> markersSet = Set<Marker>.from(collectedMarkers);
-    markersSet.addAll(formMarkers);
-    markersSet.removeWhere((m) => m.markerId.value == 'user');
-    markersSet.add(Marker(
+    final Set<Marker> markersSet = Set<Marker>.from(_displayedPointsMarkers);
+    // markersSet.addAll(formMarkers);
+    // markersSet.removeWhere((m) => m.markerId.value == 'user');
+    /* markersSet.add(Marker(
       markerId: const MarkerId('user'),
       position: userPosition,
       infoWindow: const InfoWindow(title: 'Vous êtes ici'),
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-    ));
+    ));*/
 
     // Préparer les polylines
     final allPolylines = Set<Polyline>.from(collectedPolylines);
@@ -929,7 +972,7 @@ class _HomePageState extends State<HomePage> {
 
                   // === AJOUTEZ ICI === //
                   Positioned(
-                    bottom: 160,
+                    bottom: 200,
                     right: 16,
                     child: Visibility(
                       visible: kDebugMode && homeController.hasActiveCollection,
@@ -962,6 +1005,7 @@ class _HomePageState extends State<HomePage> {
                     onToggleChaussee: toggleChausseeCollection,
                     onFinishLigne: finishLigneCollection,
                     onFinishChaussee: finishChausseeCollection,
+                    onRefresh: _loadDisplayedPoints,
                   ),
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
@@ -1027,5 +1071,43 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+}
+// === COLLEZ CETTE CLASSE DIRECTEMENT DANS home_page.dart ===
+// À la fin du fichier, avant la dernière accolade fermante
+
+class DisplayedPointsService {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  Future<Set<Marker>> getDisplayedPointsMarkers() async {
+    try {
+      final points = await _dbHelper.loadDisplayedPoints();
+      final Set<Marker> markers = {};
+
+      for (var point in points) {
+        markers.add(Marker(
+          markerId: MarkerId('displayed_point_${point['id']}'),
+          position: LatLng(
+            (point['latitude'] as num).toDouble(),
+            (point['longitude'] as num).toDouble(),
+          ),
+          infoWindow: InfoWindow(
+            title: '${point['point_type']}: ${point['point_name']}',
+            snippet: 'Code Piste: ${point['code_piste'] ?? 'N/A'}',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        ));
+      }
+
+      print('📍 ${markers.length} points affichés chargés');
+      return markers;
+    } catch (e) {
+      print('❌ Erreur dans getDisplayedPointsMarkers: $e');
+      return {};
+    }
+  }
+
+  Future<Set<Marker>> refreshDisplayedPoints() async {
+    return await getDisplayedPointsMarkers();
   }
 }

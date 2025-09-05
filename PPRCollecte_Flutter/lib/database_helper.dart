@@ -1598,4 +1598,79 @@ class DatabaseHelper {
       rethrow;
     }
   }
+
+  Future<void> saveDisplayedPoint({
+    required int id,
+    required String tableName,
+    required double latitude,
+    required double longitude,
+    required String type,
+    required String name,
+    required String codePiste,
+  }) async {
+    final db = await database;
+
+    // Créer une table dédiée pour l'affichage si elle n'existe pas
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS displayed_points (
+      id INTEGER PRIMARY KEY,
+      original_table TEXT NOT NULL,
+      latitude REAL NOT NULL,
+      longitude REAL NOT NULL,
+      point_type TEXT NOT NULL,
+      point_name TEXT NOT NULL,
+      code_piste TEXT,
+      login_id INTEGER NOT NULL,
+      date_created TEXT NOT NULL
+    )
+  ''');
+
+    await db.insert(
+      'displayed_points',
+      {
+        'id': id,
+        'original_table': tableName,
+        'latitude': latitude,
+        'longitude': longitude,
+        'point_type': type,
+        'point_name': name,
+        'code_piste': codePiste,
+        'login_id': ApiService.userId,
+        'date_created': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    print('✅ Point sauvegardé pour affichage: $name (ID: $id)');
+  }
+
+  Future<List<Map<String, dynamic>>> loadDisplayedPoints() async {
+    final db = await database;
+    final tableExists = await _tableExists(db, 'displayed_points');
+    if (!tableExists) return [];
+
+    // ============ AJOUTER LE FILTRE PAR UTILISATEUR ============
+    return await db.query(
+      'displayed_points',
+      where: 'login_id = ?', // ← NOUVEAU FILTRE
+      whereArgs: [
+        ApiService.userId
+      ], // ← ID de l'utilisateur connecté
+    );
+    // ============ FIN ============
+  }
+
+  // Dans DatabaseHelper - pour garder la DB propre
+  Future<void> cleanupDisplayedPoints() async {
+    final db = await database;
+
+    // UNIQUEMENT supprimer les points SANS login_id
+    final result = await db.delete(
+      'displayed_points',
+      where: 'login_id IS NULL', // ← SEULEMENT les points sans utilisateur
+      // whereArgs: [ApiService.userId],  // ← SUPPRIMEZ CETTE LIGNE
+    );
+
+    print('🧹 $result points sans utilisateur nettoyés');
+  }
 }

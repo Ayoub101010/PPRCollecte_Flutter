@@ -11,6 +11,7 @@ class MapControlsWidget extends StatelessWidget {
   final VoidCallback onToggleChaussee;
   final VoidCallback onFinishLigne;
   final VoidCallback onFinishChaussee;
+  final VoidCallback onRefresh;
 
   const MapControlsWidget({
     super.key,
@@ -22,8 +23,10 @@ class MapControlsWidget extends StatelessWidget {
     required this.onToggleChaussee,
     required this.onFinishLigne,
     required this.onFinishChaussee,
+    required this.onRefresh,
   });
 
+  @override
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -32,6 +35,20 @@ class MapControlsWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // BOUTON RAFRAÎCHIR - NOUVEAU
+          FloatingActionButton.extended(
+            heroTag: "refreshBtn",
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.refresh, size: 20),
+            label: const Text("Rafraîchir"),
+            onPressed: onRefresh, // ← CORRECTION: onRefresh au lieu de _loadDisplayedPoints
+            elevation: 6,
+            highlightElevation: 12,
+          ),
+
+          const SizedBox(height: 12),
+
           // Bouton Point (visible seulement si aucune collecte active)
           if (!controller.hasActiveCollection)
             FloatingActionButton.extended(

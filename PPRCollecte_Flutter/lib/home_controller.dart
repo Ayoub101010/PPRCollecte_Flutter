@@ -8,12 +8,12 @@ import 'package:location/location.dart';
 import 'location_service.dart';
 import 'collection_models.dart';
 import 'collection_manager.dart';
-import 'form_marker_service.dart';
+//import 'form_marker_service.dart';
 
 class HomeController extends ChangeNotifier {
   final LocationService _locationService;
   final CollectionManager _collectionManager = CollectionManager();
-  final FormMarkerService _formMarkerService = FormMarkerService();
+//  final FormMarkerService _formMarkerService = FormMarkerService();
 
   // États exposés
   bool gpsEnabled = false;
@@ -85,11 +85,11 @@ class HomeController extends ChangeNotifier {
 
     startLocationTracking();
     updateStatus();
-    loadFormMarkers(); // Charger les marqueurs au démarrage
+    // loadFormMarkers(); // Charger les marqueurs au démarrage
   }
 
   /// Charge les marqueurs des formulaires enregistrés
-  Future<void> loadFormMarkers() async {
+  /*Future<void> loadFormMarkers() async {
     try {
       // ⭐⭐ UTILISEZ getUnsyncedMarkers() AU LIEU DE L'ANCIENNE MÉTHODE ⭐⭐
       final markers = await _formMarkerService.getUnsyncedMarkers();
@@ -100,10 +100,10 @@ class HomeController extends ChangeNotifier {
     } catch (e) {
       print('❌ Erreur lors du chargement des marqueurs non synchronisés: $e');
     }
-  }
+  }*/
 
   /// Rafraîchit les marqueurs après un nouvel enregistrement
-  Future<void> refreshFormMarkers() async {
+  /*Future<void> refreshFormMarkers() async {
     try {
       final markers = await _formMarkerService.refreshFormMarkers();
       formMarkers = markers;
@@ -112,7 +112,7 @@ class HomeController extends ChangeNotifier {
     } catch (e) {
       print('❌ Erreur lors du rafraîchissement des marqueurs: $e');
     }
-  }
+  }*/
 
 //  Une methode pour tester les  pistes dans l'emulateur à supprimer après
   void addRealisticPisteSimulation() async {
