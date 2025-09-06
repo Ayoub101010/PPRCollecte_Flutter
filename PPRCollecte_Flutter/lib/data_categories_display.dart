@@ -10,6 +10,7 @@ import 'dart:convert'; // Pour jsonDecode
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng
 import 'formulaire_ligne_page.dart'; // Pour FormulaireLignePage
 import 'formulaire_chaussee_page.dart';
+import 'api_service.dart';
 
 class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
@@ -157,9 +158,9 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
         // FILTRAGE STANDARD POUR POINTS
         if (widget.dataFilter == "unsynced") {
-          filteredData = allData.where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null)).toList();
+          filteredData = allData.where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == ApiService.userId).toList();
         } else if (widget.dataFilter == "synced") {
-          filteredData = allData.where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null)).toList();
+          filteredData = allData.where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == ApiService.userId).toList();
         } else if (widget.dataFilter == "saved") {
           filteredData = allData.where((item) => item['downloaded'] == 1).toList();
         } else {

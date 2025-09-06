@@ -894,12 +894,13 @@ class DatabaseHelper {
     final columns = await db.rawQuery('PRAGMA table_info($tableName)');
     final hasSyncedColumn = columns.any((col) => col['name'] == 'synced');
     final hasDownloadedColumn = columns.any((col) => col['name'] == 'downloaded');
-
-    if (hasSyncedColumn && hasDownloadedColumn) {
+    final hasLoginIdColumn = columns.any((col) => col['name'] == 'login_id');
+    if (hasSyncedColumn && hasDownloadedColumn && hasLoginIdColumn) {
       // ⭐⭐ CORRECTION CRITIQUE : seulement les NON synchronisées ET NON téléchargées
-      return await db.query(tableName, where: 'synced = ? AND downloaded = ?', whereArgs: [
+      return await db.query(tableName, where: 'synced = ? AND downloaded = ? AND login_id = ?', whereArgs: [
         0,
-        0
+        0,
+        ApiService.userId
       ] // ← SEULEMENT 0 et 0 !
           );
     } else if (hasSyncedColumn) {
@@ -914,36 +915,39 @@ class DatabaseHelper {
 
   Future<void> markAsSynced(String tableName, int id) async {
     final db = await database;
-
-    // Vérifier si la table a une colonne 'synced'
     final columns = await db.rawQuery('PRAGMA table_info($tableName)');
     final hasSyncedColumn = columns.any((col) => col['name'] == 'synced');
     final hasDateSyncColumn = columns.any((col) => col['name'] == 'date_sync');
     final hasDownloadedColumn = columns.any((col) => col['name'] == 'downloaded');
-    if (hasSyncedColumn && hasDateSyncColumn && hasDownloadedColumn) {
+    final hasLoginIdColumn = columns.any((col) => col['name'] == 'login_id');
+
+    if (hasSyncedColumn && hasDateSyncColumn && hasDownloadedColumn && hasLoginIdColumn) {
       await db.update(
-          tableName,
-          {
-            'synced': 1,
-            'downloaded': 0,
-            'date_sync': DateTime.now().toIso8601String()
-          },
-          where: 'id = ?',
-          whereArgs: [
-            id
-          ]);
-    } else if (hasSyncedColumn) {
+        tableName,
+        {
+          'synced': 1,
+          'downloaded': 0,
+          'date_sync': DateTime.now().toIso8601String()
+        },
+        where: 'id = ? AND login_id = ?', // ← AJOUTER login_id
+        whereArgs: [
+          id,
+          ApiService.userId
+        ],
+      );
+    } else if (hasSyncedColumn && hasLoginIdColumn) {
       await db.update(
-          tableName,
-          {
-            'synced': 1
-          },
-          where: 'id = ?',
-          whereArgs: [
-            id
-          ]);
+        tableName,
+        {
+          'synced': 1
+        },
+        where: 'id = ? AND login_id = ?', // ← AJOUTER login_id
+        whereArgs: [
+          id,
+          ApiService.userId
+        ],
+      );
     }
-    // Si la table n'a pas de colonne synced, on ne fait rien
   }
 
   /// Sauvegarde ou met à jour une localité depuis PostgreSQL
