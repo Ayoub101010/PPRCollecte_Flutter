@@ -7,7 +7,13 @@ import 'point_form_widget.dart';
 class PointFormScreen extends StatefulWidget {
   final Map<String, dynamic>? pointData;
   final String? agentName;
-  const PointFormScreen({super.key, this.pointData, this.agentName});
+  final String? nearestPisteCode;
+  const PointFormScreen({
+    super.key,
+    this.pointData,
+    this.agentName,
+    this.nearestPisteCode,
+  });
 
   @override
   State<PointFormScreen> createState() => _PointFormScreenState();
@@ -145,6 +151,7 @@ class _PointFormScreenState extends State<PointFormScreen> {
           Navigator.of(context).pop();
         },
         agentName: widget.agentName,
+        nearestPisteCode: widget.nearestPisteCode,
       );
     }
   }

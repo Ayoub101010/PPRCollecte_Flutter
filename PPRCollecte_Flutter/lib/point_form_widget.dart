@@ -11,6 +11,7 @@ class PointFormWidget extends StatefulWidget {
   final VoidCallback onBack;
   final VoidCallback onSaved;
   final String? agentName; // ← nouveau
+  final String? nearestPisteCode;
 
   const PointFormWidget({
     super.key,
@@ -20,6 +21,7 @@ class PointFormWidget extends StatefulWidget {
     required this.onBack,
     required this.onSaved,
     this.agentName, // ← nouveau
+    this.nearestPisteCode,
   });
 
   @override
@@ -50,7 +52,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   void _initializeFormData() {
     print('🔄 Début _initializeFormData()');
     print('   widget.pointData: ${widget.pointData}');
-
+    print('   widget.nearestPisteCode: ${widget.nearestPisteCode}');
     // Réinitialiser _formData
     _formData = {};
 
@@ -85,7 +87,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
 
       _formData = {
         'id': null,
-        'code_piste': null,
+        'code_piste': widget.nearestPisteCode,
         'nom': null,
         'type': null,
         'enqueteur': widget.agentName ?? 'N/A',
@@ -100,6 +102,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       print('   longitude: $longitude');
       print('   widget.pointData[latitude]: ${widget.pointData?['latitude']}');
       print('   widget.pointData[longitude]: ${widget.pointData?['longitude']}');
+      print('   code_piste: ${widget.nearestPisteCode}');
     }
 
     print('✅ _initializeFormData() terminé:');
@@ -514,6 +517,45 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                       'Ce point sera associé à une piste lors de la synchronisation.',
                       Colors.blue,
                     ),
+
+                    // ⭐⭐ AJOUTER CET INDICATEUR ICI ⭐⭐
+                    if (widget.nearestPisteCode != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.auto_awesome, size: 20, color: Colors.green[700]),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Piste la plus proche détectée:',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[700],
+                                    ),
+                                  ),
+                                  Text(
+                                    widget.nearestPisteCode!,
+                                    style: TextStyle(
+                                      color: Colors.green[700],
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
                 _buildCodePisteField(),
@@ -718,6 +760,10 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   Widget _buildCodePisteField() {
+    // ⭐⭐ PRÉ-REMPLIR AVEC LE CODE PISTE ⭐⭐
+    if (widget.nearestPisteCode != null && _formData['code_piste'] == null) {
+      _formData['code_piste'] = widget.nearestPisteCode;
+    }
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(

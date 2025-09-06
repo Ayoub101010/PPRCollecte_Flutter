@@ -212,6 +212,12 @@ class _HomePageState extends State<HomePage> {
 
     final current = homeController.userPosition;
     print('POSITION ACTUELLE: ${current.latitude}, ${current.longitude}');
+    // ⭐⭐ TROUVER LE CODE PISTE LE PLUS PROCHE ⭐⭐
+    final storageHelper = SimpleStorageHelper();
+    final nearestPisteCode = await storageHelper.findNearestPisteCode(current);
+
+    print('📍 Code piste le plus proche pour le point: $nearestPisteCode');
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -223,6 +229,7 @@ class _HomePageState extends State<HomePage> {
             'timestamp': DateTime.now().toIso8601String(),
           },
           agentName: widget.agentName,
+          nearestPisteCode: nearestPisteCode,
         ),
       ),
     );
