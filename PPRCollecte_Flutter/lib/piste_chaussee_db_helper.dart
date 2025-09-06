@@ -433,10 +433,11 @@ class SimpleStorageHelper {
       final db = await database;
       final List<Map<String, dynamic>> maps = await db.query(
         'pistes',
-        where: 'synced = ? AND downloaded = ?',
+        where: 'synced = ? AND downloaded = ? AND login_id = ?',
         whereArgs: [
           0,
-          0
+          0,
+          ApiService.userId
         ],
         columns: [
           // ⭐⭐ SPÉCIFIEZ EXPLICITEMENT TOUTES LES COLONNES
@@ -475,9 +476,10 @@ class SimpleStorageHelper {
           'date_sync': DateTime.now().toIso8601String(),
           'sync_status': 'synced',
         },
-        where: 'id = ?',
+        where: 'id = ? AND login_id = ?',
         whereArgs: [
-          pisteId
+          pisteId,
+          ApiService.userId
         ],
       );
       print('✅ Piste $pisteId marquée comme synchronisée');
@@ -489,7 +491,9 @@ class SimpleStorageHelper {
   Future<int> getUnsyncedPistesCount() async {
     try {
       final db = await database;
-      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes WHERE synced = 0 AND downloaded = 0'));
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes WHERE synced = 0 AND downloaded = 0 AND login_id = ?', [
+        ApiService.userId
+      ]));
       return count ?? 0;
     } catch (e) {
       print('❌ Erreur comptage pistes non synchronisées: $e');
@@ -707,10 +711,11 @@ class SimpleStorageHelper {
       final db = await database;
       final List<Map<String, dynamic>> maps = await db.query(
         'chaussees',
-        where: 'synced = ? AND downloaded = ?',
+        where: 'synced = ? AND downloaded = ? AND login_id = ?',
         whereArgs: [
           0,
-          0
+          0,
+          ApiService.userId
         ],
         columns: [
           // ⭐⭐ SPÉCIFIEZ EXPLICITEMENT LES COLONNES ⭐⭐
@@ -758,9 +763,10 @@ class SimpleStorageHelper {
           'date_sync': DateTime.now().toIso8601String(),
           'sync_status': 'synced',
         },
-        where: 'id = ?',
+        where: 'id = ? AND login_id = ?',
         whereArgs: [
-          chausseeId
+          chausseeId,
+          ApiService.userId
         ],
       );
       print('✅ Chaussée $chausseeId marquée comme synchronisée');
@@ -773,7 +779,9 @@ class SimpleStorageHelper {
   Future<int> getUnsyncedChausseesCount() async {
     try {
       final db = await database;
-      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM chaussees WHERE synced = 0 AND downloaded = 0'));
+      final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM chaussees WHERE synced = 0 AND downloaded = 0 AND login_id = ?', [
+        ApiService.userId
+      ]));
       return count ?? 0;
     } catch (e) {
       print('❌ Erreur comptage chaussées non synchronisées: $e');

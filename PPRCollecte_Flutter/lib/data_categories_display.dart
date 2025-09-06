@@ -116,9 +116,9 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
           // FILTRAGE PISTES
           if (widget.dataFilter == "unsynced") {
-            filteredData = allPistes.where((piste) => (piste['synced'] == 0 || piste['synced'] == null) && (piste['downloaded'] == 0 || piste['downloaded'] == null)).toList();
+            filteredData = allPistes.where((piste) => (piste['synced'] == 0 || piste['synced'] == null) && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == ApiService.userId).toList();
           } else if (widget.dataFilter == "synced") {
-            filteredData = allPistes.where((piste) => piste['synced'] == 1 && (piste['downloaded'] == 0 || piste['downloaded'] == null)).toList();
+            filteredData = allPistes.where((piste) => piste['synced'] == 1 && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == ApiService.userId).toList();
           } else if (widget.dataFilter == "saved") {
             filteredData = allPistes.where((piste) => piste['downloaded'] == 1).toList();
           } else {
@@ -131,9 +131,9 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
           // FILTRAGE CHAUSSÉES
           if (widget.dataFilter == "unsynced") {
-            filteredData = allChaussees.where((ch) => (ch['synced'] == 0 || ch['synced'] == null) && (ch['downloaded'] == 0 || ch['downloaded'] == null)).toList();
+            filteredData = allChaussees.where((ch) => (ch['synced'] == 0 || ch['synced'] == null) && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == ApiService.userId).toList();
           } else if (widget.dataFilter == "synced") {
-            filteredData = allChaussees.where((ch) => ch['synced'] == 1 && (ch['downloaded'] == 0 || ch['downloaded'] == null)).toList();
+            filteredData = allChaussees.where((ch) => ch['synced'] == 1 && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == ApiService.userId).toList();
           } else if (widget.dataFilter == "saved") {
             filteredData = allChaussees.where((ch) => ch['downloaded'] == 1).toList();
           } else {
