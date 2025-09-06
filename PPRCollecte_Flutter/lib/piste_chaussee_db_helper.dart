@@ -106,7 +106,8 @@ class SimpleStorageHelper {
     points_json TEXT NOT NULL,
     color INTEGER NOT NULL,
     width INTEGER NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    login_id INTEGER NOT NULL
   )
 ''');
 
@@ -131,11 +132,12 @@ class SimpleStorageHelper {
         'color': color.value,
         'width': width.toInt(),
         'created_at': DateTime.now().toIso8601String(),
+        'login_id': ApiService.userId, // ← AJOUTER CETTE LIGNE
       });
 
-      print('✅ Piste affichée sauvegardée (${points.length} points)');
+      print('✅ Piste sauvegardée pour user: ${ApiService.userId}');
     } catch (e) {
-      print('❌ Erreur sauvegarde piste affichée: $e');
+      print('❌ Erreur sauvegarde piste: $e');
     }
   }
 
@@ -143,7 +145,15 @@ class SimpleStorageHelper {
   Future<List<Polyline>> loadDisplayedPistes() async {
     try {
       final db = await database;
-      final List<Map<String, dynamic>> maps = await db.query('displayed_pistes');
+
+      // ⭐⭐ FILTRER PAR UTILISATEUR ⭐⭐
+      final List<Map<String, dynamic>> maps = await db.query(
+        'displayed_pistes',
+        where: 'login_id = ?', // ← FILTRE IMPORTANT
+        whereArgs: [
+          ApiService.userId
+        ], // ← ID de l'utilisateur connecté
+      );
 
       final List<Polyline> polylines = [];
 
@@ -164,14 +174,15 @@ class SimpleStorageHelper {
             polylineId: PolylineId('displayed_piste_${map['id']}'),
             points: points,
             color: Color(map['color'] as int),
-            width: map['width'] as int, // ← ICI: Supprimez .toDouble()
+            width: map['width'] as int,
           ));
         }
       }
 
+      print('✅ ${polylines.length} pistes chargées pour user: ${ApiService.userId}');
       return polylines;
     } catch (e) {
-      print('❌ Erreur chargement pistes affichées: $e');
+      print('❌ Erreur chargement pistes: $e');
       return [];
     }
   }
