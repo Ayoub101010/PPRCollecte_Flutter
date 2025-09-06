@@ -111,9 +111,48 @@ class SimpleStorageHelper {
   )
 ''');
 
+        await db.execute('''
+  CREATE TABLE IF NOT EXISTS displayed_chaussees (
+    id INTEGER PRIMARY KEY,
+    points_json TEXT NOT NULL,
+    color INTEGER NOT NULL,
+    width INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    login_id INTEGER NOT NULL,
+    code_piste TEXT,
+    endroit TEXT
+  )
+''');
+
         print('✅ Tables créées avec succès');
       },
     );
+  }
+
+  Future<void> saveDisplayedChaussee(List<LatLng> points, Color color, double width, String codePiste, String endroit) async {
+    try {
+      final db = await database;
+      final pointsJson = jsonEncode(points
+          .map((p) => {
+                'lat': p.latitude,
+                'lng': p.longitude
+              })
+          .toList());
+
+      await db.insert('displayed_chaussees', {
+        'points_json': pointsJson,
+        'color': color.value,
+        'width': width.toInt(),
+        'login_id': ApiService.userId,
+        'code_piste': codePiste,
+        'endroit': endroit,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      print('✅ Chaussée affichée sauvegardée (${points.length} points) pour user: ${ApiService.userId}');
+    } catch (e) {
+      print('❌ Erreur sauvegarde chaussée affichée: $e');
+    }
   }
 
 // Sauvegarder une piste affichée
@@ -138,6 +177,51 @@ class SimpleStorageHelper {
       print('✅ Piste sauvegardée pour user: ${ApiService.userId}');
     } catch (e) {
       print('❌ Erreur sauvegarde piste: $e');
+    }
+  }
+
+  Future<List<Polyline>> loadDisplayedChaussees() async {
+    try {
+      final db = await database;
+
+      // ⭐⭐ FILTRER PAR UTILISATEUR ⭐⭐
+      final List<Map<String, dynamic>> maps = await db.query(
+        'displayed_chaussees',
+        where: 'login_id = ?',
+        whereArgs: [
+          ApiService.userId
+        ],
+      );
+
+      final List<Polyline> polylines = [];
+
+      for (final map in maps) {
+        final pointsData = jsonDecode(map['points_json']) as List;
+        final List<LatLng> points = [];
+
+        for (final p in pointsData) {
+          final lat = p['lat'] as double?;
+          final lng = p['lng'] as double?;
+          if (lat != null && lng != null) {
+            points.add(LatLng(lat, lng));
+          }
+        }
+
+        if (points.isNotEmpty) {
+          polylines.add(Polyline(
+            polylineId: PolylineId('displayed_chaussee_${map['id']}'),
+            points: points,
+            color: Color(map['color'] as int),
+            width: map['width'] as int,
+          ));
+        }
+      }
+
+      print('✅ ${polylines.length} chaussées affichées chargées pour user: ${ApiService.userId}');
+      return polylines;
+    } catch (e) {
+      print('❌ Erreur chargement chaussées affichées: $e');
+      return [];
     }
   }
 

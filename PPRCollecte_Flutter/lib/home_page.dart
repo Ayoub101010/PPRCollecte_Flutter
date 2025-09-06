@@ -39,7 +39,7 @@ class _HomePageState extends State<HomePage> {
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
   List<Polyline> _finishedPistes = []; // ← AJOUTEZ ICI
-
+  List<Polyline> _finishedChaussees = [];
   Set<Marker> formMarkers = {};
   bool isSyncing = false;
   bool isDownloading = false;
@@ -66,6 +66,7 @@ class _HomePageState extends State<HomePage> {
     //_cleanupDisplayedPoints();
     _loadDisplayedPistes();
     _loadDisplayedPoints();
+    _loadDisplayedChaussees();
 
     homeController.addListener(() {
       setState(() {
@@ -99,6 +100,17 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+  Future<void> _loadDisplayedChaussees() async {
+    final storageHelper = SimpleStorageHelper();
+    final displayedChaussees = await storageHelper.loadDisplayedChaussees();
+
+    setState(() {
+      _finishedChaussees = displayedChaussees;
+    });
+
+    print('✅ ${_finishedChaussees.length} chaussées chargées');
   }
 
   Future<void> _cleanupDisplayedPoints() async {
@@ -435,7 +447,14 @@ class _HomePageState extends State<HomePage> {
           width: 4,
         ));
       });
-
+      final storageHelper = SimpleStorageHelper();
+      await storageHelper.saveDisplayedChaussee(
+          result['points'],
+          const Color(0xFFFF9800),
+          4.0,
+          formResult['code_piste'] ?? 'Sans_code', // ← Code piste
+          formResult['endroit'] ?? 'Sans_endroit' // ← Endroit
+          );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Chaussée enregistrée avec succès'),
@@ -898,7 +917,8 @@ class _HomePageState extends State<HomePage> {
 
     // Préparer les polylines
     final allPolylines = Set<Polyline>.from(collectedPolylines);
-    allPolylines.addAll(_finishedPistes); // ← CORRECTION SIMPLE
+    allPolylines.addAll(_finishedPistes);
+    allPolylines.addAll(_finishedChaussees); // ← CORRECTION SIMPLE
     // Ajouter la ligne en cours si active (nouveau système)
     if (homeController.ligneCollection != null) {
       final lignePoints = homeController.ligneCollection!.points;
