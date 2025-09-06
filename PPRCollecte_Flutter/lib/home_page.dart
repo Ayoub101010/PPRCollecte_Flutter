@@ -53,6 +53,7 @@ class _HomePageState extends State<HomePage> {
   int _syncTotalItems = 0;
   int _syncProcessedItems = 0;
   Set<Marker> _displayedPointsMarkers = {};
+  String? _currentNearestPisteCode;
 
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _lastCameraPosition;
@@ -386,6 +387,9 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
+      // ⭐⭐ TROUVER LE CODE PISTE LE PLUS PROCHE ⭐⭐
+      final storageHelper = SimpleStorageHelper();
+      _currentNearestPisteCode = await storageHelper.findNearestPisteCode(homeController.userPosition);
       await homeController.startChausseeCollection(); // ✅ Aucun paramètre requis
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -433,7 +437,8 @@ class _HomePageState extends State<HomePage> {
         builder: (_) => FormulaireChausseePage(
           chausseePoints: result['points'],
           provisionalId: result['id'],
-          agentName: widget.agentName, // ✅ Utiliser l'ID correct
+          agentName: widget.agentName,
+          nearestPisteCode: _currentNearestPisteCode, // ✅ Utiliser l'ID correct
         ),
       ),
     );

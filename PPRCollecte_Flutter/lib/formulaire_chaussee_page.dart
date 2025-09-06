@@ -11,6 +11,7 @@ class FormulaireChausseePage extends StatefulWidget {
   final String? agentName;
   final Map<String, dynamic>? initialData; // ← NOUVEAU: Données existantes
   final bool isEditingMode; // ← NOUVEAU: Mode édition
+  final String? nearestPisteCode;
   const FormulaireChausseePage({
     super.key,
     required this.chausseePoints,
@@ -18,6 +19,7 @@ class FormulaireChausseePage extends StatefulWidget {
     this.agentName,
     this.initialData, // ← NOUVEAU
     this.isEditingMode = false, // ← NOUVEAU
+    this.nearestPisteCode,
   });
 
   @override
@@ -63,6 +65,10 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   void _initializeForm() {
     if (widget.isEditingMode && widget.initialData != null) {
       _fillFormWithExistingData();
+    }
+    // ⭐⭐ PRÉ-REMPLIR AVEC LE CODE PISTE LE PLUS PROCHE ⭐⭐
+    if (widget.nearestPisteCode != null) {
+      _codePisteController.text = widget.nearestPisteCode!;
     }
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
     _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
@@ -276,6 +282,29 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                           hint: 'Ex: 1B-02CR03P01',
                           required: true,
                         ),
+                        if (widget.nearestPisteCode != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.auto_awesome, size: 16, color: Colors.green[700]),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Code piste le plus proche détecté automatiquement',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         _buildTextField(
                           controller: _codeGpsController,
                           label: 'Code GPS ',

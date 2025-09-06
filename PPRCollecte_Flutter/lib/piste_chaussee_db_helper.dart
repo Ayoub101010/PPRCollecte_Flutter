@@ -7,6 +7,7 @@ import 'dart:convert'; // Pour jsonEncode/jsonDecode
 import 'package:flutter/material.dart'; // Pour Color
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng et Polyline
 import 'api_service.dart';
+import 'dart:math';
 
 class SimpleStorageHelper {
   static final SimpleStorageHelper _instance = SimpleStorageHelper._internal();
@@ -976,5 +977,74 @@ class SimpleStorageHelper {
         id
       ],
     );
+  }
+
+  Future<String?> findNearestPisteCode(LatLng position) async {
+    try {
+      final storageHelper = SimpleStorageHelper();
+      final db = await storageHelper.database;
+
+      // Récupérer toutes les pistes de l'utilisateur
+      final List<Map<String, dynamic>> pistes = await db.query(
+        'pistes',
+        where: 'login_id = ?',
+        whereArgs: [
+          ApiService.userId
+        ],
+      );
+
+      if (pistes.isEmpty) return null;
+
+      String? nearestCode;
+      double minDistance = double.maxFinite;
+
+      for (final piste in pistes) {
+        try {
+          final pointsJson = piste['points_json'] as String;
+          final pointsData = jsonDecode(pointsJson) as List;
+
+          for (final pointData in pointsData) {
+            final lat = pointData['latitude'] as double?;
+            final lng = pointData['longitude'] as double?;
+
+            if (lat != null && lng != null) {
+              final pistePoint = LatLng(lat, lng);
+              final distance = _calculateDistance(position, pistePoint);
+
+              if (distance < minDistance) {
+                minDistance = distance;
+                nearestCode = piste['code_piste'] as String?;
+              }
+            }
+          }
+        } catch (e) {
+          print('❌ Erreur lecture piste ${piste['id']}: $e');
+        }
+      }
+
+      print('📍 Piste la plus proche: $nearestCode (${minDistance.toStringAsFixed(0)} m)');
+      return nearestCode;
+    } catch (e) {
+      print('❌ Erreur recherche piste proche: $e');
+      return null;
+    }
+  }
+
+  double _calculateDistance(LatLng point1, LatLng point2) {
+    // Formule de Haversine simplifiée
+    const double earthRadius = 6371000; // Rayon de la Terre en mètres
+
+    final double dLat = _degreesToRadians(point2.latitude - point1.latitude);
+    final double dLon = _degreesToRadians(point2.longitude - point1.longitude);
+
+    final double a = sin(dLat / 2) * sin(dLat / 2) + cos(_degreesToRadians(point1.latitude)) * cos(_degreesToRadians(point2.latitude)) * sin(dLon / 2) * sin(dLon / 2);
+
+    final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * (pi / 180);
   }
 }
