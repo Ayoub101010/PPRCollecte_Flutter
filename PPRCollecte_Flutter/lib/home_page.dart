@@ -452,8 +452,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       // ⭐⭐ TROUVER LE CODE PISTE LE PLUS PROCHE ⭐⭐
-      final storageHelper = SimpleStorageHelper();
-      _currentNearestPisteCode = await storageHelper.findNearestPisteCode(homeController.userPosition);
+      _currentNearestPisteCode = homeController.activePisteCode ?? await SimpleStorageHelper().findNearestPisteCode(homeController.userPosition);
       await homeController.startChausseeCollection(); // ✅ Aucun paramètre requis
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -767,6 +766,7 @@ class _HomePageState extends State<HomePage> {
 
 // Ajoutez cette méthode pour effectuer la déconnexion
   void _performLogout() {
+    homeController.clearActivePisteCode();
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginPage()),
       (Route<dynamic> route) => false,

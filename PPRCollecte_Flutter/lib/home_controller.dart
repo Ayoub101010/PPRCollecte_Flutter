@@ -211,6 +211,7 @@ class HomeController extends ChangeNotifier {
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
+      notifyListeners();
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -277,6 +278,11 @@ class HomeController extends ChangeNotifier {
       'startTime': result.startTime,
       'endTime': result.endTime,
     };
+  }
+
+  void clearActivePisteCode() {
+    _activePisteCode = null;
+    notifyListeners();
   }
 
   String? getActiveCollectionType() {

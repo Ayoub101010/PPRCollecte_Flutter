@@ -66,10 +66,16 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     if (widget.isEditingMode && widget.initialData != null) {
       _fillFormWithExistingData();
     }
+    final String? codePisteToUse;
     // ⭐⭐ PRÉ-REMPLIR AVEC LE CODE PISTE LE PLUS PROCHE ⭐⭐
     if (widget.nearestPisteCode != null) {
-      _codePisteController.text = widget.nearestPisteCode!;
+      codePisteToUse = widget.nearestPisteCode;
+    } else {
+      // ⭐⭐ SOLUTION DE SECOURS: Générer un code par défaut ⭐⭐
+      codePisteToUse = 'CH_${DateTime.now().millisecondsSinceEpoch}';
     }
+
+    _codePisteController.text = codePisteToUse!;
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
     _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
     // Date de création = maintenant par défaut
