@@ -411,11 +411,8 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         // 2. SUPPRIMER LA PISTE PRINCIPALE
         await storageHelper.deletePiste(id);
 
-        // 3. FORCER UN RECHARGEMENT COMPLET
-        if (mounted) {
-          // Envoyer un événement pour recharger toute l'application
-          // ou forcer le rafraîchissement de la page d'accueil
-        }
+        // 3. ⭐⭐ SIMPLEMENT RAFRAÎCHIR LES DONNÉES ⭐⭐
+        _fetchData();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Piste supprimée avec succès')),
