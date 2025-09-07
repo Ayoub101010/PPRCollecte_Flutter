@@ -281,6 +281,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                           label: 'Code Piste *',
                           hint: 'Ex: 1B-02CR03P01',
                           required: true,
+                          enabled: false,
                         ),
                         if (widget.nearestPisteCode != null)
                           Container(
@@ -507,6 +508,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     required String label,
     required String hint,
     bool required = false,
+    bool enabled = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -524,11 +526,12 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
+            enabled: enabled,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
               filled: true,
-              fillColor: const Color(0xFFF9FAFB),
+              fillColor: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -540,6 +543,11 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFFF9800)),
+              ),
+              disabledBorder: OutlineInputBorder(
+                // ← AJOUTER POUR LES CHAMPS DÉSACTIVÉS
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
               ),
             ),
             validator: required

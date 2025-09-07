@@ -437,6 +437,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           label: 'Code Piste *',
                           hint: 'Code unique de la piste',
                           required: true,
+                          enabled: false,
                         ),
                         _buildDropdownField(
                           label: 'Commune Rurale *',
