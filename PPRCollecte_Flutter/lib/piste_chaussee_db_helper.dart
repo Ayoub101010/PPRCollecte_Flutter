@@ -140,17 +140,50 @@ class SimpleStorageHelper {
               })
           .toList());
 
-      await db.insert('displayed_chaussees', {
-        'points_json': pointsJson,
-        'color': color.value,
-        'width': width.toInt(),
-        'login_id': ApiService.userId,
-        'code_piste': codePiste,
-        'endroit': endroit,
-        'created_at': DateTime.now().toIso8601String(),
-      });
+      // ⭐⭐ SUPPRIMER CETTE LIGNE QUI EFFACE TOUT ⭐⭐
+      // await db.delete('displayed_chaussees', where: 'login_id = ?', whereArgs: [ApiService.userId]);
 
-      print('✅ Chaussée affichée sauvegardée (${points.length} points) pour user: ${ApiService.userId}');
+      // ⭐⭐ AJOUTER SANS SUPPRIMER - vérifier si existe déjà ⭐⭐
+      final existing = await db.query(
+        'displayed_chaussees',
+        where: 'login_id = ? AND code_piste = ?',
+        whereArgs: [
+          ApiService.userId,
+          codePiste
+        ],
+      );
+
+      if (existing.isNotEmpty) {
+        // Mettre à jour l'existante
+        await db.update(
+          'displayed_chaussees',
+          {
+            'points_json': pointsJson,
+            'color': color.value,
+            'width': width.toInt(),
+            'endroit': endroit,
+            'created_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ? AND login_id = ?',
+          whereArgs: [
+            existing.first['id'],
+            ApiService.userId
+          ],
+        );
+      } else {
+        // Ajouter une nouvelle
+        await db.insert('displayed_chaussees', {
+          'points_json': pointsJson,
+          'color': color.value,
+          'width': width.toInt(),
+          'login_id': ApiService.userId,
+          'code_piste': codePiste,
+          'endroit': endroit,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+
+      print('✅ Chaussée affichée sauvegardée pour user: ${ApiService.userId}');
     } catch (e) {
       print('❌ Erreur sauvegarde chaussée affichée: $e');
     }
@@ -167,13 +200,44 @@ class SimpleStorageHelper {
               })
           .toList());
 
-      await db.insert('displayed_pistes', {
-        'points_json': pointsJson,
-        'color': color.value,
-        'width': width.toInt(),
-        'created_at': DateTime.now().toIso8601String(),
-        'login_id': ApiService.userId, // ← AJOUTER CETTE LIGNE
-      });
+      // ⭐⭐ SUPPRIMER CETTE LIGNE QUI EFFACE TOUT ⭐⭐
+      // await db.delete('displayed_pistes', where: 'login_id = ?', whereArgs: [ApiService.userId]);
+
+      // ⭐⭐ AJOUTER SANS SUPPRIMER - vérifier si existe déjà ⭐⭐
+      final existing = await db.query(
+        'displayed_pistes',
+        where: 'login_id = ?',
+        whereArgs: [
+          ApiService.userId
+        ],
+      );
+
+      if (existing.isNotEmpty) {
+        // Mettre à jour l'existante
+        await db.update(
+          'displayed_pistes',
+          {
+            'points_json': pointsJson,
+            'color': color.value,
+            'width': width.toInt(),
+            'created_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ? AND login_id = ?',
+          whereArgs: [
+            existing.first['id'],
+            ApiService.userId
+          ],
+        );
+      } else {
+        // Ajouter une nouvelle
+        await db.insert('displayed_pistes', {
+          'points_json': pointsJson,
+          'color': color.value,
+          'width': width.toInt(),
+          'created_at': DateTime.now().toIso8601String(),
+          'login_id': ApiService.userId,
+        });
+      }
 
       print('✅ Piste sauvegardée pour user: ${ApiService.userId}');
     } catch (e) {

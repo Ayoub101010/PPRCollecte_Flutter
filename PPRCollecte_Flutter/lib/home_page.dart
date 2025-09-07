@@ -108,25 +108,39 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDisplayedChaussees() async {
     try {
       final storageHelper = SimpleStorageHelper();
+
+      // ⭐⭐ SUPPRIMER CETTE LIGNE INUTILE ⭐⭐
+      // final db = await storageHelper.database;
+
+      // ⭐⭐ 2. FILTRER UNIQUEMENT LES CHAUSSÉES DE L'UTILISATEUR COURANT ⭐⭐
+      final allChaussees = await storageHelper.getAllChausseesMaps();
+      final userChaussees = allChaussees.where((ch) => ch['login_id'] == ApiService.userId).toList();
+
+      print('📊 Chaussées trouvées: ${allChaussees.length}, Chaussées utilisateur: ${userChaussees.length}');
+
+      for (final chaussee in userChaussees) {
+        try {
+          final pointsJson = chaussee['points_json'] as String;
+          final pointsData = jsonDecode(pointsJson) as List;
+          final points = pointsData.map((p) => LatLng((p['latitude'] ?? p['lat']) as double, (p['longitude'] ?? p['lng']) as double)).toList();
+
+          // ⭐⭐ 3. UTILISER LA NOUVELLE MÉTHODE QUI NE SUPPRIME PAS ⭐⭐
+          await storageHelper.saveDisplayedChaussee(points, const Color(0xFFFF9800), 4.0, chaussee['code_piste'] ?? 'Sans_code', chaussee['endroit'] ?? 'Sans_endroit');
+        } catch (e) {
+          print('❌ Erreur recréation chaussée ${chaussee['id']}: $e');
+        }
+      }
+
+      // ⭐⭐ 4. CHARGER LES CHAUSSÉES FILTRÉES ⭐⭐
       final displayedChaussees = await storageHelper.loadDisplayedChaussees();
 
-      // ⭐⭐ GARDER L'ANCIENNE VERSION SANS FILTRAGE ⭐⭐
       setState(() {
         _finishedChaussees = displayedChaussees;
       });
 
-      print('✅ ${displayedChaussees.length} chaussées chargées');
+      print('✅ ${displayedChaussees.length} chaussées rechargées pour user: ${ApiService.userId}');
     } catch (e) {
-      print('❌ Erreur chargement chaussées: $e');
-    }
-  }
-
-  Future<void> _cleanupDisplayedPoints() async {
-    try {
-      final dbHelper = DatabaseHelper();
-      await dbHelper.cleanupDisplayedPoints();
-    } catch (e) {
-      print('❌ Erreur nettoyage points: $e');
+      print('❌ Erreur rechargement chaussées: $e');
     }
   }
 
@@ -389,41 +403,36 @@ class _HomePageState extends State<HomePage> {
     try {
       final storageHelper = SimpleStorageHelper();
 
-      // ⭐⭐ 1. SUPPRIMER TOUTES LES PISTES AFFICHÉES EXISTANTES ⭐⭐
-      final db = await storageHelper.database;
-      await db.delete(
-        'displayed_pistes',
-        where: 'login_id = ?',
-        whereArgs: [
-          ApiService.userId
-        ],
-      );
+      // ⭐⭐ SUPPRIMER CETTE LIGNE INUTILE ⭐⭐
+      // final db = await storageHelper.database;
 
-      // ⭐⭐ 2. RECRÉER UNIQUEMENT LES PISTES VALIDES ⭐⭐
+      // ⭐⭐ 2. FILTRER UNIQUEMENT LES PISTES DE L'UTILISATEUR COURANT ⭐⭐
       final allPistes = await storageHelper.getAllPistesMaps();
+      final userPistes = allPistes.where((piste) => piste['login_id'] == ApiService.userId).toList();
 
-      for (final piste in allPistes) {
+      print('📊 Pistes trouvées: ${allPistes.length}, Pistes utilisateur: ${userPistes.length}');
+
+      for (final piste in userPistes) {
         try {
-          // Convertir points_json en List<LatLng>
           final pointsJson = piste['points_json'] as String;
           final pointsData = jsonDecode(pointsJson) as List;
-          final points = pointsData.map((p) => LatLng(p['latitude'], p['longitude'])).toList();
+          final points = pointsData.map((p) => LatLng((p['latitude'] ?? p['lat']) as double, (p['longitude'] ?? p['lng']) as double)).toList();
 
-          // Recréer la piste affichée
+          // ⭐⭐ 3. UTILISER LA NOUVELLE MÉTHODE QUI NE SUPPRIME PAS ⭐⭐
           await storageHelper.saveDisplayedPiste(points, Colors.blue, 4.0);
         } catch (e) {
           print('❌ Erreur recréation piste ${piste['id']}: $e');
         }
       }
 
-      // ⭐⭐ 3. CHARGER LES NOUVELLES PISTES ⭐⭐
+      // ⭐⭐ 4. CHARGER LES PISTES FILTRÉES ⭐⭐
       final displayedPistes = await storageHelper.loadDisplayedPistes();
 
       setState(() {
         _finishedPistes = displayedPistes;
       });
 
-      print('✅ ${displayedPistes.length} pistes rechargées proprement');
+      print('✅ ${displayedPistes.length} pistes rechargées pour user: ${ApiService.userId}');
     } catch (e) {
       print('❌ Erreur rechargement pistes: $e');
     }
