@@ -28,6 +28,7 @@ class HomeController extends ChangeNotifier {
   bool linePaused = false;
   List<LatLng> linePoints = [];
   double lineTotalDistance = 0.0;
+  String? _activePisteCode;
 
   StreamSubscription<LocationData>? _locationSub;
 
@@ -41,6 +42,7 @@ class HomeController extends ChangeNotifier {
   bool get hasActiveCollection => _collectionManager.hasActiveCollection;
   bool get hasPausedCollection => _collectionManager.hasPausedCollection;
   String? get activeCollectionType => _collectionManager.activeCollectionType;
+  String? get activePisteCode => _activePisteCode;
 
   /// Appelé lorsque les collectes changent
   void _onCollectionChanged() {
@@ -187,15 +189,14 @@ class HomeController extends ChangeNotifier {
   // === MÉTHODES DE COLLECTE ===
 
   Future<void> startLigneCollection(String codePiste) async {
-    if (!gpsEnabled) {
-      throw Exception('Le GPS doit être activé pour commencer la collecte');
-    }
     try {
+      _activePisteCode = codePiste; // ⭐⭐ STOCKER LE CODE ⭐⭐
       _collectionManager.startLigneCollection(
         codePiste: codePiste,
         initialPosition: userPosition,
         locationStream: _locationService.onLocationChanged(),
       );
+      notifyListeners();
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -247,12 +248,18 @@ class HomeController extends ChangeNotifier {
 
   Map<String, dynamic>? finishLigneCollection() {
     final result = _collectionManager.finishLigneCollection();
+
+    // ⭐⭐ EFFACER IMMÉDIATEMENT LE CODE PISTE ACTIF ⭐⭐
+    final String? finishedCode = _activePisteCode;
+    _activePisteCode = null;
+    notifyListeners();
+
     if (result == null) return null;
 
     return {
       'points': result.points,
       'id': result.id,
-      'codePiste': result.codePiste,
+      'codePiste': result.codePiste ?? finishedCode, // ⭐⭐ GARDE LE CODE SI NULL ⭐⭐
       'totalDistance': result.totalDistance,
       'startTime': result.startTime,
       'endTime': result.endTime,

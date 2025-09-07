@@ -228,12 +228,15 @@ class _HomePageState extends State<HomePage> {
 
     final current = homeController.userPosition;
     print('POSITION ACTUELLE: ${current.latitude}, ${current.longitude}');
-    // ⭐⭐ TROUVER LE CODE PISTE LE PLUS PROCHE ⭐⭐
-    final storageHelper = SimpleStorageHelper();
-    final nearestPisteCode = await storageHelper.findNearestPisteCode(current);
+    // ⭐⭐ UTILISER LE CODE PISTE ACTIF SI DISPONIBLE ⭐⭐
+    final String? nearestPisteCode;
 
-    print('📍 Code piste le plus proche pour le point: $nearestPisteCode');
-
+    if (homeController.activePisteCode != null) {
+      nearestPisteCode = homeController.activePisteCode;
+      print('🎯 Utilisation piste active en pause: $nearestPisteCode');
+    } else {
+      nearestPisteCode = await SimpleStorageHelper().findNearestPisteCode(current, activePisteCode: homeController.activePisteCode);
+    }
     final result = await Navigator.push(
       context,
       MaterialPageRoute(

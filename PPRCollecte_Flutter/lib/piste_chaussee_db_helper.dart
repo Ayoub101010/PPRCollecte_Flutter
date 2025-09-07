@@ -979,11 +979,15 @@ class SimpleStorageHelper {
     );
   }
 
-  Future<String?> findNearestPisteCode(LatLng position) async {
+  Future<String?> findNearestPisteCode(LatLng position, {String? activePisteCode}) async {
     try {
-      final storageHelper = SimpleStorageHelper();
-      final db = await storageHelper.database;
+      final db = await database;
 
+      // ⭐⭐ PRIORITÉ ABSOLUE: Si une piste est active, utiliser son code ⭐⭐
+      if (activePisteCode != null) {
+        print('📍 Utilisation piste active: $activePisteCode');
+        return activePisteCode;
+      }
       // Récupérer toutes les pistes de l'utilisateur
       final List<Map<String, dynamic>> pistes = await db.query(
         'pistes',
