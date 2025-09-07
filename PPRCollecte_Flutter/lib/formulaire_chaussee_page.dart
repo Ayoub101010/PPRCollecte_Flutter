@@ -184,6 +184,14 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
       if (savedId != null) {
         print('✅ Chaussée sauvegardée en local avec ID: $savedId');
         await storageHelper.debugPrintAllChaussees();
+        await storageHelper.saveDisplayedChaussee(
+            widget.chausseePoints, // Points de la chaussée
+            const Color(0xFFFF9800), // Couleur orange
+            4.0, // Épaisseur de la ligne
+            chausseeData['code_piste'], // ⭐⭐ MÊME CODE_PISTE ⭐⭐
+            chausseeData['endroit'] ?? 'Sans endroit' // Endroit
+            );
+        print('✅ Chaussée affichée sauvegardée avec code_piste: ${chausseeData['code_piste']}');
       }
 
       if (mounted) {

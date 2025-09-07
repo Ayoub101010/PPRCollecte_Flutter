@@ -18,6 +18,8 @@ import 'data_categories_page.dart';
 import 'package:flutter/foundation.dart'; // Pour kDebugMode
 import 'piste_chaussee_db_helper.dart';
 import 'database_helper.dart';
+import 'api_service.dart';
+import 'dart:convert'; // ⭐⭐ AJOUTEZ CET IMPORT ⭐⭐
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -104,14 +106,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadDisplayedChaussees() async {
-    final storageHelper = SimpleStorageHelper();
-    final displayedChaussees = await storageHelper.loadDisplayedChaussees();
+    try {
+      final storageHelper = SimpleStorageHelper();
+      final displayedChaussees = await storageHelper.loadDisplayedChaussees();
 
-    setState(() {
-      _finishedChaussees = displayedChaussees;
-    });
+      // ⭐⭐ GARDER L'ANCIENNE VERSION SANS FILTRAGE ⭐⭐
+      setState(() {
+        _finishedChaussees = displayedChaussees;
+      });
 
-    print('✅ ${_finishedChaussees.length} chaussées chargées');
+      print('✅ ${displayedChaussees.length} chaussées chargées');
+    } catch (e) {
+      print('❌ Erreur chargement chaussées: $e');
+    }
   }
 
   Future<void> _cleanupDisplayedPoints() async {
@@ -378,26 +385,44 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDisplayedPistes() async {
     try {
       final storageHelper = SimpleStorageHelper();
+
+      // ⭐⭐ 1. SUPPRIMER TOUTES LES PISTES AFFICHÉES EXISTANTES ⭐⭐
+      final db = await storageHelper.database;
+      await db.delete(
+        'displayed_pistes',
+        where: 'login_id = ?',
+        whereArgs: [
+          ApiService.userId
+        ],
+      );
+
+      // ⭐⭐ 2. RECRÉER UNIQUEMENT LES PISTES VALIDES ⭐⭐
+      final allPistes = await storageHelper.getAllPistesMaps();
+
+      for (final piste in allPistes) {
+        try {
+          // Convertir points_json en List<LatLng>
+          final pointsJson = piste['points_json'] as String;
+          final pointsData = jsonDecode(pointsJson) as List;
+          final points = pointsData.map((p) => LatLng(p['latitude'], p['longitude'])).toList();
+
+          // Recréer la piste affichée
+          await storageHelper.saveDisplayedPiste(points, Colors.blue, 4.0);
+        } catch (e) {
+          print('❌ Erreur recréation piste ${piste['id']}: $e');
+        }
+      }
+
+      // ⭐⭐ 3. CHARGER LES NOUVELLES PISTES ⭐⭐
       final displayedPistes = await storageHelper.loadDisplayedPistes();
 
-      // Filtrer seulement les pistes valides
-      final allPistes = await storageHelper.getAllPistesMaps();
-      final existingIds = allPistes.map((p) => p['id'] as int).toSet();
-
-      final validPistes = displayedPistes.where((polyline) {
-        final polylineId = polyline.polylineId.value;
-        final idStr = polylineId.replaceFirst('displayed_piste_', '');
-        final id = int.tryParse(idStr);
-        return id != null && existingIds.contains(id);
-      }).toList();
-
       setState(() {
-        _finishedPistes = validPistes;
+        _finishedPistes = displayedPistes;
       });
 
-      print('✅ ${validPistes.length} pistes valides chargées');
+      print('✅ ${displayedPistes.length} pistes rechargées proprement');
     } catch (e) {
-      print('❌ Erreur chargement pistes: $e');
+      print('❌ Erreur rechargement pistes: $e');
     }
   }
 

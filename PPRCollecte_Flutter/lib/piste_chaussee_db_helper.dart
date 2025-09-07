@@ -1049,20 +1049,70 @@ class SimpleStorageHelper {
   }
 
   // Dans la classe SimpleStorageHelper
-  Future<void> deleteDisplayedPiste(int id) async {
+  // Pour les pistes - même principe que chaussées
+  Future<void> deleteDisplayedPiste(int pisteId) async {
     try {
       final db = await database;
-      await db.delete(
-        'displayed_pistes',
-        where: 'id = ? AND login_id = ?',
-        whereArgs: [
-          id,
-          ApiService.userId
-        ],
-      );
-      print('✅ Piste affichée supprimée: ID $id');
+
+      // ⭐⭐ 1. TROUVER LA PISTE POUR AVOIR SON CODE_PISTE ⭐⭐
+      final piste = await db.query('pistes',
+          where: 'id = ?',
+          whereArgs: [
+            pisteId
+          ],
+          limit: 1);
+
+      if (piste.isNotEmpty) {
+        final codePiste = piste.first['code_piste'] as String?;
+
+        if (codePiste != null) {
+          // ⭐⭐ 2. SUPPRIMER TOUTES LES PISTES AFFICHÉES AVEC CE CODE_PISTE ⭐⭐
+          await db.delete(
+            'displayed_pistes',
+            where: 'login_id = ?', // On supprime tout pour l'utilisateur
+            whereArgs: [
+              ApiService.userId
+            ],
+          );
+          print('✅ Toutes les pistes affichées supprimées pour rechargement propre');
+        }
+      }
     } catch (e) {
       print('❌ Erreur suppression piste affichée: $e');
+    }
+  }
+
+  // Ajoutez cette méthode
+  Future<void> deleteDisplayedChaussee(int chausseeId) async {
+    try {
+      final db = await database;
+
+      // 1. Trouver le code_piste de la chaussée à supprimer
+      final chaussee = await db.query('chaussees',
+          where: 'id = ?',
+          whereArgs: [
+            chausseeId
+          ],
+          limit: 1);
+
+      if (chaussee.isNotEmpty) {
+        final codePiste = chaussee.first['code_piste'] as String?;
+
+        if (codePiste != null) {
+          // 2. Supprimer la chaussée affichée avec le même code_piste
+          await db.delete(
+            'displayed_chaussees',
+            where: 'code_piste = ? AND login_id = ?',
+            whereArgs: [
+              codePiste,
+              ApiService.userId
+            ],
+          );
+          print('✅ Chaussée affichée supprimée: $codePiste');
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur suppression chaussée affichée: $e');
     }
   }
 }

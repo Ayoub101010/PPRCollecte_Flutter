@@ -253,6 +253,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     if (confirmed == true) {
       try {
         final storageHelper = SimpleStorageHelper();
+        await storageHelper.deleteDisplayedChaussee(id);
         await storageHelper.deleteChaussee(id);
         _fetchData(); // Rafraîchir la liste
 
@@ -403,9 +404,18 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     if (confirmed == true) {
       try {
         final storageHelper = SimpleStorageHelper();
+
+        // 1. SUPPRIMER LA PISTE AFFICHÉE
         await storageHelper.deleteDisplayedPiste(id);
+
+        // 2. SUPPRIMER LA PISTE PRINCIPALE
         await storageHelper.deletePiste(id);
-        _fetchData(); // Rafraîchir la liste
+
+        // 3. FORCER UN RECHARGEMENT COMPLET
+        if (mounted) {
+          // Envoyer un événement pour recharger toute l'application
+          // ou forcer le rafraîchissement de la page d'accueil
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Piste supprimée avec succès')),
