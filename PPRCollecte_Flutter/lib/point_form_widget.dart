@@ -804,6 +804,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                       fontSize: 16,
                       color: Color(0xFF374151),
                     ),
+                    enabled: false, // ← DÉSACTIVÉ
+                    readOnly: true, // ← LECTURE SEULE
                     onChanged: (value) {
                       _formData['code_piste'] = value;
                     },
