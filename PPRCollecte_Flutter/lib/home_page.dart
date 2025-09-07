@@ -373,12 +373,32 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Pour charger au démarrage
+  // Dans la classe _HomePageState
+// Remplacer l'ancienne méthode par la nouvelle
   Future<void> _loadDisplayedPistes() async {
-    final storageHelper = SimpleStorageHelper();
-    final displayedPistes = await storageHelper.loadDisplayedPistes();
-    setState(() {
-      _finishedPistes = displayedPistes;
-    });
+    try {
+      final storageHelper = SimpleStorageHelper();
+      final displayedPistes = await storageHelper.loadDisplayedPistes();
+
+      // Filtrer seulement les pistes valides
+      final allPistes = await storageHelper.getAllPistesMaps();
+      final existingIds = allPistes.map((p) => p['id'] as int).toSet();
+
+      final validPistes = displayedPistes.where((polyline) {
+        final polylineId = polyline.polylineId.value;
+        final idStr = polylineId.replaceFirst('displayed_piste_', '');
+        final id = int.tryParse(idStr);
+        return id != null && existingIds.contains(id);
+      }).toList();
+
+      setState(() {
+        _finishedPistes = validPistes;
+      });
+
+      print('✅ ${validPistes.length} pistes valides chargées');
+    } catch (e) {
+      print('❌ Erreur chargement pistes: $e');
+    }
   }
 
   // === GESTION DE LA COLLECTE CHAUSSÉE ===
@@ -685,6 +705,8 @@ class _HomePageState extends State<HomePage> {
     ).then((_) {
       // ⭐⭐ RAFRAÎCHIR TOUJOURS À LE RETOUR ⭐⭐
       _loadDisplayedPoints();
+      _loadDisplayedPistes();
+      _loadDisplayedChaussees();
     });
   }
 

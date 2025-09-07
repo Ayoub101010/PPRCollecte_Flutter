@@ -1047,4 +1047,22 @@ class SimpleStorageHelper {
   double _degreesToRadians(double degrees) {
     return degrees * (pi / 180);
   }
+
+  // Dans la classe SimpleStorageHelper
+  Future<void> deleteDisplayedPiste(int id) async {
+    try {
+      final db = await database;
+      await db.delete(
+        'displayed_pistes',
+        where: 'id = ? AND login_id = ?',
+        whereArgs: [
+          id,
+          ApiService.userId
+        ],
+      );
+      print('✅ Piste affichée supprimée: ID $id');
+    } catch (e) {
+      print('❌ Erreur suppression piste affichée: $e');
+    }
+  }
 }

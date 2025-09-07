@@ -403,6 +403,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     if (confirmed == true) {
       try {
         final storageHelper = SimpleStorageHelper();
+        await storageHelper.deleteDisplayedPiste(id);
         await storageHelper.deletePiste(id);
         _fetchData(); // Rafraîchir la liste
 
