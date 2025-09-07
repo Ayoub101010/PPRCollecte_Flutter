@@ -450,6 +450,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
       if (confirmed == true) {
         try {
           final dbHelper = DatabaseHelper();
+          await dbHelper.deleteDisplayedPoint(id, tableName);
           await dbHelper.deleteEntity(tableName, id);
           _fetchData(); // Rafraîchir la liste
 

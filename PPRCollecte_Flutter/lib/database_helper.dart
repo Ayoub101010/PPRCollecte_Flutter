@@ -1677,4 +1677,22 @@ class DatabaseHelper {
 
     print('🧹 $result points sans utilisateur nettoyés');
   }
+
+  // Dans la classe DatabaseHelper
+  Future<void> deleteDisplayedPoint(int id, String tableName) async {
+    try {
+      final db = await database;
+      await db.delete(
+        'displayed_points',
+        where: 'id = ? AND original_table = ?',
+        whereArgs: [
+          id,
+          tableName
+        ],
+      );
+      print('✅ Point affiché supprimé: ID $id de la table $tableName');
+    } catch (e) {
+      print('❌ Erreur suppression point affiché: $e');
+    }
+  }
 }

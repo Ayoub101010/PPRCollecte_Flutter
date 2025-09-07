@@ -151,10 +151,19 @@ class _HomePageState extends State<HomePage> {
 
     try {
       final markers = await _pointsService.getDisplayedPointsMarkers();
+      // ⭐⭐ FILTRER SEULEMENT LES MARQUEURS VALIDES ⭐⭐
+      final dbHelper = DatabaseHelper();
+      final existingPoints = await dbHelper.loadDisplayedPoints();
+      final existingIds = existingPoints.map((p) => p['id'] as int).toSet();
+
+      final validMarkers = markers.where((marker) {
+        final markerId = int.tryParse(marker.markerId.value.replaceFirst('displayed_point_', ''));
+        return markerId != null && existingIds.contains(markerId);
+      }).toSet();
       setState(() {
-        _displayedPointsMarkers = markers;
+        _displayedPointsMarkers = validMarkers;
       });
-      print('📍 ${markers.length} points affichés chargés');
+      print('📍 ${validMarkers.length} points affichés valides');
     } catch (e) {
       print('❌ Erreur chargement points: $e');
     }
@@ -673,7 +682,10 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const DataCategoriesPage()),
-    );
+    ).then((_) {
+      // ⭐⭐ RAFRAÎCHIR TOUJOURS À LE RETOUR ⭐⭐
+      _loadDisplayedPoints();
+    });
   }
 
 // Ajoutez cette méthode pour afficher la confirmation de déconnexion
