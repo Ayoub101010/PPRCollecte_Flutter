@@ -236,6 +236,78 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
     }
   }
 
+  void _clearForm() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmation'),
+        content: const Text('Êtes-vous sûr de vouloir effacer tous les champs?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _performClear();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Effacer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performClear() {
+    setState(() {
+      // Réinitialiser seulement les champs modifiables
+      _codeGpsController.clear();
+      _endroitController.clear();
+
+      // Réinitialiser les sélections
+      _typeChaussee = null;
+      _etatPiste = null;
+
+      // Garder les champs en lecture seule
+      // _codePisteController - Garder le code piste
+      // _userLoginController - Garder le nom de l'agent
+      // _dateCreation - Garder la date de création
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Formulaire effacé'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _confirmExit() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Abandonner la saisie ?"),
+        content: const Text("Les données non sauvegardées seront perdues."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Abandonner"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,7 +331,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _confirmExit,
                     icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
                     padding: const EdgeInsets.all(8),
                   ),
@@ -274,7 +346,18 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 40),
+                  TextButton.icon(
+                    onPressed: _clearForm,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: const Text('Effacer'),
+                  ),
                 ],
               ),
             ),
@@ -545,7 +628,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
               filled: true,
-              fillColor: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+              fillColor: const Color(0xFFF9FAFB), // ← TOUJOURS la même couleur
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -554,15 +637,19 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
               ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)), // ← Même bordure
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFFF9800)),
               ),
-              disabledBorder: OutlineInputBorder(
-                // ← AJOUTER POUR LES CHAMPS DÉSACTIVÉS
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
+            ),
+            style: const TextStyle(
+              // ← Style du texte
+              fontSize: 14,
+              color: Color(0xFF374151), // ← Même couleur que les champs normaux
             ),
             validator: required
                 ? (value) {
@@ -769,30 +856,30 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
             ),
           ),
           const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => _selectDateCreation(context),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _dateCreation != null ? "${_dateCreation!.day.toString().padLeft(2, '0')}/${_dateCreation!.month.toString().padLeft(2, '0')}/${_dateCreation!.year}" : "Sélectionner une date",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _dateCreation != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
-                      ),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB), // ← Même couleur que les champs normaux
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _dateCreation != null
+                        ? "${_dateCreation!.day.toString().padLeft(2, '0')}/${_dateCreation!.month.toString().padLeft(2, '0')}/${_dateCreation!.year} "
+                            "${_dateCreation!.hour.toString().padLeft(2, '0')}:${_dateCreation!.minute.toString().padLeft(2, '0')}" // ← Ajouter l'heure
+                        : "Date/heure automatique",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF374151), // ← Même couleur de texte
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
