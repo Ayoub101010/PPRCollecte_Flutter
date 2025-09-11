@@ -530,28 +530,33 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     return 6371000 * c; // Rayon de la Terre en mètres
   }
 
-  Future<void> _selectDateCreation(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  Future<DateTime?> _showDatePickerWithValidation(BuildContext context, DateTime initialDate) async {
+    return await showDatePicker(
       context: context,
-      initialDate: _dateCreation ?? DateTime.now(),
-      firstDate: DateTime(2000),
+      initialDate: initialDate,
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
+      selectableDayPredicate: (DateTime day) {
+        // Bloquer les dates passées
+        return !day.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+      },
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF1976D2), // Couleur principale
+              onPrimary: Colors.white,
+            ),
+            dialogBackgroundColor: Colors.white,
+          ),
+          child: child!,
+        );
+      },
     );
-
-    if (picked != null) {
-      setState(() {
-        _dateCreation = picked;
-      });
-    }
   }
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
+    final DateTime? picked = await _showDatePickerWithValidation(context, DateTime.now());
 
     if (picked != null) {
       setState(() {
@@ -561,12 +566,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   }
 
   Future<void> _selectOccupationDate(BuildContext context, bool isStartDate) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
+    final DateTime? picked = await _showDatePickerWithValidation(context, DateTime.now());
 
     if (picked != null) {
       setState(() {
@@ -781,6 +781,68 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     );
   }
 
+  void _clearForm() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmation'),
+        content: const Text('Êtes-vous sûr de vouloir effacer tous les champs?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _performClear();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Effacer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performClear() {
+    setState(() {
+      // Réinitialiser seulement les champs modifiables
+      _nomOrigineController.clear();
+      _nomDestinationController.clear();
+      _travauxRealisesController.clear();
+      _entrepriseController.clear();
+
+      // Réinitialiser les sélections
+      _communeRurale = null;
+      _typeOccupation = null;
+      _debutOccupation = null;
+      _finOccupation = null;
+      _largeurEmprise = null;
+      _frequenceTrafic = null;
+      _typeTrafic = null;
+      _dateDebutTravaux = null;
+
+      // Garder les champs en lecture seule (ils seront réinitialisés automatiquement)
+      // _codeController - Garder le code piste
+      // _userLoginController - Garder le nom de l'agent
+      // _heureDebutController - Garder l'heure de début
+      // _heureFinController - Garder l'heure de fin
+      // _xOrigineController - Garder les coordonnées
+      // _yOrigineController - Garder les coordonnées
+      // _xDestinationController - Garder les coordonnées
+      // _yDestinationController - Garder les coordonnées
+      // _dateCreation - Garder la date de création
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Formulaire effacé'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -820,7 +882,18 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  const SizedBox(width: 40), // Équilibrer avec le bouton back
+                  TextButton.icon(
+                    onPressed: _clearForm,
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: const Text('Effacer'),
+                  ), // Équilibrer avec le bouton back
                 ],
               ),
             ),
@@ -1165,30 +1238,30 @@ class _FormulairePageState extends State<FormulaireLignePage> {
             ),
           ),
           const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () => _selectDateCreation(context),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _dateCreation != null ? "${_dateCreation!.day.toString().padLeft(2, '0')}/${_dateCreation!.month.toString().padLeft(2, '0')}/${_dateCreation!.year}" : "Sélectionner une date",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _dateCreation != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
-                      ),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB), // ← Même couleur que les champs normaux
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _dateCreation != null
+                        ? "${_dateCreation!.day.toString().padLeft(2, '0')}/${_dateCreation!.month.toString().padLeft(2, '0')}/${_dateCreation!.year} "
+                            "${_dateCreation!.hour.toString().padLeft(2, '0')}:${_dateCreation!.minute.toString().padLeft(2, '0')}" // ← Ajouter l'heure
+                        : "Date/heure automatique",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: _dateCreation != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1293,7 +1366,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     bool required = false,
     int maxLines = 1,
     TextInputType? keyboardType,
-    bool enabled = true, // Nouveau paramètre pour champs en lecture seule
+    bool enabled = true,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1318,7 +1391,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
               filled: true,
-              fillColor: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
+              fillColor: const Color(0xFFF9FAFB), // ← TOUJOURS la même couleur
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -1329,12 +1402,18 @@ class _FormulairePageState extends State<FormulaireLignePage> {
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)), // ← Même bordure
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFF1976D2)),
               ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+            style: const TextStyle(
+              // ← Style du texte
+              fontSize: 14,
+              color: Color(0xFF374151), // ← Même couleur que les champs normaux
             ),
             textAlignVertical: maxLines > 1 ? TextAlignVertical.top : null,
             validator: required
@@ -1560,7 +1639,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   Widget _buildTimeField({
     required String label,
     required TextEditingController controller,
-    VoidCallback? onTap, // 🚀 RENDRE OPTIONNEL (ajout du ?)
+    VoidCallback? onTap,
     bool enabled = true,
   }) {
     return Column(
@@ -1575,36 +1654,32 @@ class _FormulairePageState extends State<FormulaireLignePage> {
           ),
         ),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: enabled && onTap != null ? onTap : null, // 🚀 CONDITIONNEL
-          child: Container(
-            decoration: BoxDecoration(
-              color: enabled ? const Color(0xFFF9FAFB) : const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: 20,
-                  color: enabled ? const Color(0xFF666666) : const Color(0xFF9CA3AF),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    controller.text.isEmpty
-                        ? "Heure automatique" // 🚀 MESSAGE PLUS CLAIR
-                        : controller.text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: controller.text.isEmpty ? const Color(0xFF9CA3AF) : (enabled ? const Color(0xFF374151) : const Color(0xFF6B7280)),
-                    ),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FAFB), // ← Même couleur de fond
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE5E7EB)), // ← Même bordure
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 20,
+                color: enabled ? const Color(0xFF666666) : const Color(0xFF666666), // ← Même couleur d'icône
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  controller.text.isEmpty ? "Heure automatique" : controller.text,
+                  style: const TextStyle(
+                    // ← Même style de texte
+                    fontSize: 14,
+                    color: Color(0xFF374151), // ← Même couleur de texte
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
