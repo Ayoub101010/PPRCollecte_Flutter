@@ -33,6 +33,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   Map<String, dynamic> _formData = {};
   bool _isLoading = false;
   late TextEditingController agentController;
+  bool _typeValidated = true;
+  String? _typeError;
 
   @override
   void initState() {
@@ -91,7 +93,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'nom': null,
         'type': null,
         'enqueteur': widget.agentName ?? 'N/A',
-        'date_creation': null,
+        'date_creation': DateTime.now().toIso8601String(),
         'date_modification': null,
         'latitude': latitude,
         'longitude': longitude,
@@ -172,6 +174,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   Future<void> _handleSave() async {
+    if (!_validateForm()) return;
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -308,6 +311,35 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     }
   }
 
+  bool _validateForm() {
+    // Valider les champs requis standards
+    if (!_formKey.currentState!.validate()) {
+      return false;
+    }
+
+    // Validation spécifique pour le type
+    final config = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
+    final typeOptions = InfrastructureConfig.getTypeOptions(widget.category, widget.type);
+
+    if (typeOptions.isNotEmpty && (_formData['type'] == null || _formData['type'].toString().isEmpty)) {
+      setState(() {
+        _typeValidated = false;
+        _typeError = 'Veuillez sélectionner un type';
+      });
+
+      // Faire défiler jusqu'au champ erroné
+      Scrollable.ensureVisible(
+        _formKey.currentContext!,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+
+      return false;
+    }
+
+    return true;
+  }
+
 // AJOUTEZ dans _PointFormWidgetState
   void _refreshAndNavigate() {
     // Fermer le formulaire
@@ -421,6 +453,56 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     });
   }
 
+// Remplacer la méthode _clearForm par:
+  void _clearForm() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirmation'),
+        content: const Text('Êtes-vous sûr de vouloir effacer tous les champs?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _performClear();
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Effacer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performClear() {
+    setState(() {
+      // Réinitialiser seulement les champs modifiables
+      _formData['nom'] = null;
+      _formData['type'] = null;
+      _formData['nom_cours_eau'] = null;
+      _formData['situation'] = null;
+      _formData['type_pont'] = null;
+      _formData['type_bac'] = null;
+      _formData['causes_coupures'] = null;
+      _formData['type_point_critique'] = null;
+
+      // Réinitialiser l'état de validation
+      _typeValidated = true;
+      _typeError = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Formulaire effacé'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
 // MÉTHODE DE VALIDATION :
   void _validateRequiredFields(Map<String, dynamic> entityData, Map<String, dynamic>? config) {
     final requiredFields = config?['fields'] as List<String>? ?? [];
@@ -497,7 +579,19 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                   ],
                 ),
               ),
-              const SizedBox(width: 40),
+              // Bouton Effacer dans le header
+              TextButton.icon(
+                onPressed: _clearForm,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.delete, size: 18),
+                label: const Text('Effacer'),
+              ),
             ],
           ),
         ),
@@ -590,6 +684,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                       label: 'Date de création *',
                       key: 'date_creation',
                       required: true,
+                      readOnly: true,
                     ),
                     _buildDateModificationField(),
                   ],
@@ -825,11 +920,29 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     );
   }
 
+  // Modifier la méthode _buildDateField() pour le champ date_creation:
   Widget _buildDateField({
     required String label,
     required String key,
     bool required = false,
+    bool readOnly = false,
   }) {
+    final bool isReadOnly = readOnly || key == 'date_creation';
+
+    // Formater la date pour l'affichage
+    String formatDisplayDate(String dateString) {
+      try {
+        final date = DateTime.parse(dateString);
+        return "${date.day.toString().padLeft(2, '0')}/"
+            "${date.month.toString().padLeft(2, '0')}/"
+            "${date.year} "
+            "${date.hour.toString().padLeft(2, '0')}:"
+            "${date.minute.toString().padLeft(2, '0')}";
+      } catch (e) {
+        return dateString;
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -844,54 +957,40 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             ),
           ),
           const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () async {
-              DateTime initialDate = DateTime.now();
-              if (_formData[key] != null) {
-                initialDate = DateTime.tryParse(_formData[key]) ?? DateTime.now();
-              }
-
-              final DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: initialDate,
-                firstDate: DateTime(1900),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) {
-                setState(() {
-                  _formData[key] = picked.toIso8601String();
-                });
-              }
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _formData[key] != null
-                          ? DateTime.tryParse(_formData[key]) != null
-                              ? "${DateTime.parse(_formData[key]).day.toString().padLeft(2, '0')}/"
-                                  "${DateTime.parse(_formData[key]).month.toString().padLeft(2, '0')}/"
-                                  "${DateTime.parse(_formData[key]).year}"
-                              : _formData[key]
-                          : "Sélectionner une date",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: _formData[key] != null ? const Color(0xFF374151) : const Color(0xFF9CA3AF),
-                      ),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _formData[key] != null ? formatDisplayDate(_formData[key]) : "Date non disponible",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF374151),
                     ),
                   ),
-                  const Icon(Icons.calendar_today, size: 20, color: Color(0xFF1976D2)),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+          if (isReadOnly)
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text(
+                'Date automatique (non modifiable)',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF9E9E9E),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -962,7 +1061,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           ),
           const SizedBox(height: 8),
           TextFormField(
-            controller: controller, // Utiliser le contrôleur
+            controller: controller,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
@@ -980,6 +1079,15 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Color(0xFF1976D2)),
               ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.red), // ← Même rouge que le type
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.red), // ← Même rouge que le type
+              ),
+              errorStyle: const TextStyle(color: Colors.red), // ← Même rouge que le type
             ),
             maxLines: maxLines,
             textAlignVertical: maxLines > 1 ? TextAlignVertical.top : null,
@@ -1007,20 +1115,19 @@ class _PointFormWidgetState extends State<PointFormWidget> {
     required String key,
     bool required = false,
   }) {
-    // Récupérer la valeur actuelle
-    final currentValue = _formData[key];
+    final bool hasError = !_typeValidated && _formData[key] == null && required;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF374151),
+              color: hasError ? Colors.red : const Color(0xFF374151),
             ),
           ),
           const SizedBox(height: 8),
@@ -1028,17 +1135,21 @@ class _PointFormWidgetState extends State<PointFormWidget> {
             decoration: BoxDecoration(
               color: const Color(0xFFF9FAFB),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
+              border: Border.all(
+                color: hasError ? Colors.red : const Color(0xFFE5E7EB),
+              ),
             ),
             padding: const EdgeInsets.all(12),
             child: Column(
               children: options.map((option) {
-                final isSelected = currentValue == option;
+                final isSelected = _formData[key] == option;
 
                 return GestureDetector(
                   onTap: () {
                     setState(() {
                       _formData[key] = option;
+                      _typeValidated = true;
+                      _typeError = null;
                     });
                   },
                   child: Container(
@@ -1050,7 +1161,10 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                           height: 20,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFD1D5DB), width: 2),
+                            border: Border.all(
+                              color: hasError && !isSelected ? Colors.red : const Color(0xFFD1D5DB),
+                              width: 2,
+                            ),
                           ),
                           child: isSelected
                               ? const Center(
@@ -1068,7 +1182,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                             option,
                             style: TextStyle(
                               fontSize: 15,
-                              color: isSelected ? const Color(0xFF1976D2) : const Color(0xFF374151),
+                              color: isSelected ? const Color(0xFF1976D2) : (hasError ? Colors.red : const Color(0xFF374151)),
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
@@ -1080,6 +1194,17 @@ class _PointFormWidgetState extends State<PointFormWidget> {
               }).toList(),
             ),
           ),
+          if (hasError)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                _typeError ?? 'Veuillez sélectionner un type',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.red, // ← Même rouge que le nom
+                ),
+              ),
+            ),
         ],
       ),
     );
