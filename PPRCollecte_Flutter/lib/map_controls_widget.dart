@@ -14,7 +14,7 @@ class MapControlsWidget extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const MapControlsWidget({
-    super.key,
+    Key? key,
     required this.controller,
     required this.onAddPoint,
     required this.onStartLigne,
@@ -24,55 +24,59 @@ class MapControlsWidget extends StatelessWidget {
     required this.onFinishLigne,
     required this.onFinishChaussee,
     required this.onRefresh,
-  });
+  }) : super(key: key);
 
+  @override
   @override
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 20,
-      right: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // BOUTON RAFRAÎCHIR - NOUVEAU
-          FloatingActionButton.extended(
+    return Stack(
+      children: [
+        // Bouton Rafraîchir en haut à droite (à ajuster si nécessaire)
+        Positioned(
+          top: 8,
+          right: 55,
+          child: FloatingActionButton(
             heroTag: "refreshBtn",
+            mini: true,
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
-            icon: const Icon(Icons.refresh, size: 20),
-            label: const Text("Rafraîchir"),
-            onPressed: onRefresh, // ← CORRECTION: onRefresh au lieu de _loadDisplayedPoints
+            onPressed: onRefresh,
             elevation: 6,
-            highlightElevation: 12,
+            child: const Icon(Icons.refresh, size: 20),
           ),
+        ),
 
-          const SizedBox(height: 12),
-
-          // Bouton Point (visible seulement si aucune collecte active)
-          if (!controller.hasActiveCollection)
-            FloatingActionButton.extended(
-              heroTag: "pointBtn",
-              backgroundColor: const Color(0xFFE53E3E),
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.place),
-              label: const Text("Point"),
-              onPressed: onAddPoint,
-              elevation: 6,
-              highlightElevation: 12,
+        // Boutons Point, Piste, Chaussée alignés horizontalement en bas
+        Positioned(
+          bottom: 10,
+          left: 0,
+          right: 50,
+          child: SafeArea(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (!controller.hasActiveCollection)
+                  SizedBox(
+                    width: 110,
+                    child: FloatingActionButton.extended(
+                      heroTag: "pointBtn",
+                      backgroundColor: const Color(0xFFE53E3E),
+                      foregroundColor: Colors.white,
+                      icon: const Icon(Icons.place),
+                      label: const Text("Point"),
+                      onPressed: onAddPoint,
+                      elevation: 6,
+                      highlightElevation: 12,
+                    ),
+                  ),
+                SizedBox(width: 110, child: _buildLigneControls()),
+                SizedBox(width: 110, child: _buildChausseeControls()),
+              ],
             ),
-
-          if (!controller.hasActiveCollection) const SizedBox(height: 12),
-
-          // Boutons Ligne/Piste
-          _buildLigneControls(),
-
-          const SizedBox(height: 12),
-
-          // Boutons Chaussée
-          _buildChausseeControls(),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -96,10 +100,9 @@ class MapControlsWidget extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Bouton pause/reprendre
           FloatingActionButton(
             heroTag: "pauseLigneBtn",
-            backgroundColor: ligneCollection.isPaused ? const Color(0xFF4CAF50) : const Color(0xFFD69E2E),
+            backgroundColor: const Color(0xFF1976D2),
             foregroundColor: Colors.white,
             onPressed: onToggleLigne,
             mini: true,
@@ -135,21 +138,19 @@ class MapControlsWidget extends StatelessWidget {
         heroTag: "chausseeBtn",
         backgroundColor: const Color(0xFFFF9800),
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.construction),
+        icon: const Icon(Icons.alt_route),
         label: const Text("Chaussée"),
         onPressed: onStartChaussee,
         elevation: 6,
         highlightElevation: 12,
       );
     } else {
-      // Contrôles chaussée active/en pause
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Bouton pause/reprendre
           FloatingActionButton(
             heroTag: "pauseChausseeBtn",
-            backgroundColor: chausseeCollection.isPaused ? const Color(0xFF4CAF50) : const Color(0xFFD69E2E),
+            backgroundColor: const Color(0xFFFF9800),
             foregroundColor: Colors.white,
             onPressed: onToggleChaussee,
             mini: true,
