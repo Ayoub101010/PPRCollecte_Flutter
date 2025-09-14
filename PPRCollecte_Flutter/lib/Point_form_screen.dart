@@ -8,12 +8,15 @@ class PointFormScreen extends StatefulWidget {
   final Map<String, dynamic>? pointData;
   final String? agentName;
   final String? nearestPisteCode;
-
+  final Function(String)? onSpecialTypeSelected; // ← AJOUTEZ CETTE LIGNE
+  final Function(String)? onTypeSelected; // ← AJOUTEZ CETTE LIGNE
   const PointFormScreen({
     super.key,
     this.pointData,
     this.agentName,
     this.nearestPisteCode,
+    this.onSpecialTypeSelected, // ← AJOUTEZ CETTE LIGNE
+    this.onTypeSelected,
   });
 
   @override
@@ -59,10 +62,21 @@ class _PointFormScreenState extends State<PointFormScreen> {
     });
   }
 
+  // Dans TypeSelectorWidget
   void _onTypeSelected(String type) {
-    setState(() {
-      selectedType = type;
-    });
+    if (type == "Bac" || type == "Passage Submersible") {
+      // Retourner à la carte pour la collecte spéciale
+      Navigator.of(context).pop();
+      // Démarrer la collecte spéciale
+      if (widget.onSpecialTypeSelected != null) {
+        widget.onSpecialTypeSelected!(type);
+      }
+    } else {
+      // Ouvrir le formulaire normal
+      setState(() {
+        selectedType = type;
+      });
+    }
   }
 
   void _onBackToCategories() {

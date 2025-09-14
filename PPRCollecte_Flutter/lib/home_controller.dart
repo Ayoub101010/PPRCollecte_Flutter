@@ -29,7 +29,7 @@ class HomeController extends ChangeNotifier {
   List<LatLng> linePoints = [];
   double lineTotalDistance = 0.0;
   String? _activePisteCode;
-
+  String? _specialCollectionType;
   StreamSubscription<LocationData>? _locationSub;
 
   HomeController({LocationService? locationService}) : _locationService = locationService ?? LocationService() {
@@ -43,6 +43,20 @@ class HomeController extends ChangeNotifier {
   bool get hasPausedCollection => _collectionManager.hasPausedCollection;
   String? get activeCollectionType => _collectionManager.activeCollectionType;
   String? get activePisteCode => _activePisteCode;
+
+  void setSpecialCollectionType(String type) {
+    _specialCollectionType = type;
+  }
+
+  String? getSpecialCollectionType() {
+    return _specialCollectionType;
+  }
+
+  // Dans HomeController
+  void clearSpecialCollectionType() {
+    _specialCollectionType = null;
+    notifyListeners();
+  }
 
   /// Appelé lorsque les collectes changent
   void _onCollectionChanged() {
@@ -256,7 +270,12 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
 
     if (result == null) return null;
-
+    print('📏 Résultat ligne - Points: ${result.points.length}');
+    print('📏 Résultat ligne - Distance: ${result.totalDistance}m');
+    if (result.points.isNotEmpty) {
+      print('📏 Premier point: ${result.points.first}');
+      print('📏 Dernier point: ${result.points.last}');
+    }
     return {
       'points': result.points,
       'id': result.id,

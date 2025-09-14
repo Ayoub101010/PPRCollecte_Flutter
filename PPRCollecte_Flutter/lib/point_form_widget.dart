@@ -12,7 +12,7 @@ class PointFormWidget extends StatefulWidget {
   final VoidCallback onSaved;
   final String? agentName; // ← nouveau
   final String? nearestPisteCode;
-
+  final bool isSpecialLine;
   const PointFormWidget({
     super.key,
     required this.category,
@@ -22,6 +22,7 @@ class PointFormWidget extends StatefulWidget {
     required this.onSaved,
     this.agentName, // ← nouveau
     this.nearestPisteCode,
+    this.isSpecialLine = false,
   });
 
   @override
@@ -52,11 +53,11 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   }
 
   void _initializeFormData() {
-    print('🔄 Début _initializeFormData()');
+    print('🔄 Début _initializeFormData() - isSpecialLine: ${widget.isSpecialLine}');
     print('   widget.pointData: ${widget.pointData}');
-    print('   widget.nearestPisteCode: ${widget.nearestPisteCode}');
-    // Réinitialiser _formData
-    _formData = {};
+
+    // RÉINITIALISER _formData EN COPIANT TOUTES LES DONNÉES EXISTANTES
+    _formData = Map<String, dynamic>.from(widget.pointData ?? {});
 
     if (widget.pointData != null && widget.pointData!['id'] != null) {
       // ============ MODIFICATION ============
@@ -66,45 +67,43 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       final tableName = config?['tableName'] ?? '';
       final coordinatePrefix = _getCoordinatePrefix(tableName);
 
-      _formData = {
-        'id': widget.pointData!['id'],
-        'code_piste': widget.pointData!['code_piste'],
-        'nom': widget.pointData!['nom'],
-        'type': widget.pointData!['type'],
-        'enqueteur': widget.pointData!['enqueteur'] ?? widget.agentName ?? 'N/A',
-        'date_creation': widget.pointData!['date_creation'],
-        'date_modification': widget.pointData!['date_modification'] ?? DateTime.now().toIso8601String(),
-        'latitude': widget.pointData!['x_$coordinatePrefix'],
-        'longitude': widget.pointData!['y_$coordinatePrefix'],
-      };
+      // AJOUTEZ SEULEMENT LES CHAMPS MANQUANTS, NE REMPLACEZ PAS TOUT
+      _formData['id'] = widget.pointData!['id'];
+      _formData['code_piste'] = widget.pointData!['code_piste'];
+      _formData['nom'] = widget.pointData!['nom'];
+      _formData['type'] = widget.pointData!['type'];
+      _formData['enqueteur'] = widget.pointData!['enqueteur'] ?? widget.agentName ?? 'N/A';
+      _formData['date_creation'] = widget.pointData!['date_creation'];
+      _formData['date_modification'] = widget.pointData!['date_modification'] ?? DateTime.now().toIso8601String();
+      _formData['latitude'] = widget.pointData!['x_$coordinatePrefix'];
+      _formData['longitude'] = widget.pointData!['y_$coordinatePrefix'];
 
       _addSpecificFormDataFromPointData(widget.pointData!, widget.type);
     } else {
       // ============ CRÉATION ============
       print('🆕 Mode CRÉATION');
 
-      // COORDONNÉES GPS - CORRECTION DÉFINITIVE
-      final double latitude = widget.pointData?['latitude']?.toDouble() ?? 0.0;
-      final double longitude = widget.pointData?['longitude']?.toDouble() ?? 0.0;
+      // AJOUTEZ SEULEMENT LES CHAMPS MANQUANTS, NE REMPLACEZ PAS TOUT
+      _formData['id'] = _formData['id'] ?? null;
+      _formData['code_piste'] = _formData['code_piste'] ?? widget.nearestPisteCode;
+      _formData['nom'] = _formData['nom'] ?? null;
+      _formData['type'] = _formData['type'] ?? null;
+      _formData['enqueteur'] = _formData['enqueteur'] ?? widget.agentName ?? 'N/A';
+      _formData['date_creation'] = _formData['date_creation'] ?? DateTime.now().toIso8601String();
+      _formData['date_modification'] = _formData['date_modification'] ?? null;
 
-      _formData = {
-        'id': null,
-        'code_piste': widget.nearestPisteCode,
-        'nom': null,
-        'type': null,
-        'enqueteur': widget.agentName ?? 'N/A',
-        'date_creation': DateTime.now().toIso8601String(),
-        'date_modification': null,
-        'latitude': latitude,
-        'longitude': longitude,
-      };
+      // ASSUREZ-VOUS QUE LES COORDONNÉES PRINCIPALES EXISTENT
+      if (!_formData.containsKey('latitude') && _formData.containsKey('latitude_debut')) {
+        _formData['latitude'] = _formData['latitude_debut'];
+      }
+      if (!_formData.containsKey('longitude') && _formData.containsKey('longitude_debut')) {
+        _formData['longitude'] = _formData['longitude_debut'];
+      }
 
       print('📍 Coordonnées extraites:');
-      print('   latitude: $latitude');
-      print('   longitude: $longitude');
-      print('   widget.pointData[latitude]: ${widget.pointData?['latitude']}');
-      print('   widget.pointData[longitude]: ${widget.pointData?['longitude']}');
-      print('   code_piste: ${widget.nearestPisteCode}');
+      print('   latitude: ${_formData['latitude']}');
+      print('   longitude: ${_formData['longitude']}');
+      print('   code_piste: ${_formData['code_piste']}');
     }
 
     print('✅ _initializeFormData() terminé:');
@@ -204,14 +203,26 @@ class _PointFormWidgetState extends State<PointFormWidget> {
 
       // Préparer les données de base avec le bon préfixe
       final entityData = {
-        'x_$coordinatePrefix': _formData['latitude'] ?? 0.0,
-        'y_$coordinatePrefix': _formData['longitude'] ?? 0.0,
         'nom': _formData['nom'] ?? 'Sans nom',
         'enqueteur': _formData['enqueteur'] ?? 'Anonyme',
         'code_piste': _formData['code_piste'],
         'login_id': ApiService.userId,
       };
-
+      entityData['x_$coordinatePrefix'] = _formData['latitude'] ?? 0.0;
+      entityData['y_$coordinatePrefix'] = _formData['longitude'] ?? 0.0;
+      if (widget.isSpecialLine) {
+        if (widget.type == "Bac") {
+          entityData['x_debut_traversee_bac'] = _formData['latitude_debut'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_debut_traversee_bac'] = _formData['longitude_debut'] ?? _formData['longitude'] ?? 0.0;
+          entityData['x_fin_traversee_bac'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_fin_traversee_bac'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+        } else if (widget.type == "Passage Submersible") {
+          entityData['x_debut_passage_submersible'] = _formData['latitude_debut'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_debut_passage_submersible'] = _formData['longitude_debut'] ?? _formData['longitude'] ?? 0.0;
+          entityData['x_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+        }
+      }
       // Si c'est une modification, ajouter l'ID
       if (widget.pointData != null && widget.pointData!['id'] != null) {
         entityData['id'] = widget.pointData!['id'];
@@ -227,7 +238,14 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       }
       // Ajouter le type si présent dans le formulaire
       if (_formData['type'] != null) {
-        entityData['type'] = _formData['type'];
+        // Vérifiez si cette entité utilise 'type' ou 'type_materiau'
+        if (widget.type == "Passage Submersible") {
+          entityData['type_materiau'] = _formData['type']; // ← Pour Passage Submersible
+        } else if (widget.type == "Bac") {
+          entityData['type_bac'] = _formData['type']; // ← Pour Bac
+        } else {
+          entityData['type'] = _formData['type']; // ← Pour les autres entités
+        }
       }
 
       // Ajouter les champs spécifiques selon le type d'entité
@@ -411,7 +429,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         break;
 
       case 'Passage Submersible':
-        entityData['type_materiau'] = _formData['type'] ?? 'Non spécifié';
+        entityData['type_materiau'] = _formData['type_materiau'] ?? 'Non spécifié';
         // Les coordonnées de début sont déjà dans entityData via le préfixe
         entityData['x_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
         entityData['y_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
@@ -1213,49 +1231,129 @@ class _PointFormWidgetState extends State<PointFormWidget> {
   Widget _buildGpsInfo() {
     final dynamic lat = _formData['latitude'];
     final dynamic lng = _formData['longitude'];
-
+    print('🔍 _formData dans _buildGpsInfo:');
+    print('   latitude: ${_formData['latitude']}');
+    print('   longitude: ${_formData['longitude']}');
+    print('   latitude_debut: ${_formData['latitude_debut']}');
+    print('   longitude_debut: ${_formData['longitude_debut']}');
+    print('   latitude_fin: ${_formData['latitude_fin']}');
+    print('   longitude_fin: ${_formData['longitude_fin']}');
+    print('   distance: ${_formData['distance']}');
+    print('   isSpecialLine: ${widget.isSpecialLine}');
     String latStr = 'N/A';
     String lngStr = 'N/A';
 
-    if (lat != null) {
-      latStr = lat is double ? lat.toStringAsFixed(6) : lat.toString();
-    }
+    if (lat != null) latStr = lat is double ? lat.toStringAsFixed(6) : lat.toString();
+    if (lng != null) lngStr = lng is double ? lng.toStringAsFixed(6) : lng.toString();
+    if (widget.isSpecialLine) {
+      print('🔍 Données de ligne spéciale: $_formData'); // ← DEBUG
+      // AFFICHAGE SPÉCIAL POUR LES LIGNES (BAC ET PASSAGE)
+      final dynamic latDebut = _formData['latitude_debut'];
+      final dynamic lngDebut = _formData['longitude_debut'];
+      final dynamic latFin = _formData['latitude_fin'];
+      final dynamic lngFin = _formData['longitude_fin'];
+      final dynamic distance = _formData['distance'];
 
-    if (lng != null) {
-      lngStr = lng is double ? lng.toStringAsFixed(6) : lng.toString();
-    }
+      String latDebutStr = 'N/A';
+      String lngDebutStr = 'N/A';
+      String latFinStr = 'N/A';
+      String lngFinStr = 'N/A';
+      String distanceStr = 'N/A';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F8FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE3F2FD)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.gps_fixed, size: 20, color: Color(0xFF1976D2)),
-              SizedBox(width: 8),
-              Text(
-                'Position GPS collectée',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1976D2),
+      if (latDebut != null && latDebut != 0.0) {
+        latDebutStr = latDebut is double ? latDebut.toStringAsFixed(6) : latDebut.toString();
+      }
+
+      if (lngDebut != null && lngDebut != 0.0) {
+        lngDebutStr = lngDebut is double ? lngDebut.toStringAsFixed(6) : lngDebut.toString();
+      }
+
+      if (latFin != null && latFin != 0.0) {
+        latFinStr = latFin is double ? latFin.toStringAsFixed(6) : latFin.toString();
+      }
+
+      if (lngFin != null && lngFin != 0.0) {
+        lngFinStr = lngFin is double ? lngFin.toStringAsFixed(6) : lngFin.toString();
+      }
+
+      if (distance != null && distance != 0.0) {
+        distanceStr = distance is double ? '${distance.toStringAsFixed(2)} m' : distance.toString();
+      }
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F8FF),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE3F2FD)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.gps_fixed, size: 20, color: Color(0xFF1976D2)),
+                SizedBox(width: 8),
+                Text(
+                  'Géolocalisation de la ligne',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1976D2),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildGpsInfoRow('Latitude:', '$latStr°'),
-          _buildGpsInfoRow('Longitude:', '$lngStr°'),
-        ],
-      ),
-    );
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGpsInfoRow('Point de début:', '$latDebutStr°, $lngDebutStr°'),
+            _buildGpsInfoRow('Point de fin:', '$latFinStr°, $lngFinStr°'),
+            _buildGpsInfoRow('Distance totale:', distanceStr),
+          ],
+        ),
+      );
+    } else {
+      // AFFICHAGE NORMAL POUR LES POINTS
+      final dynamic lat = _formData['latitude'];
+      final dynamic lng = _formData['longitude'];
+
+      String latStr = 'N/A';
+      String lngStr = 'N/A';
+
+      if (lat != null) latStr = lat is double ? lat.toStringAsFixed(6) : lat.toString();
+      if (lng != null) lngStr = lng is double ? lng.toStringAsFixed(6) : lng.toString();
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F8FF),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE3F2FD)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.gps_fixed, size: 20, color: Color(0xFF1976D2)),
+                SizedBox(width: 8),
+                Text(
+                  'Position GPS collectée',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1976D2),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGpsInfoRow('Latitude:', '$latStr°'),
+            _buildGpsInfoRow('Longitude:', '$lngStr°'),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildGpsInfoRow(String label, String value) {

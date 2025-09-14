@@ -12,6 +12,8 @@ class MapControlsWidget extends StatelessWidget {
   final VoidCallback onFinishLigne;
   final VoidCallback onFinishChaussee;
   final VoidCallback onRefresh;
+  final bool isSpecialCollection;
+  final VoidCallback onStopSpecial;
 
   const MapControlsWidget({
     Key? key,
@@ -24,6 +26,8 @@ class MapControlsWidget extends StatelessWidget {
     required this.onFinishLigne,
     required this.onFinishChaussee,
     required this.onRefresh,
+    required this.isSpecialCollection, // ← NOUVEAU
+    required this.onStopSpecial, // ← NOUVEAU
   }) : super(key: key);
 
   @override
@@ -56,19 +60,31 @@ class MapControlsWidget extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                if (!controller.hasActiveCollection)
+                // BOUTON POINT/ARRÊT (MODIFIÉ)
+                if (!controller.hasActiveCollection || isSpecialCollection)
                   SizedBox(
                     width: 110,
-                    child: FloatingActionButton.extended(
-                      heroTag: "pointBtn",
-                      backgroundColor: const Color(0xFFE53E3E),
-                      foregroundColor: Colors.white,
-                      icon: const Icon(Icons.place),
-                      label: const Text("Point"),
-                      onPressed: onAddPoint,
-                      elevation: 6,
-                      highlightElevation: 12,
-                    ),
+                    child: isSpecialCollection
+                        ? FloatingActionButton.extended(
+                            heroTag: "stopSpecialBtn",
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            icon: const Icon(Icons.stop),
+                            label: const Text("Arrêt"),
+                            onPressed: onStopSpecial,
+                            elevation: 6,
+                            highlightElevation: 12,
+                          )
+                        : FloatingActionButton.extended(
+                            heroTag: "pointBtn",
+                            backgroundColor: const Color(0xFFE53E3E),
+                            foregroundColor: Colors.white,
+                            icon: const Icon(Icons.place),
+                            label: const Text("Point"),
+                            onPressed: onAddPoint,
+                            elevation: 6,
+                            highlightElevation: 12,
+                          ),
                   ),
                 SizedBox(width: 110, child: _buildLigneControls()),
                 SizedBox(width: 110, child: _buildChausseeControls()),

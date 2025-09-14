@@ -20,6 +20,7 @@ import 'piste_chaussee_db_helper.dart';
 import 'database_helper.dart';
 import 'api_service.dart';
 import 'dart:convert'; // ⭐⭐ AJOUTEZ CET IMPORT ⭐⭐
+import 'special_line_form_page.dart'; // ← AJOUTEZ CET IMPORT
 
 class HomePage extends StatefulWidget {
   final Function onLogout;
@@ -56,7 +57,8 @@ class _HomePageState extends State<HomePage> {
   int _syncProcessedItems = 0;
   Set<Marker> _displayedPointsMarkers = {};
   String? _currentNearestPisteCode;
-
+  bool _isSpecialCollection = false;
+  String? _specialCollectionType;
   final Completer<GoogleMapController> _controller = Completer();
   LatLng? _lastCameraPosition;
   late final HomeController homeController;
@@ -103,6 +105,120 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+// Dans _HomePageState
+  Future<void> startSpecialLineCollection(String type) async {
+    if (!homeController.gpsEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Veuillez activer le GPS")),
+      );
+      return;
+    }
+
+    if (homeController.hasActiveCollection) {
+      final activeType = homeController.activeCollectionType;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Veuillez mettre en pause la collecte de $activeType en cours'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Générer le code piste automatiquement
+    final codePisteAuto = generateCodePiste();
+
+    try {
+      await homeController.startLigneCollection(codePisteAuto);
+
+      // Stocker le type spécial
+      homeController.setSpecialCollectionType(type);
+
+      setState(() {
+        _isSpecialCollection = true;
+        _specialCollectionType = type;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Collecte de $type démarrée'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+// Modifiez finishLigneCollection pour gérer les types spéciaux
+  Future<void> finishSpecialLigneCollection() async {
+    final result = homeController.finishLigneCollection();
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Une ligne doit contenir au moins 2 points.")),
+      );
+      return;
+    }
+    print('🎯 finishSpecialLigneCollection appelé');
+    print('   Points: ${result['points']?.length}');
+    print('   Distance: ${result['totalDistance']}');
+    print('   Code Piste: ${result['codePiste']}');
+    final specialType = homeController.getSpecialCollectionType();
+
+    if (specialType != null && (specialType == "Bac" || specialType == "Passage Submersible")) {
+      // Ouvrir le formulaire spécial avec les données de la ligne
+      final formResult = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SpecialLineFormPage(
+            linePoints: result['points'],
+            provisionalCode: result['codePiste'] ?? '',
+            startTime: result['startTime'] ?? DateTime.now(),
+            endTime: result['endTime'] ?? DateTime.now(),
+            agentName: widget.agentName,
+            specialType: specialType,
+            totalDistance: result['totalDistance'] ?? 0.0,
+          ),
+        ),
+      );
+      setState(() {
+        _isSpecialCollection = false;
+        _specialCollectionType = null;
+      });
+      if (formResult != null) {
+        // Sauvegarder la ligne spéciale avec une couleur différente
+        final specialColor = specialType == "Bac" ? Colors.purple : Colors.deepPurple;
+
+        setState(() {
+          _finishedPistes.add(Polyline(
+            polylineId: PolylineId('special_${DateTime.now().millisecondsSinceEpoch}'),
+            points: result['points'],
+            color: specialColor,
+            width: 4,
+          ));
+          _isSpecialCollection = false;
+          _specialCollectionType = null;
+        });
+
+        final storageHelper = SimpleStorageHelper();
+        await storageHelper.saveDisplayedPiste(result['points'], specialColor, 4.0);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Données enregistrées avec succès'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadDisplayedChaussees() async {
@@ -228,6 +344,12 @@ class _HomePageState extends State<HomePage> {
 
   // === GESTION DES POINTS D'INTÉRÊT ===
   Future<void> addPointOfInterest() async {
+    if (_isSpecialCollection) {
+      // Si on est en mode collection spéciale, arrêter la collecte
+      await finishSpecialLigneCollection();
+      return;
+    }
+
     // Vérifier si une collecte est active
     final activeType = homeController.getActiveCollectionType();
     if (activeType != null) {
@@ -241,16 +363,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     final current = homeController.userPosition;
-    print('POSITION ACTUELLE: ${current.latitude}, ${current.longitude}');
-    // ⭐⭐ UTILISER LE CODE PISTE ACTIF SI DISPONIBLE ⭐⭐
-    final String? nearestPisteCode;
+    final nearestPisteCode = await SimpleStorageHelper().findNearestPisteCode(current, activePisteCode: homeController.activePisteCode);
 
-    if (homeController.activePisteCode != null) {
-      nearestPisteCode = homeController.activePisteCode;
-      print('🎯 Utilisation piste active en pause: $nearestPisteCode');
-    } else {
-      nearestPisteCode = await SimpleStorageHelper().findNearestPisteCode(current, activePisteCode: homeController.activePisteCode);
-    }
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -263,6 +377,10 @@ class _HomePageState extends State<HomePage> {
           },
           agentName: widget.agentName,
           nearestPisteCode: nearestPisteCode,
+          onSpecialTypeSelected: (type) {
+            // Démarrer la collecte spéciale
+            startSpecialLineCollection(type);
+          },
         ),
       ),
     );
@@ -278,7 +396,6 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       });
-      // homeController.refreshFormMarkers();
     }
   }
 
@@ -989,14 +1106,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     // Préparer les markers
     final Set<Marker> markersSet = Set<Marker>.from(_displayedPointsMarkers);
-    // markersSet.addAll(formMarkers);
-    // markersSet.removeWhere((m) => m.markerId.value == 'user');
-    /* markersSet.add(Marker(
-      markerId: const MarkerId('user'),
-      position: userPosition,
-      infoWindow: const InfoWindow(title: 'Vous êtes ici'),
-      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-    ));*/
 
     // Préparer les polylines
     final allPolylines = Set<Polyline>.from(collectedPolylines);
@@ -1097,6 +1206,30 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                  Positioned(
+                    bottom: 160,
+                    right: 16,
+                    child: Visibility(
+                      visible: _isSpecialCollection && kDebugMode,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          // Simuler l'ajout de points réalistes
+                          homeController.addRealisticPisteSimulation();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Points simulés pour $_specialCollectionType'),
+                              backgroundColor: Colors.blue,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        backgroundColor: Colors.purple,
+                        child: const Icon(Icons.add_road, color: Colors.white),
+                        mini: true,
+                        heroTag: 'simulate_button',
+                      ),
+                    ),
+                  ),
                   // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(
@@ -1109,6 +1242,8 @@ class _HomePageState extends State<HomePage> {
                     onFinishLigne: finishLigneCollection,
                     onFinishChaussee: finishChausseeCollection,
                     onRefresh: _loadDisplayedPoints,
+                    isSpecialCollection: _isSpecialCollection, // ← NOUVEAU
+                    onStopSpecial: finishSpecialLigneCollection,
                   ),
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
