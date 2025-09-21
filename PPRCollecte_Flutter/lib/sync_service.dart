@@ -364,7 +364,7 @@ class SyncService {
       'properties': {
         'sqlite_id': localData['id'],
         'code_piste': localData['code_piste'] ?? 'INCONNU_${DateTime.now().millisecondsSinceEpoch}',
-        'communes_rurales_id': _parseInt(localData['commune_rurale_id']),
+        'communes_rurales_id': localData['commune_rurales'],
         'heure_debut': localData['heure_debut'] ?? '',
         'heure_fin': localData['heure_fin'] ?? '',
         'nom_origine_piste': localData['nom_origine_piste'] ?? '',
@@ -388,7 +388,7 @@ class SyncService {
         'entreprise': localData['entreprise'],
         'created_at': _formatDateTime(localData['created_at']) ?? _formatDateTime(DateTime.now()),
         'updated_at': _formatDateTime(localData['updated_at']),
-        'login': _parseInt(localData['login_id']) ?? _parseInt(localData['login']),
+        'login_id': _parseInt(localData['login_id']) ?? _parseInt(localData['login']),
       }
     };
   }

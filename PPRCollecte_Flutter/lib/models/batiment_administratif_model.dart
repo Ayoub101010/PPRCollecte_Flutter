@@ -8,6 +8,7 @@ class BatimentAdministratif {
   final String dateCreation;
   final String? dateModification;
   final String? codePiste;
+  final int? communeId;
 
   BatimentAdministratif({
     this.id,
@@ -19,6 +20,7 @@ class BatimentAdministratif {
     required this.dateCreation,
     this.dateModification,
     this.codePiste,
+    this.communeId,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +34,7 @@ class BatimentAdministratif {
       'date_creation': dateCreation,
       'date_modification': dateModification,
       'code_piste': codePiste,
+      'commune_id': communeId,
     };
   }
 
@@ -46,6 +49,7 @@ class BatimentAdministratif {
       dateCreation: map['date_creation'],
       dateModification: map['date_modification'],
       codePiste: map['code_piste'],
+      communeId: map['commune_id'],
     );
   }
 }

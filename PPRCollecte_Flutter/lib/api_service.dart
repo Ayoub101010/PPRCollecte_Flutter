@@ -5,6 +5,12 @@ class ApiService {
   static const String baseUrl = 'http://10.0.2.2:8000';
   static String? authToken;
   static int? userId;
+  static int? communeId;
+  static int? prefectureId;
+  static int? regionId;
+  static String? communeNom;
+  static String? prefectureNom;
+  static String? regionNom;
   // Remplace par l'IP de ton PC ou le serveur API
 
   /// Fonction pour se connecter via API
@@ -30,6 +36,13 @@ class ApiService {
       final data = jsonDecode(response.body);
       authToken = data['token'];
       userId = data['id'];
+      communeId = data['communes_rurales'];
+      prefectureId = data['prefecture_id'];
+      regionId = data['region_id'];
+      communeNom = data['commune_nom'];
+      prefectureNom = data['prefecture_nom'];
+      regionNom = data['region_nom'];
+
       // On vérifie que "nom" et "prenom" sont bien présents
       if (data.containsKey('nom') && data.containsKey('prenom')) {
         return data;
@@ -175,6 +188,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -211,6 +225,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -247,6 +262,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -283,6 +299,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -319,6 +336,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -355,6 +373,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -391,6 +410,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -429,6 +449,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -468,6 +489,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -503,6 +525,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -539,6 +562,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -577,6 +601,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -612,6 +637,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 
@@ -647,6 +673,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'login_id': userId,
+      'commune_id': localData['commune_id'],
     };
   }
 

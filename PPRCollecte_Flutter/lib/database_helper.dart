@@ -85,7 +85,7 @@ class DatabaseHelper {
 
   Future<void> _createAllTables(Database db) async {
     print('🏗️  Début de la création des tables...');
-
+    await _createSessionTable(db);
     // ============ TABLE USERS ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS users(
@@ -95,6 +95,12 @@ class DatabaseHelper {
       email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       role TEXT,
+      communes_rurales INTEGER,
+      commune_nom TEXT,
+      prefecture_nom TEXT,
+      prefecture_id INTEGER,
+      region_nom TEXT,
+      region_id INTEGER,
       date_creation TEXT
     )
   ''');
@@ -115,7 +121,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,               -- ← COLONNE AJOUTÉE
+      commune_id INTEGER
     )
   ''');
     print('✅ Table localites créée');
@@ -135,7 +142,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,               -- ← COLONNE AJOUTÉE
+      commune_id INTEGER
     )
   ''');
     print('✅ Table ecoles créée');
@@ -155,7 +163,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table marches créée');
@@ -175,7 +184,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table services_santes créée');
@@ -195,7 +205,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table batiments_administratifs créée');
@@ -215,7 +226,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table infrastructures_hydrauliques créée');
@@ -235,7 +247,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table autres_infrastructures créée');
@@ -257,7 +270,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table ponts créée');
@@ -280,7 +294,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table bacs créée');
@@ -299,7 +314,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table buses créée');
@@ -319,7 +335,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table dalots créée');
@@ -341,7 +358,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table passages_submersibles créée');
@@ -360,7 +378,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table points_critiques créée');
@@ -379,7 +398,8 @@ class DatabaseHelper {
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
-      login_id INTEGER                -- ← COLONNE AJOUTÉE
+      login_id INTEGER,            
+      commune_id INTEGER
     )
   ''');
     print('✅ Table points_coupures créée');
@@ -389,6 +409,18 @@ class DatabaseHelper {
     print('✅ Table test créée');
 
     print("🎉 Toutes les tables ont été créées avec succès !");
+  }
+
+  Future<void> _createSessionTable(Database db) async {
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS app_session (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      current_user_email TEXT,
+      last_login TEXT,
+      is_logged_in INTEGER DEFAULT 0
+    )
+  ''');
+    print('✅ Table app_session créée');
   }
 
   Future<void> _insertDefaultUser(Database db) async {
@@ -408,6 +440,102 @@ class DatabaseHelper {
       print('✅ Utilisateur par défaut inséré');
     } catch (e) {
       print('⚠️ Erreur insertion utilisateur: $e');
+    }
+  }
+
+  Future<void> setCurrentUserEmail(String email) async {
+    try {
+      final db = await database;
+
+      // Vérifier si une session existe déjà
+      final existingSession = await db.query('app_session', limit: 1);
+
+      if (existingSession.isEmpty) {
+        // Insérer une nouvelle session
+        await db.insert('app_session', {
+          'current_user_email': email,
+          'last_login': DateTime.now().toIso8601String(),
+          'is_logged_in': 1,
+        });
+      } else {
+        // Mettre à jour la session existante
+        await db.update(
+            'app_session',
+            {
+              'current_user_email': email,
+              'last_login': DateTime.now().toIso8601String(),
+              'is_logged_in': 1,
+            },
+            where: 'id = ?',
+            whereArgs: [
+              existingSession.first['id']
+            ]);
+      }
+
+      print('✅ Email utilisateur stocké: $email');
+    } catch (e) {
+      print("❌ Erreur setCurrentUserEmail: $e");
+    }
+  }
+
+  Future<String?> getCurrentUserEmail() async {
+    try {
+      final db = await database;
+      final result = await db.query('app_session', limit: 1);
+
+      if (result.isNotEmpty && result.first['is_logged_in'] == 1) {
+        final email = result.first['current_user_email'] as String?;
+        print('📧 Email utilisateur récupéré: $email');
+        return email;
+      }
+
+      print('ℹ️ Aucun utilisateur connecté');
+      return null;
+    } catch (e) {
+      print("❌ Erreur getCurrentUserEmail: $e");
+      return null;
+    }
+  }
+
+  Future<void> clearSession() async {
+    try {
+      final db = await database;
+      await db.delete('app_session');
+      print('✅ Session effacée');
+    } catch (e) {
+      print("❌ Erreur clearSession: $e");
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final db = await database;
+      final currentEmail = await getCurrentUserEmail();
+
+      if (currentEmail == null) {
+        print('ℹ️ Aucun utilisateur connecté');
+        return null;
+      }
+
+      final result = await db.query(
+        'users',
+        where: 'email = ?',
+        whereArgs: [
+          currentEmail
+        ],
+        limit: 1,
+      );
+
+      if (result.isNotEmpty) {
+        print('✅ Utilisateur courant récupéré: $currentEmail');
+        return result.first;
+      } else {
+        print('❌ Utilisateur non trouvé dans la base: $currentEmail');
+        return null;
+      }
+    } catch (e) {
+      print("❌ Erreur getCurrentUser: $e");
+      return null;
     }
   }
 
@@ -530,23 +658,114 @@ class DatabaseHelper {
     }
   }
 
-  Future<int> insertUser(String prenom, String nom, String email, String password, {String? role}) async {
+  Future<int> insertUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role}) async {
+    try {
+      print('🔄 Tentative insertion/mise à jour user: $email');
+      final db = await database;
+
+      // Vérifier si l'utilisateur existe déjà
+      final existingUser = await db.query(
+        'users',
+        where: 'email = ?',
+        whereArgs: [
+          email
+        ],
+        limit: 1,
+      );
+
+      final userData = {
+        'prenom': prenom,
+        'nom': nom,
+        'email': email,
+        'password': password,
+        'role': role ?? 'enqueteur',
+        'communes_rurales': communeRural,
+        'commune_nom': communeNom,
+        'prefecture_nom': prefectureNom,
+        'prefecture_id': prefectureId,
+        'region_nom': regionNom,
+        'region_id': regionId,
+        'date_creation': DateTime.now().toIso8601String(),
+      };
+
+      int result;
+
+      if (existingUser.isNotEmpty) {
+        // Mise à jour de l'utilisateur existant
+        print('📝 Utilisateur existe déjà, mise à jour...');
+        result = await db.update(
+          'users',
+          userData,
+          where: 'email = ?',
+          whereArgs: [
+            email
+          ],
+        );
+        print('✅ Utilisateur mis à jour: $result ligne affectée');
+        return existingUser.first['id'] as int;
+      } else {
+        // Insertion d'un nouvel utilisateur
+        print('➕ Nouvel utilisateur, insertion...');
+        result = await db.insert(
+          'users',
+          userData,
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        print('✅ Nouvel utilisateur inséré avec ID: $result');
+        return result;
+      }
+    } catch (e) {
+      print("❌ Erreur insertUser: $e");
+      print('Stack trace: ${e.toString()}');
+      return -1;
+    }
+  }
+
+  Future<bool> userExists(String email) async {
     try {
       final db = await database;
-      return await db.insert(
+      final result = await db.query(
+        'users',
+        where: 'email = ?',
+        whereArgs: [
+          email
+        ],
+        limit: 1,
+      );
+      return result.isNotEmpty;
+    } catch (e) {
+      print("❌ Erreur userExists: $e");
+      return false;
+    }
+  }
+
+  Future<int> updateUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role}) async {
+    try {
+      final db = await database;
+      final result = await db.update(
         'users',
         {
           'prenom': prenom,
           'nom': nom,
-          'email': email,
           'password': password,
           'role': role ?? 'enqueteur',
+          'communes_rurales': communeRural,
+          'commune_nom': communeNom,
+          'prefecture_nom': prefectureNom,
+          'prefecture_id': prefectureId,
+          'region_nom': regionNom,
+          'region_id': regionId,
           'date_creation': DateTime.now().toIso8601String(),
         },
-        conflictAlgorithm: ConflictAlgorithm.replace,
+        where: 'email = ?',
+        whereArgs: [
+          email
+        ],
       );
+      print('✅ Utilisateur mis à jour: $result ligne affectée');
+      return result;
     } catch (e) {
-      print("❌ Erreur insertUser: $e");
+      print("❌ Erreur updateUser: $e");
       return -1;
     }
   }
@@ -591,9 +810,11 @@ class DatabaseHelper {
     final userData = {
       ...data,
       'login_id': ApiService.userId, // ← Utiliser l'ID de l'API
+      'commune_id': await _getCommuneId(),
     };
     print('🗂️ Insertion dans: $path');
     print('📋 Table: $tableName');
+    print('📍 commune_id: ${userData['commune_id']}');
     // NOUVEAU: Afficher les champs et valeurs qui seront insérés
     print('📝 Champs à insérer:');
     data.forEach((key, value) {
@@ -620,6 +841,30 @@ class DatabaseHelper {
     }
 
     return maps;
+  }
+
+  Future<int?> _getCommuneId() async {
+    try {
+      // Priorité à l'API
+      if (ApiService.communeId != null) {
+        print('📍 commune_id depuis API: ${ApiService.communeId}');
+        return ApiService.communeId;
+      }
+
+      // Fallback: base locale
+      final currentUser = await getCurrentUser();
+      if (currentUser != null && currentUser['communes_rurales'] != null) {
+        final communeId = currentUser['communes_rurales'] as int;
+        print('📍 commune_id depuis base locale: $communeId');
+        return communeId;
+      }
+
+      print('⚠️ commune_id non trouvé, utilisation valeur par défaut: 1');
+      return 1; // Valeur par défaut
+    } catch (e) {
+      print('❌ Erreur _getCommuneId: $e');
+      return 1; // Valeur par défaut en cas d'erreur
+    }
   }
 
   Future<bool> _tableExists(Database db, String tableName) async {
@@ -970,6 +1215,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'localites',
           {
@@ -985,6 +1231,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1018,6 +1265,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'ecoles',
           {
@@ -1033,6 +1281,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1065,6 +1314,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'marches',
           {
@@ -1080,6 +1330,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1112,6 +1363,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'services_santes',
           {
@@ -1127,6 +1379,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1158,6 +1411,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'batiments_administratifs',
           {
@@ -1173,6 +1427,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1204,6 +1459,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'infrastructures_hydrauliques',
           {
@@ -1219,6 +1475,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1250,6 +1507,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'autres_infrastructures',
           {
@@ -1265,6 +1523,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1296,6 +1555,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'ponts',
           {
@@ -1313,6 +1573,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1344,6 +1605,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'bacs',
           {
@@ -1362,6 +1624,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1393,6 +1656,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'buses',
           {
@@ -1407,6 +1671,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1438,6 +1703,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'dalots',
           {
@@ -1453,6 +1719,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1484,6 +1751,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'passages_submersibles',
           {
@@ -1501,6 +1769,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1532,6 +1801,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'points_critiques',
           {
@@ -1546,6 +1816,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
@@ -1577,6 +1848,7 @@ class DatabaseHelper {
       );
 
       if (existing.isEmpty) {
+        final communeId = await _getCommuneId();
         await db.insert(
           'points_coupures',
           {
@@ -1591,6 +1863,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': properties['login_id'] ?? 1,
+            'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
           conflictAlgorithm: ConflictAlgorithm.replace,

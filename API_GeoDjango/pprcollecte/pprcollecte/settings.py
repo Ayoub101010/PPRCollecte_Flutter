@@ -80,11 +80,14 @@ WSGI_APPLICATION = 'pprcollecte.wsgi.application'
 DATABASES = {
     'default': {
        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'pprprojet',
+        'NAME': 'ma_base',
         'USER': 'postgres',
         'PASSWORD': 'postgres123',
         'HOST': 'localhost',
         'PORT': '5432',
+         'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
 }
 

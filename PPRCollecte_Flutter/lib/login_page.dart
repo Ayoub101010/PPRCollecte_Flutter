@@ -243,11 +243,29 @@ class _LoginPageState extends State<LoginPage> {
                             print('Tentative connexion API...');
                             final userData = await ApiService.login(email, password);
                             print('Connexion API réussie: $userData');
-
+                            await DatabaseHelper().setCurrentUserEmail(email);
+                            final existingUser = await DatabaseHelper().userExists(email);
                             final nom = userData['nom'] ?? '';
                             final prenom = userData['prenom'] ?? '';
                             final fullName = '$prenom $nom';
-                            await DatabaseHelper().insertUser(prenom, nom, email, password);
+                            final communeId = userData['communes_rurales'];
+                            final prefectureId = userData['prefecture_id'];
+                            final regionId = userData['region_id'];
+                            final communeNom = userData['commune_nom'];
+                            final prefectureNom = userData['prefecture_nom'];
+                            final regionNom = userData['region_nom'];
+
+                            print('📍 Données récupérées:');
+                            print('   communeId: $communeId, communeNom: $communeNom');
+                            print('   prefectureId: $prefectureId, prefectureNom: $prefectureNom');
+                            print('   regionId: $regionId, regionNom: $regionNom');
+                            if (existingUser) {
+                              print('ℹ️ Utilisateur existe déjà, mise à jour...');
+                              await DatabaseHelper().updateUser(prenom, nom, email, password, communeId, prefectureId, regionId, prefectureNom, communeNom, regionNom, role: userData['role']);
+                            } else {
+                              print('➕ Nouvel utilisateur, insertion...');
+                              await DatabaseHelper().insertUser(prenom, nom, email, password, communeId, prefectureId, regionId, prefectureNom, communeNom, regionNom, role: userData['role']);
+                            }
 
                             print('Utilisateur sauvegardé localement.');
 

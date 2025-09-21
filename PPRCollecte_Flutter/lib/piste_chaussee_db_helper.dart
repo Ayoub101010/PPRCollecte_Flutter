@@ -8,6 +8,7 @@ import 'package:flutter/material.dart'; // Pour Color
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng et Polyline
 import 'api_service.dart';
 import 'dart:math';
+import 'database_helper.dart';
 
 class SimpleStorageHelper {
   static final SimpleStorageHelper _instance = SimpleStorageHelper._internal();
@@ -38,6 +39,7 @@ class SimpleStorageHelper {
             id INTEGER PRIMARY KEY ,
             code_piste TEXT NOT NULL,
             commune_rurale_id TEXT,
+            commune_rurales INTEGER,
             user_login TEXT ,
             heure_debut TEXT ,
             heure_fin TEXT ,
@@ -340,7 +342,8 @@ class SimpleStorageHelper {
   Future<int?> savePiste(Map<String, dynamic> formData) async {
     try {
       final loginId = ApiService.userId;
-
+      print('🔄 Début sauvegarde piste...');
+      print('📋 commune_rurales reçu: ${formData['commune_rurales']}');
       // Ajouter le login_id aux données du formulaire
       final formDataWithLoginId = Map<String, dynamic>.from(formData);
       formDataWithLoginId['login_id'] = loginId;
@@ -601,7 +604,7 @@ class SimpleStorageHelper {
         ],
         columns: [
           // ⭐⭐ SPÉCIFIEZ EXPLICITEMENT TOUTES LES COLONNES
-          'id', 'code_piste', 'commune_rurale_id', 'user_login',
+          'id', 'code_piste', 'commune_rurale_id', 'commune_rurales', 'user_login',
           'heure_debut', 'heure_fin', 'nom_origine_piste', 'x_origine',
           'y_origine', 'nom_destination_piste', 'x_destination', 'y_destination',
           'existence_intersection', 'x_intersection', 'y_intersection',
@@ -806,10 +809,18 @@ class SimpleStorageHelper {
     try {
       final db = await database;
 
+      int? communeRurales;
+      if (ApiService.communeId != null) {
+        communeRurales = ApiService.communeId;
+      } else {
+        final currentUser = await DatabaseHelper().getCurrentUser();
+        communeRurales = currentUser?['communes_rurales'] as int?;
+      }
       // ✅ PRÉPARER UNIQUEMENT LES CHAMPS MODIFIABLES
       final updateData = {
         'code_piste': pisteData['code_piste'],
         'commune_rurale_id': pisteData['commune_rurale_id'],
+        'commune_rurales': communeRurales,
         'user_login': pisteData['user_login'],
         'heure_debut': pisteData['heure_debut'],
         'heure_fin': pisteData['heure_fin'],

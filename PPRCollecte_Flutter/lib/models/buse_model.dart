@@ -6,6 +6,7 @@ class Buse {
   final String dateCreation;
   final String? dateModification;
   final String? codePiste;
+  final int? communeId;
 
   Buse({
     this.id,
@@ -15,6 +16,7 @@ class Buse {
     required this.dateCreation,
     this.dateModification,
     this.codePiste,
+    this.communeId,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +28,7 @@ class Buse {
       'date_creation': dateCreation,
       'date_modification': dateModification,
       'code_piste': codePiste,
+      'commune_id': communeId,
     };
   }
 
@@ -38,6 +41,7 @@ class Buse {
       dateCreation: map['date_creation'],
       dateModification: map['date_modification'],
       codePiste: map['code_piste'],
+      communeId: map['commune_id'],
     );
   }
 }

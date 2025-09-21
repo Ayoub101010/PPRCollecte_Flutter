@@ -128,7 +128,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Générer le code piste automatiquement
-    final codePisteAuto = generateCodePiste();
+    final codePisteAuto = await generateCodePiste();
 
     try {
       await homeController.startLigneCollection(codePisteAuto);
@@ -260,13 +260,59 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  String generateCodePiste() {
+  Future<String> generateCodePiste() async {
     final now = DateTime.now();
-    final timestamp = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
-        '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}'
-        '${now.second.toString().padLeft(2, '0')}';
 
-    return 'Piste_$timestamp';
+    // Format timestamp avec millisecondes
+    final timestamp = '${now.year}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}'
+        '${now.hour.toString().padLeft(2, '0')}'
+        '${now.minute.toString().padLeft(2, '0')}'
+        '${now.second.toString().padLeft(2, '0')}'
+        '${now.millisecond.toString().padLeft(3, '0')}';
+
+    String communeNom;
+    String prefectureNom;
+    String regionNom;
+
+    // Essayer d'abord depuis ApiService (en ligne)
+    if (ApiService.communeNom != null && ApiService.prefectureNom != null && ApiService.regionNom != null) {
+      communeNom = ApiService.communeNom!;
+      prefectureNom = ApiService.prefectureNom!;
+      regionNom = ApiService.regionNom!;
+
+      print('📍 Localisation récupérée depuis API');
+    } else {
+      // Sinon, récupérer depuis la base locale (hors ligne)
+      final currentUser = await DatabaseHelper().getCurrentUser();
+
+      if (currentUser != null) {
+        communeNom = currentUser['commune_nom'] ?? 'Inconnu';
+        prefectureNom = currentUser['prefecture_nom'] ?? 'Inconnu';
+        regionNom = currentUser['region_nom'] ?? 'Inconnu';
+        print('📍 Localisation récupérée depuis base locale');
+      } else {
+        communeNom = 'Inconnu';
+        prefectureNom = 'Inconnu';
+        regionNom = 'Inconnu';
+        print('⚠️ Localisation inconnue');
+      }
+    }
+
+    // Nettoyer les noms
+    String cleanName(String name) {
+      return name.replaceAll(' ', '_').replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '').toUpperCase();
+    }
+
+    final code = 'Piste_'
+        '${cleanName(communeNom)}_'
+        '${cleanName(prefectureNom)}_'
+        '${cleanName(regionNom)}_'
+        '$timestamp';
+
+    print('🆔 Code piste généré: $code');
+    return code;
   }
 
 // AJOUTEZ CETTE MÉTHODE DANS _HomePageState
@@ -423,13 +469,13 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // ⭐⭐ GÉNÉRER le code piste automatiquement
-    final codePisteAuto = generateCodePiste();
+    // ⭐⭐ GÉNÉRER le code piste automatiquement - AJOUTER AWAIT
+    final codePisteAuto = await generateCodePiste(); // ← AJOUTER AWAIT
 
     // ⭐⭐ Afficher le dialogue AVEC code pré-rempli et IMMODIFIABLE
     final provisionalData = await ProvisionalFormDialog.show(
       context: context,
-      initialCode: codePisteAuto,
+      initialCode: codePisteAuto, // ← Maintenant ça fonctionne
     );
 
     // ⭐⭐ Plus besoin de vérifier si null, car le code est toujours fourni

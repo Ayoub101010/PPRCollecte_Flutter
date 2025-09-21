@@ -7,6 +7,7 @@ class PointCoupure {
   final String dateCreation;
   final String? dateModification;
   final String? codePiste;
+  final int? communeId;
 
   PointCoupure({
     this.id,
@@ -17,6 +18,7 @@ class PointCoupure {
     required this.dateCreation,
     this.dateModification,
     this.codePiste,
+    this.communeId,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +31,7 @@ class PointCoupure {
       'date_creation': dateCreation,
       'date_modification': dateModification,
       'code_piste': codePiste,
+      'commune_id': communeId,
     };
   }
 
@@ -42,6 +45,7 @@ class PointCoupure {
       dateCreation: map['date_creation'],
       dateModification: map['date_modification'],
       codePiste: map['code_piste'],
+      communeId: map['commune_id'],
     );
   }
 }

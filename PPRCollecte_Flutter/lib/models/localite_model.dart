@@ -8,6 +8,7 @@ class Localite {
   final String dateCreation;
   final String? dateModification;
   int? synced;
+  final int? communeId;
 
   Localite({
     this.id,
@@ -19,6 +20,7 @@ class Localite {
     this.dateCreation = '',
     this.dateModification,
     this.synced = 0,
+    this.communeId,
   });
 
   // Conversion vers Map (SQLite)
@@ -32,7 +34,8 @@ class Localite {
       'enqueteur': enqueteur,
       'date_creation': dateCreation.isEmpty ? DateTime.now().toIso8601String() : dateCreation,
       'date_modification': dateModification,
-      'synced': synced
+      'synced': synced,
+      'commune_id': communeId,
     };
   }
 
@@ -48,6 +51,7 @@ class Localite {
       dateCreation: map['date_creation'],
       dateModification: map['date_modification'],
       synced: map['synced'] != null ? (map['synced'] as num).toInt() : 0,
+      communeId: map['commune_id'],
     ); // valeur par défaut;
   }
 

@@ -5,11 +5,9 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
 )
 from django.contrib.gis.geos import Point
-from django.contrib.gis.geos import GEOSGeometry, MultiLineString
-
 
 class RegionSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -24,11 +22,24 @@ class PrefectureSerializer(GeoFeatureModelSerializer):
         fields = '__all__'
 
 class CommuneRuraleSerializer(GeoFeatureModelSerializer):
+    # Ajouter ces lignes pour afficher les infos hiérarchiques
+    prefecture_nom = serializers.CharField(source='prefectures_id.nom', read_only=True)
+    prefecture_id = serializers.IntegerField(source='prefectures_id.id', read_only=True)
+    region_nom = serializers.CharField(source='prefectures_id.regions_id.nom', read_only=True)
+    region_id = serializers.IntegerField(source='prefectures_id.regions_id.id', read_only=True)
+    localisation_complete = serializers.SerializerMethodField()
+    
     class Meta:
         model = CommuneRurale
         geo_field = "geom"
         fields = '__all__'
-
+    
+    def get_localisation_complete(self, obj):
+        """Format: Commune, Préfecture, Région"""
+        prefecture = obj.prefectures_id.nom if obj.prefectures_id else "N/A"
+        region = obj.prefectures_id.regions_id.nom if obj.prefectures_id and obj.prefectures_id.regions_id else "N/A"
+        return f"{obj.nom}, {prefecture}, {region}"
+    
 class ServicesSantesSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = ServicesSantes
@@ -75,10 +86,19 @@ class BacsSerializer(GeoFeatureModelSerializer):
         }
     
     def to_internal_value(self, data):
-        if 'x_debut_traversee_bac' in data and 'y_debut_traversee_bac' in data:
-            x = float(data.pop('x_debut_traversee_bac'))
-            y = float(data.pop('y_debut_traversee_bac'))
-            data['geom'] = Point(x, y, srid=4326)
+    # Modifier cette partie dans BacsSerializer
+        if ('x_debut_tr' in data and 'y_debut_tr' in data and 
+            'x_fin_trav' in data and 'y_fin_trav' in data):
+            
+            x_debut = float(data.pop('x_debut_tr'))
+            y_debut = float(data.pop('y_debut_tr'))
+            x_fin = float(data.pop('x_fin_trav'))
+            y_fin = float(data.pop('y_fin_trav'))
+            
+            # Créer une LineString au lieu d'un Point
+            from django.contrib.gis.geos import LineString
+            data['geom'] = LineString((x_debut, y_debut), (x_fin, y_fin), srid=4326)
+            
         return super().to_internal_value(data)
 
 class BatimentsAdministratifsSerializer(GeoFeatureModelSerializer):
@@ -218,12 +238,7 @@ class PassagesSubmersiblesSerializer(GeoFeatureModelSerializer):
             
         }
     
-    def to_internal_value(self, data):
-        if 'x_debut_passage_submersible' in data and 'y_debut_passage_submersible' in data:
-            x = float(data.pop('x_debut_passage_submersible'))
-            y = float(data.pop('y_debut_passage_submersible'))
-            data['geom'] = Point(x, y, srid=4326)
-        return super().to_internal_value(data)
+    
 
 class PontsSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -243,9 +258,24 @@ class PontsSerializer(GeoFeatureModelSerializer):
         return super().to_internal_value(data)
 
 class LoginSerializer(serializers.ModelSerializer):
+    commune_complete = serializers.ReadOnlyField()
+    commune_nom = serializers.CharField(source='communes_rurales.nom', read_only=True)
+    prefecture_nom = serializers.CharField(source='communes_rurales.prefectures_id.nom', read_only=True)
+    prefecture_id = serializers.IntegerField(source='communes_rurales.prefectures_id.id', read_only=True)
+    region_nom = serializers.CharField(source='communes_rurales.prefectures_id.regions_id.nom', read_only=True)
+    region_id = serializers.IntegerField(source='communes_rurales.prefectures_id.regions_id.id', read_only=True)
+
+    communes_rurales = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Login
-        fields = ['id', 'nom', 'prenom', 'mail', 'role']
+        fields = [
+            'id', 'nom', 'prenom', 'mail', 'role', 'communes_rurales',
+            'commune_complete', 'commune_nom', 'prefecture_nom', 'prefecture_id',
+            'region_nom', 'region_id'
+        ]
+
+
 
 class PisteSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -262,30 +292,82 @@ class PisteSerializer(GeoFeatureModelSerializer):
             data['geom'] = geom
         return super().to_internal_value(data)
     
+class UserCreateSerializer(serializers.ModelSerializer):
+    """Serializer pour créer un nouvel utilisateur avec commune"""
+    communes_rurales_id = serializers.PrimaryKeyRelatedField(
+    queryset=CommuneRurale.objects.all(),
+    required=False,
+    allow_null=True
+)
 
-class ChausseesTestSerializer(GeoFeatureModelSerializer):
-
-   
+    
     class Meta:
-        model = ChausseesTest
-        geo_field = "geom"
-        fields = '__all__'
-        read_only_fields = ('fid',)
+        model = Login
+        fields = ['nom', 'prenom', 'mail', 'mdp', 'role', 'communes_rurales_id']
+    
+    
+    def validate_role(self, value):
+        """Vérifier que le rôle est valide"""
+        valid_roles = ['user', 'admin', 'super_admin']
+        if value not in valid_roles:
+            raise serializers.ValidationError(f"Rôle invalide. Valeurs autorisées : {valid_roles}")
+        return value
+    
+    def validate_mail(self, value):
+        """Vérifier que l'email est unique"""
+        if Login.objects.filter(mail=value).exists():
+            raise serializers.ValidationError("Cette adresse email est déjà utilisée.")
+        return value
 
-    def to_internal_value(self, data):
-        """
-        Permet de transformer les données d'entrée pour créer la géométrie MultiLineString
-        à partir d'une représentation GeoJSON ou d'une liste de coordonnées.
-        """
-        data = data.copy()
+class UserUpdateSerializer(serializers.ModelSerializer):
+    """Serializer pour modifier un utilisateur existant"""
+    communes_rurales_id = serializers.IntegerField(required=False,allow_null=True)
+    
+    class Meta:
+        model = Login
+        fields = ['nom', 'prenom', 'mail', 'role', 'communes_rurales_id']
+    
+    def validate_communes_rurales_id(self, value):
+        """Vérifier que la commune existe si fournie"""
+        if value is not None:
+            try:
+                CommuneRurale.objects.get(id=value)
+                return value
+            except CommuneRurale.DoesNotExist:
+                raise serializers.ValidationError("Cette commune n'existe pas.")
+        return value
+    
+    def validate_mail(self, value):
+        """Vérifier que l'email est unique lors de la modification"""
+        # Récupérer l'instance en cours de modification
+        instance = getattr(self, 'instance', None)
+        
+        # Si l'email est différent de l'actuel, vérifier l'unicité
+        if instance and instance.mail != value:
+            if Login.objects.filter(mail=value).exists():
+                raise serializers.ValidationError("Cette adresse email est déjà utilisée.")
+        
+        return value
+    
+    def validate_role(self, value):
+        """Vérifier que le rôle est valide"""
+        valid_roles = ['user', 'admin', 'super_admin']
+        if value and value not in valid_roles:
+            raise serializers.ValidationError(f"Rôle invalide. Valeurs autorisées : {valid_roles}")
+        return value
 
-        if 'geom' in data and data['geom'] is not None:
-            # Forcer la géométrie en MultiLineString et SRID 32628
-            geom = GEOSGeometry(str(data['geom']))
-            geom.srid = 32628
-            if geom.geom_type != 'MultiLineString':
-                # Convertir LineString en MultiLineString si besoin
-                geom = MultiLineString(geom) if geom.geom_type == 'LineString' else geom
-            data['geom'] = geom
-
-        return super().to_internal_value(data)
+class CommuneSearchSerializer(serializers.ModelSerializer):
+    """Serializer pour la recherche de communes avec infos complètes"""
+    prefecture_nom = serializers.CharField(source='prefectures_id.nom', read_only=True)
+    region_nom = serializers.CharField(source='prefectures_id.regions_id.nom', read_only=True)
+    localisation_complete = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CommuneRurale
+        fields = ['id', 'nom', 'prefecture_nom', 'region_nom', 'localisation_complete']
+    
+    def get_localisation_complete(self, obj):
+        """Format: Commune, Préfecture, Région"""
+        prefecture = obj.prefectures_id.nom if obj.prefectures_id else "N/A"
+        region = obj.prefectures_id.regions_id.nom if obj.prefectures_id and obj.prefectures_id.regions_id else "N/A"
+        return f"{obj.nom}, {prefecture}, {region}"

@@ -23,6 +23,7 @@ class PisteModel {
   final int? id;
   final String codePiste;
   final String? communeRuraleId;
+  final int? communeRurales;
   final String userLogin;
   final String heureDebut;
   final String heureFin;
@@ -54,6 +55,7 @@ class PisteModel {
     int? id,
     String? codePiste,
     this.communeRuraleId,
+    this.communeRurales,
     required this.userLogin,
     required this.heureDebut,
     required this.heureFin,
@@ -91,6 +93,7 @@ class PisteModel {
       id: formData['id'] ?? generateTimestampId(),
       codePiste: formData['code_piste'] ?? generateCodePiste(),
       communeRuraleId: formData['commune_rurale_id'],
+      communeRurales: formData['commune_rurales'],
       userLogin: formData['user_login'] ?? '',
       heureDebut: formData['heure_debut'] ?? '',
       heureFin: formData['heure_fin'] ?? '',
@@ -125,6 +128,7 @@ class PisteModel {
       'id': id,
       'code_piste': codePiste,
       'commune_rurale_id': communeRuraleId,
+      'commune_rurales': communeRurales,
       'user_login': userLogin,
       'heure_debut': heureDebut,
       'heure_fin': heureFin,

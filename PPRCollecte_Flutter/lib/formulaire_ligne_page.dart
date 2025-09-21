@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 import 'piste_chaussee_db_helper.dart';
 import 'api_service.dart';
+import 'database_helper.dart';
 
 class FormulaireLignePage extends StatefulWidget {
   final List<LatLng> linePoints;
@@ -56,6 +57,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
   DateTime? _dateDebutTravaux;
   DateTime? _dateCreation; // ← NOUVEAU
   DateTime? _dateModification;
+  String _communeAuto = '';
   // Options pour les dropdowns
   final List<String> _communesRuralesOptions = [
     "Boffa-Centre",
@@ -432,6 +434,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     if (widget.provisionalCode != null) {
       _codeController.text = widget.provisionalCode!;
     }
+    _determineCommuneAuto();
     // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
     _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
     // Date de création = maintenant par défaut
@@ -497,6 +500,39 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       _dateCreation = data['created_at'] != null ? DateTime.parse(data['created_at']) : null;
       _dateModification = DateTime.now(); // ← Date modif actuelle
     });
+  }
+
+  void _determineCommuneAuto() {
+    // 1. Essayer d'abord depuis l'API
+    if (ApiService.communeNom != null) {
+      _communeAuto = ApiService.communeNom!;
+      _communeRurale = _communeAuto;
+      print('📍 Commune API: $_communeAuto');
+      return;
+    }
+
+    // 2. Si pas d'API, essayer base locale (mais sans async)
+    _communeAuto = 'Non spécifié'; // Valeur par défaut
+    _communeRurale = 'Non spécifié';
+
+    // Chargement asynchrone sans attendre
+    _loadCommuneFromDatabase();
+  }
+
+  void _loadCommuneFromDatabase() async {
+    try {
+      final currentUser = await DatabaseHelper().getCurrentUser();
+      if (currentUser != null && currentUser['commune_nom'] != null) {
+        final commune = currentUser['commune_nom'] as String;
+        setState(() {
+          _communeAuto = commune;
+          _communeRurale = commune;
+        });
+        print('📍 Commune base locale: $commune');
+      }
+    } catch (e) {
+      print('❌ Erreur chargement commune: $e');
+    }
   }
 
   // Méthode pour récupérer l'utilisateur actuel
@@ -589,11 +625,22 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     try {
       await Future.delayed(const Duration(seconds: 1));
 
+      int? communeRuralesId;
+      if (ApiService.communeId != null) {
+        // En ligne : utiliser l'API
+        communeRuralesId = ApiService.communeId;
+      } else {
+        // Hors ligne : utiliser la base locale
+        final currentUser = await DatabaseHelper().getCurrentUser();
+        communeRuralesId = currentUser?['communes_rurales'] as int?;
+      }
+
       final pisteData = {
         // ✅ L'ID sera auto-généré par la BDD, ne pas l'inclure ici
         if (widget.isEditingMode) 'id': widget.initialData!['id'],
         'code_piste': _codeController.text,
         'commune_rurale_id': _communeRurale,
+        'commune_rurales': communeRuralesId,
         'user_login': widget.agentName,
         'heure_debut': _heureDebutController.text,
         'heure_fin': _heureFinController.text,
@@ -631,6 +678,9 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'sync_status': 'pending',
         'login_id': ApiService.userId,
       };
+      print('🔍 Données envoyées à savePiste:');
+      print('   commune_rurale_id (nom): ${pisteData['commune_rurale_id']}');
+      print('   commune_rurales (id): ${pisteData['commune_rurales']}');
       final storageHelper = SimpleStorageHelper();
       if (widget.isEditingMode) {
         // ✅ MODE ÉDITION: Mise à jour
@@ -916,13 +966,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
                           required: true,
                           enabled: false,
                         ),
-                        _buildDropdownField(
-                          label: 'Commune Rurale *',
-                          value: _communeRurale,
-                          options: _communesRuralesOptions,
-                          onChanged: (value) => setState(() => _communeRurale = value),
-                          required: true,
-                        ),
+                        _buildReadOnlyCommuneField(),
                         _buildDateCreationField(),
                         _buildDateModificationField(),
                         // Remplacer le TextField "Utilisateur" par :
@@ -1167,6 +1211,50 @@ class _FormulairePageState extends State<FormulaireLignePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+// AJOUTER cette méthode
+  Widget _buildReadOnlyCommuneField() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Commune Rurale *',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on, size: 20, color: Color(0xFF1976D2)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _communeRurale ?? 'Non spécifié',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF374151),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
