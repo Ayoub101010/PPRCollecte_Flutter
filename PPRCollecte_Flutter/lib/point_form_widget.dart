@@ -268,18 +268,45 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         // INSERTION d'une nouvelle entité
         id = await dbHelper.insertEntity(tableName, entityData);
         print('✅ Nouvelle entité enregistrée avec ID: $id');
+        // ⭐⭐ DEBUG DÉTAILLÉ ⭐⭐
+        print('🔍 === DEBUG LIGNE SPÉCIALE ===');
+        print('isSpecialLine: ${widget.isSpecialLine}');
+        print('Type: ${widget.type}');
+        print('Données de ligne disponibles:');
+        print('  latDebut: ${_formData['latitude_debut']}');
+        print('  lngDebut: ${_formData['longitude_debut']}');
+        print('  latFin: ${_formData['latitude_fin']}');
+        print('  lngFin: ${_formData['longitude_fin']}');
+        print('=============================');
         final entityConfig = InfrastructureConfig.getEntityConfig(widget.category, widget.type);
         final originalTableName = entityConfig?['tableName'] ?? ''; // ← NOM DIFFÉRENT
 
-        await dbHelper.saveDisplayedPoint(
-          id: id,
-          tableName: originalTableName, // ← UTILISER LE NOUVEAU NOM
-          latitude: _formData['latitude'] ?? 0.0,
-          longitude: _formData['longitude'] ?? 0.0,
-          type: widget.type,
-          name: _formData['nom'] ?? 'Sans nom',
-          codePiste: _formData['code_piste'] ?? 'Non spécifié',
-        );
+        if (widget.isSpecialLine) {
+          print('🟣 Tentative de sauvegarde comme ligne spéciale...');
+          // POUR LES LIGNES SPÉCIALES (Bac, Passage Submersible)
+          await dbHelper.saveDisplayedSpecialLine(
+            id: id,
+            tableName: originalTableName,
+            latDebut: _formData['latitude_debut'] ?? _formData['latitude'] ?? 0.0,
+            lngDebut: _formData['longitude_debut'] ?? _formData['longitude'] ?? 0.0,
+            latFin: _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0,
+            lngFin: _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0,
+            specialType: widget.type,
+            name: _formData['nom'] ?? 'Sans nom',
+            codePiste: _formData['code_piste'] ?? 'Non spécifié',
+          );
+        } else {
+          // POUR LES POINTS NORMaux (comme avant)
+          await dbHelper.saveDisplayedPoint(
+            id: id,
+            tableName: originalTableName,
+            latitude: _formData['latitude'] ?? 0.0,
+            longitude: _formData['longitude'] ?? 0.0,
+            type: widget.type,
+            name: _formData['nom'] ?? 'Sans nom',
+            codePiste: _formData['code_piste'] ?? 'Non spécifié',
+          );
+        }
       }
 
       // ============ AJOUTER CE CODE POUR LA CONFIRMATION ============

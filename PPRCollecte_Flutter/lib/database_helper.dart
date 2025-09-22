@@ -1876,6 +1876,88 @@ class DatabaseHelper {
     }
   }
 
+// Dans database_helper.dart
+  Future<void> saveDisplayedSpecialLine({
+    required int id,
+    required String tableName,
+    required double latDebut,
+    required double lngDebut,
+    required double latFin,
+    required double lngFin,
+    required String specialType,
+    required String name,
+    required String codePiste,
+  }) async {
+    final db = await database;
+
+    // Créer une table dédiée pour les lignes spéciales si elle n'existe pas
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS displayed_special_lines (
+      id INTEGER PRIMARY KEY,
+      original_table TEXT NOT NULL,
+      lat_debut REAL NOT NULL,
+      lng_debut REAL NOT NULL,
+      lat_fin REAL NOT NULL,
+      lng_fin REAL NOT NULL,
+      special_type TEXT NOT NULL,
+      line_name TEXT NOT NULL,
+      code_piste TEXT,
+      login_id INTEGER NOT NULL,
+      date_created TEXT NOT NULL
+    )
+  ''');
+
+    await db.insert(
+      'displayed_special_lines',
+      {
+        'id': id,
+        'original_table': tableName,
+        'lat_debut': latDebut,
+        'lng_debut': lngDebut,
+        'lat_fin': latFin,
+        'lng_fin': lngFin,
+        'special_type': specialType,
+        'line_name': name,
+        'code_piste': codePiste,
+        'login_id': ApiService.userId,
+        'date_created': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    print('✅ Ligne spéciale sauvegardée: $name (ID: $id)');
+  }
+
+  Future<List<Map<String, dynamic>>> loadDisplayedSpecialLines() async {
+    final db = await database;
+    final tableExists = await _tableExists(db, 'displayed_special_lines');
+    if (!tableExists) return [];
+
+    return await db.query(
+      'displayed_special_lines',
+      where: 'login_id = ?',
+      whereArgs: [
+        ApiService.userId
+      ],
+    );
+  }
+
+// Dans DatabaseHelper, ajoutez cette méthode
+  Future<void> debugDisplayedSpecialLines() async {
+    final db = await database;
+    final tableExists = await _tableExists(db, 'displayed_special_lines');
+    print('📊 Table displayed_special_lines existe: $tableExists');
+
+    if (tableExists) {
+      final lines = await db.query('displayed_special_lines');
+      print('📊 Nombre de lignes spéciales dans la table: ${lines.length}');
+
+      for (var line in lines) {
+        print('  - ID: ${line['id']}, Type: ${line['special_type']}, Nom: ${line['line_name']}');
+      }
+    }
+  }
+
   Future<void> saveDisplayedPoint({
     required int id,
     required String tableName,

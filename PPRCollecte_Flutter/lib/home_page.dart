@@ -63,7 +63,8 @@ class _HomePageState extends State<HomePage> {
   LatLng? _lastCameraPosition;
   late final HomeController homeController;
   final DisplayedPointsService _pointsService = DisplayedPointsService();
-
+  final SpecialLinesService _specialLinesService = SpecialLinesService();
+  Set<Polyline> _displayedSpecialLines = {};
   @override
   void initState() {
     super.initState();
@@ -72,6 +73,7 @@ class _HomePageState extends State<HomePage> {
     _loadDisplayedPistes();
     _loadDisplayedPoints();
     _loadDisplayedChaussees();
+    _loadDisplayedSpecialLines();
 
     homeController.addListener(() {
       setState(() {
@@ -105,6 +107,33 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+// Dans _HomePageState (home_page.dart)
+// ⭐⭐ AJOUTER CETTE MÉTHODE SEULEMENT ⭐⭐
+  Future<void> _refreshAfterNavigation() async {
+    print('🔄 Rafraîchissement après navigation...');
+    await _loadDisplayedSpecialLines(); // Seulement les lignes spéciales
+  }
+
+  Future<void> _loadDisplayedSpecialLines() async {
+    try {
+      await DatabaseHelper().debugDisplayedSpecialLines();
+      print('🟣 Début chargement lignes spéciales...');
+      final specialLines = await _specialLinesService.getDisplayedSpecialLines();
+      await Future.delayed(const Duration(milliseconds: 100));
+      print('🟣 Lignes récupérées: ${specialLines.length}');
+      for (var line in specialLines) {
+        print('  - ${line.polylineId.value} : ${line.points.length} points');
+      }
+
+      setState(() {
+        _displayedSpecialLines = specialLines;
+      });
+      print('✅ ${specialLines.length} lignes spéciales chargées');
+    } catch (e) {
+      print('❌ Erreur chargement lignes spéciales: $e');
+    }
   }
 
 // Dans _HomePageState
@@ -189,7 +218,9 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-
+    if (mounted) {
+      _refreshAfterNavigation();
+    }
     setState(() {
       _isSpecialCollection = false;
       _specialCollectionType = null;
@@ -436,7 +467,9 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-
+    if (mounted) {
+      _refreshAfterNavigation(); // Rafraîchir après être revenu
+    }
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         collectedMarkers.add(
@@ -1163,6 +1196,7 @@ class _HomePageState extends State<HomePage> {
     final allPolylines = Set<Polyline>.from(collectedPolylines);
     allPolylines.addAll(_finishedPistes);
     allPolylines.addAll(_finishedChaussees); // ← CORRECTION SIMPLE
+    allPolylines.addAll(_displayedSpecialLines);
     // Ajouter la ligne en cours si active (nouveau système)
     if (homeController.specialCollection != null) {
       final specialPoints = homeController.specialCollection!.points;
@@ -1394,6 +1428,10 @@ class DisplayedPointsService {
       final Set<Marker> markers = {};
 
       for (var point in points) {
+        final pointType = point['point_type'] as String?;
+        if (pointType == "Bac" || pointType == "Passage Submersible") {
+          continue; // Ne pas créer de marqueur pour ces types
+        }
         markers.add(Marker(
           markerId: MarkerId('displayed_point_${point['id']}'),
           position: LatLng(
@@ -1418,5 +1456,48 @@ class DisplayedPointsService {
 
   Future<Set<Marker>> refreshDisplayedPoints() async {
     return await getDisplayedPointsMarkers();
+  }
+}
+
+// Dans home_page.dart, ajoutez cette classe
+class SpecialLinesService {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  Future<Set<Polyline>> getDisplayedSpecialLines() async {
+    try {
+      final lines = await _dbHelper.loadDisplayedSpecialLines();
+      final Set<Polyline> polylines = {};
+
+      for (var line in lines) {
+        final specialType = line['special_type'] as String;
+        final lineColor = specialType == "Bac" ? Colors.purple : Colors.deepPurple;
+
+        polylines.add(Polyline(
+          polylineId: PolylineId('special_line_${line['id']}'),
+          points: [
+            LatLng(
+              (line['lat_debut'] as num).toDouble(),
+              (line['lng_debut'] as num).toDouble(),
+            ),
+            LatLng(
+              (line['lat_fin'] as num).toDouble(),
+              (line['lng_fin'] as num).toDouble(),
+            ),
+          ],
+          color: lineColor,
+          width: 4,
+          patterns: [
+            PatternItem.dash(10),
+            PatternItem.gap(5)
+          ],
+        ));
+      }
+
+      print('📍 ${polylines.length} lignes spéciales chargées');
+      return polylines;
+    } catch (e) {
+      print('❌ Erreur chargement lignes spéciales: $e');
+      return {};
+    }
   }
 }
