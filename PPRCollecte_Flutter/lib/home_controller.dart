@@ -43,6 +43,24 @@ class HomeController extends ChangeNotifier {
   bool get hasPausedCollection => _collectionManager.hasPausedCollection;
   String? get activeCollectionType => _collectionManager.activeCollectionType;
   String? get activePisteCode => _activePisteCode;
+  SpecialCollection? get specialCollection => _collectionManager.specialCollection;
+
+  Future<void> startSpecialCollection(String specialType) async {
+    try {
+      _collectionManager.startSpecialCollection(
+        specialType: specialType,
+        initialPosition: userPosition,
+        locationStream: _locationService.onLocationChanged(),
+      );
+      notifyListeners();
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  CollectionResult? finishSpecialCollection() {
+    return _collectionManager.finishSpecialCollection();
+  }
 
   void setSpecialCollectionType(String type) {
     _specialCollectionType = type;
@@ -58,9 +76,44 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
+// Ajouter cette méthode
+  // Ajouter cette méthode pour la simulation spéciale
+  void addManualPointToSpecialCollection() {
+    if (specialCollection == null || !specialCollection!.isActive) return;
+
+    final random = Random();
+
+    // SIMULATION plus réaliste pour les lignes
+    final numberOfPoints = 10 + random.nextInt(5); // 10-15 points
+
+    double currentLat = userPosition.latitude;
+    double currentLng = userPosition.longitude;
+    double angle = random.nextDouble() * 2 * pi;
+    double curveIntensity = 0.05;
+
+    for (int i = 0; i < numberOfPoints; i++) {
+      final distance = 0.0001 + (random.nextDouble() * 0.00005); // 10-15m
+      final curveVariation = (random.nextDouble() - 0.5) * curveIntensity;
+      angle += curveVariation;
+
+      currentLat += distance * cos(angle);
+      currentLng += distance * sin(angle);
+
+      final point = LatLng(currentLat, currentLng);
+      _collectionManager.addManualPoint(CollectionType.special, point);
+    }
+
+    print('✅ $numberOfPoints points réalistes simulés pour collection spéciale');
+    notifyListeners();
+  }
+
   /// Appelé lorsque les collectes changent
+  // Vérifier que la collection spéciale est bien mise à jour
   void _onCollectionChanged() {
     final ligne = _collectionManager.ligneCollection;
+    final chaussee = _collectionManager.chausseeCollection;
+    final special = _collectionManager.specialCollection; // ← AJOUTER
+
     if (ligne != null) {
       lineActive = ligne.isActive;
       linePaused = ligne.isPaused;
@@ -72,6 +125,14 @@ class HomeController extends ChangeNotifier {
       linePoints = [];
       lineTotalDistance = 0.0;
     }
+
+    // ⭐⭐ AJOUTER LA COLLECTION SPÉCIALE ⭐⭐
+    if (special != null) {
+      // Mettre à jour les points pour le traçage
+      linePoints = List<LatLng>.from(special.points);
+      lineTotalDistance = special.totalDistance;
+    }
+
     notifyListeners();
   }
 

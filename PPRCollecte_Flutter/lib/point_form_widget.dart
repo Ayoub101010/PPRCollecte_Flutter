@@ -247,7 +247,12 @@ class _PointFormWidgetState extends State<PointFormWidget> {
           entityData['type'] = _formData['type']; // ← Pour les autres entités
         }
       }
-
+// JUSTE AVANT la sauvegarde, ajoutez ce debug
+      print('🔍 === DEBUG TYPE_MATERIAU ===');
+      print('Valeur dans _formData: ${_formData['type_materiau']}');
+      print('Valeur dans entityData: ${entityData['type_materiau']}');
+      print('Options disponibles: ${InfrastructureConfig.getTypeOptions(widget.category, widget.type)}');
+      print('=============================');
       // Ajouter les champs spécifiques selon le type d'entité
       _addSpecificFields(entityData, widget.type, config);
 
@@ -429,7 +434,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         break;
 
       case 'Passage Submersible':
-        entityData['type_materiau'] = _formData['type_materiau'] ?? 'Non spécifié';
+        entityData['type_materiau'] = _formData['type'] ?? 'Non spécifié';
         // Les coordonnées de début sont déjà dans entityData via le préfixe
         entityData['x_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
         entityData['y_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;

@@ -3,7 +3,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 enum CollectionType {
   ligne,
-  chaussee
+  chaussee,
+  special
 }
 
 enum CollectionStatus {
@@ -189,6 +190,46 @@ class ChausseeCollection extends CollectionBase {
       startTime: DateTime.parse(json['startTime']),
       lastPointTime: json['lastPointTime'] != null ? DateTime.parse(json['lastPointTime']) : null,
       totalDistance: json['totalDistance']?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class SpecialCollection extends CollectionBase {
+  final String specialType; // "Bac" ou "Passage Submersible"
+
+  SpecialCollection({
+    required super.id,
+    required this.specialType,
+    required super.status,
+    required super.points,
+    required super.startTime,
+    super.lastPointTime,
+    super.totalDistance,
+  }) : super(
+          codePiste: null,
+          type: CollectionType.special,
+        );
+
+  @override
+  SpecialCollection copyWith({
+    int? id,
+    String? codePiste,
+    String? specialType,
+    CollectionType? type,
+    CollectionStatus? status,
+    List<LatLng>? points,
+    DateTime? startTime,
+    DateTime? lastPointTime,
+    double? totalDistance,
+  }) {
+    return SpecialCollection(
+      id: id ?? this.id,
+      specialType: specialType ?? this.specialType,
+      status: status ?? this.status,
+      points: points ?? this.points,
+      startTime: startTime ?? this.startTime,
+      lastPointTime: lastPointTime ?? this.lastPointTime,
+      totalDistance: totalDistance ?? this.totalDistance,
     );
   }
 }

@@ -116,3 +116,62 @@ class ChausseeStatusWidget extends StatelessWidget {
     );
   }
 }
+
+// Ajouter après ChausseeStatusWidget
+class SpecialStatusWidget extends StatelessWidget {
+  final SpecialCollection collection;
+  final double? topOffset;
+
+  const SpecialStatusWidget({
+    super.key,
+    required this.collection,
+    this.topOffset,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: topOffset ?? 16,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.95),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: const Color(0xFF9C27B0), // Violet pour spécial
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.radio_button_checked,
+              color: const Color(0xFF9C27B0),
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                "Collecte ${collection.specialType} active",
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87),
+              ),
+            ),
+            Text(
+              "${collection.points.length} pts • ${collection.totalDistance.round()}m",
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.grey[700]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

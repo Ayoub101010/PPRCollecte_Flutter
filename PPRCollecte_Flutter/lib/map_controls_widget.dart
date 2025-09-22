@@ -61,7 +61,7 @@ class MapControlsWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 // BOUTON POINT/ARRÊT (MODIFIÉ)
-                if (!controller.hasActiveCollection || isSpecialCollection)
+                if (!controller.hasActiveCollection || controller.specialCollection != null)
                   SizedBox(
                     width: 110,
                     child: isSpecialCollection

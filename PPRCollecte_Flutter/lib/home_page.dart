@@ -108,7 +108,8 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Dans _HomePageState
-  Future<void> startSpecialLineCollection(String type) async {
+  // Remplacer startSpecialLineCollection par :
+  Future<void> startSpecialCollection(String type) async {
     if (!homeController.gpsEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Veuillez activer le GPS")),
@@ -127,14 +128,8 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Générer le code piste automatiquement
-    final codePisteAuto = await generateCodePiste();
-
     try {
-      await homeController.startLigneCollection(codePisteAuto);
-
-      // Stocker le type spécial
-      homeController.setSpecialCollectionType(type);
+      await homeController.startSpecialCollection(type);
 
       setState(() {
         _isSpecialCollection = true;
@@ -144,7 +139,7 @@ class _HomePageState extends State<HomePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Collecte de $type démarrée'),
-          backgroundColor: Colors.green,
+          backgroundColor: Colors.purple, // Couleur différente
         ),
       );
     } catch (e) {
@@ -157,9 +152,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-// Modifiez finishLigneCollection pour gérer les types spéciaux
-  Future<void> finishSpecialLigneCollection() async {
-    final result = homeController.finishLigneCollection();
+// Remplacer finishSpecialLigneCollection par :
+  Future<void> finishSpecialCollection() async {
+    final result = homeController.finishSpecialCollection();
 
     if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -167,57 +162,68 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
-    print('🎯 finishSpecialLigneCollection appelé');
-    print('   Points: ${result['points']?.length}');
-    print('   Distance: ${result['totalDistance']}');
-    print('   Code Piste: ${result['codePiste']}');
-    final specialType = homeController.getSpecialCollectionType();
 
-    if (specialType != null && (specialType == "Bac" || specialType == "Passage Submersible")) {
-      // Ouvrir le formulaire spécial avec les données de la ligne
-      final formResult = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => SpecialLineFormPage(
-            linePoints: result['points'],
-            provisionalCode: result['codePiste'] ?? '',
-            startTime: result['startTime'] ?? DateTime.now(),
-            endTime: result['endTime'] ?? DateTime.now(),
-            agentName: widget.agentName,
-            specialType: specialType,
-            totalDistance: result['totalDistance'] ?? 0.0,
-          ),
+    // ⭐⭐ AJOUTEZ CES LIGNES DE DEBUG ⭐⭐
+    print('=== DEBUG FINISH SPECIAL ===');
+    print('Result codePiste: ${result.codePiste}');
+    print('HomeController activePisteCode: ${homeController.activePisteCode}');
+    print('Special type: $_specialCollectionType');
+    final current = homeController.userPosition;
+    final nearestPisteCode = await SimpleStorageHelper().findNearestPisteCode(current, activePisteCode: homeController.activePisteCode // ← MÊME APPEL
+        );
+
+    print('📍 Code piste pour spécial: $nearestPisteCode');
+
+    final formResult = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SpecialLineFormPage(
+          linePoints: result.points,
+          provisionalCode: result.codePiste ?? '',
+          startTime: result.startTime,
+          endTime: result.endTime,
+          agentName: widget.agentName,
+          specialType: _specialCollectionType!,
+          totalDistance: result.totalDistance,
+          activePisteCode: homeController.activePisteCode, // ⭐⭐ AJOUTEZ CETTE LIGNE ⭐⭐
+        ),
+      ),
+    );
+
+    setState(() {
+      _isSpecialCollection = false;
+      _specialCollectionType = null;
+    });
+
+    if (formResult != null) {
+      final specialColor = _specialCollectionType == "Bac" ? Colors.purple : Colors.deepPurple;
+
+      // ⭐⭐ AJOUTEZ DU DEBUG POUR LE TRACAGE ⭐⭐
+      print('🎨 Tracing special line: ${result.points.length} points');
+      print('🎨 Color: $specialColor');
+
+      setState(() {
+        _finishedPistes.add(Polyline(
+          polylineId: PolylineId('special_${DateTime.now().millisecondsSinceEpoch}'),
+          points: result.points,
+          color: specialColor,
+          width: 6, // ← Augmentez pour mieux voir
+          patterns: [
+            PatternItem.dash(10),
+            PatternItem.gap(5)
+          ], // ← Motif distinctif
+        ));
+      });
+
+      final storageHelper = SimpleStorageHelper();
+      await storageHelper.saveDisplayedPiste(result.points, specialColor, 4.0);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Données enregistrées avec succès'),
+          backgroundColor: Colors.green,
         ),
       );
-      setState(() {
-        _isSpecialCollection = false;
-        _specialCollectionType = null;
-      });
-      if (formResult != null) {
-        // Sauvegarder la ligne spéciale avec une couleur différente
-        final specialColor = specialType == "Bac" ? Colors.purple : Colors.deepPurple;
-
-        setState(() {
-          _finishedPistes.add(Polyline(
-            polylineId: PolylineId('special_${DateTime.now().millisecondsSinceEpoch}'),
-            points: result['points'],
-            color: specialColor,
-            width: 4,
-          ));
-          _isSpecialCollection = false;
-          _specialCollectionType = null;
-        });
-
-        final storageHelper = SimpleStorageHelper();
-        await storageHelper.saveDisplayedPiste(result['points'], specialColor, 4.0);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Données enregistrées avec succès'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
     }
   }
 
@@ -391,8 +397,8 @@ class _HomePageState extends State<HomePage> {
   // === GESTION DES POINTS D'INTÉRÊT ===
   Future<void> addPointOfInterest() async {
     if (_isSpecialCollection) {
-      // Si on est en mode collection spéciale, arrêter la collecte
-      await finishSpecialLigneCollection();
+      // Utiliser la nouvelle méthode
+      await finishSpecialCollection(); // ← CHANGER ICI
       return;
     }
 
@@ -424,8 +430,8 @@ class _HomePageState extends State<HomePage> {
           agentName: widget.agentName,
           nearestPisteCode: nearestPisteCode,
           onSpecialTypeSelected: (type) {
-            // Démarrer la collecte spéciale
-            startSpecialLineCollection(type);
+            // Utiliser la nouvelle méthode
+            startSpecialCollection(type); // ← CHANGER ICI
           },
         ),
       ),
@@ -1158,6 +1164,25 @@ class _HomePageState extends State<HomePage> {
     allPolylines.addAll(_finishedPistes);
     allPolylines.addAll(_finishedChaussees); // ← CORRECTION SIMPLE
     // Ajouter la ligne en cours si active (nouveau système)
+    if (homeController.specialCollection != null) {
+      final specialPoints = homeController.specialCollection!.points;
+      if (specialPoints.length > 1) {
+        final specialColor = _specialCollectionType == "Bac" ? Colors.purple : Colors.deepPurple;
+
+        allPolylines.add(Polyline(
+          polylineId: const PolylineId('currentSpecial'),
+          points: specialPoints,
+          color: specialColor,
+          width: 5,
+          patterns: homeController.specialCollection!.isPaused
+              ? <PatternItem>[
+                  PatternItem.dash(10),
+                  PatternItem.gap(5)
+                ]
+              : <PatternItem>[],
+        ));
+      }
+    }
     if (homeController.ligneCollection != null) {
       final lignePoints = homeController.ligneCollection!.points;
       if (lignePoints.length > 1) {
@@ -1252,19 +1277,19 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                  // Ajouter dans la section des boutons de debug
                   Positioned(
-                    bottom: 160,
+                    bottom: 120,
                     right: 16,
                     child: Visibility(
                       visible: _isSpecialCollection && kDebugMode,
                       child: FloatingActionButton(
                         onPressed: () {
-                          // Simuler l'ajout de points réalistes
-                          homeController.addRealisticPisteSimulation();
+                          homeController.addManualPointToSpecialCollection();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Points simulés pour $_specialCollectionType'),
-                              backgroundColor: Colors.blue,
+                              backgroundColor: Colors.purple,
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -1272,7 +1297,7 @@ class _HomePageState extends State<HomePage> {
                         backgroundColor: Colors.purple,
                         child: const Icon(Icons.add_road, color: Colors.white),
                         mini: true,
-                        heroTag: 'simulate_button',
+                        heroTag: 'simulate_special_button',
                       ),
                     ),
                   ),
@@ -1289,7 +1314,7 @@ class _HomePageState extends State<HomePage> {
                     onFinishChaussee: finishChausseeCollection,
                     onRefresh: _loadDisplayedPoints,
                     isSpecialCollection: _isSpecialCollection, // ← NOUVEAU
-                    onStopSpecial: finishSpecialLigneCollection,
+                    onStopSpecial: finishSpecialCollection,
                   ),
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
