@@ -454,19 +454,16 @@ class ApiService {
   }
 
   static Map<String, dynamic> _mapBacToApi(Map<String, dynamic> localData) {
-    // Convertir la date au format PostgreSQL
     String formatDateForPostgres(String? dateString) {
       if (dateString == null) return '';
       try {
         final date = DateTime.parse(dateString);
 
-        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
         if (date.hour == 0 && date.minute == 0 && date.second == 0) {
           final now = DateTime.now();
           return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
               '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
         } else {
-          // Sinon utiliser l'heure de la date
           return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
               '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
         }
@@ -476,20 +473,32 @@ class ApiService {
     }
 
     return {
-      'sqlite_id': localData['id'],
-      'x_debut_traversee_bac': localData['x_debut_traversee_bac'],
-      'y_debut_traversee_bac': localData['y_debut_traversee_bac'],
-      'x_fin_traversee_bac': localData['x_fin_traversee_bac'],
-      'y_fin_traversee_bac': localData['y_fin_traversee_bac'],
-      'nom': localData['nom'],
-      'type_bac': localData['type_bac'],
-      'nom_cours_eau': localData['nom_cours_eau'],
-      'enqueteur': localData['enqueteur'],
-      'created_at': formatDateForPostgres(localData['date_creation']),
-      'updated_at': formatDateForPostgres(localData['date_modification']),
-      'code_piste': localData['code_piste'],
-      'login_id': userId,
-      'commune_id': localData['commune_id'],
+      "sqlite_id": localData["id"],
+      "geom": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            localData["y_debut_traversee_bac"],
+            localData["x_debut_traversee_bac"]
+          ],
+          [
+            localData["y_fin_traversee_bac"],
+            localData["x_fin_traversee_bac"]
+          ]
+        ]
+      },
+      "x_debut_tr": localData["x_debut_traversee_bac"],
+      "y_debut_tr": localData["y_debut_traversee_bac"],
+      "x_fin_trav": localData["x_fin_traversee_bac"],
+      "y_fin_trav": localData["y_fin_traversee_bac"],
+      "nom": localData["nom"],
+      "type_bac": localData["type_bac"],
+      "nom_cours": localData["nom_cours_eau"],
+      "created_at": formatDateForPostgres(localData["date_creation"]),
+      "updated_at": formatDateForPostgres(localData["date_modification"]),
+      "code_piste": localData["code_piste"],
+      "login_id": userId,
+      "commune_id": localData["commune_id"],
     };
   }
 
@@ -567,19 +576,15 @@ class ApiService {
   }
 
   static Map<String, dynamic> _mapPassageSubmersibleToApi(Map<String, dynamic> localData) {
-    // Convertir la date au format PostgreSQL
     String formatDateForPostgres(String? dateString) {
       if (dateString == null) return '';
       try {
         final date = DateTime.parse(dateString);
-
-        // Si l'heure est minuit (00:00:00), utiliser l'heure actuelle
         if (date.hour == 0 && date.minute == 0 && date.second == 0) {
           final now = DateTime.now();
           return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
               '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
         } else {
-          // Sinon utiliser l'heure de la date
           return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
               '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
         }
@@ -590,12 +595,25 @@ class ApiService {
 
     return {
       'sqlite_id': localData['id'],
-      'x_debut_passage_submersible': localData['x_debut_passage_submersible'],
-      'y_debut_passage_submersible': localData['y_debut_passage_submersible'],
-      'x_fin_passage_submersible': localData['x_fin_passage_submersible'],
-      'y_fin_passage_submersible': localData['y_fin_passage_submersible'],
+      'geom': {
+        'type': 'LineString',
+        'coordinates': [
+          [
+            localData['y_debut_passage_submersible'],
+            localData['x_debut_passage_submersible']
+          ],
+          [
+            localData['y_fin_passage_submersible'],
+            localData['x_fin_passage_submersible']
+          ],
+        ]
+      },
+      'x_debut_pa': localData['x_debut_passage_submersible'],
+      'y_debut_pa': localData['y_debut_passage_submersible'],
+      'x_fin_pass': localData['x_fin_passage_submersible'],
+      'y_fin_pass': localData['y_fin_passage_submersible'],
       'nom': localData['nom'],
-      'type_materiau': localData['type_materiau'],
+      'type_mater': localData['type_materiau'],
       'enqueteur': localData['enqueteur'],
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
