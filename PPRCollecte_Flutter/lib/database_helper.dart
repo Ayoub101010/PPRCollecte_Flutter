@@ -1230,7 +1230,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1280,7 +1280,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1329,7 +1329,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1378,7 +1378,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1426,7 +1426,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1474,7 +1474,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1522,7 +1522,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1572,7 +1572,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1624,7 +1624,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1671,7 +1671,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1719,7 +1719,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1770,7 +1770,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1817,7 +1817,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1864,7 +1864,7 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 1,
+            'login_id': properties['login_id'] ?? 'Non spécifié',
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
