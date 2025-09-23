@@ -65,6 +65,9 @@ class _HomePageState extends State<HomePage> {
   final DisplayedPointsService _pointsService = DisplayedPointsService();
   final SpecialLinesService _specialLinesService = SpecialLinesService();
   Set<Polyline> _displayedSpecialLines = {};
+  final DownloadedPointsService _downloadedPointsService = DownloadedPointsService();
+  Set<Marker> _downloadedPointsMarkers = {};
+  bool _showDownloadedPoints = true;
   @override
   void initState() {
     super.initState();
@@ -74,6 +77,7 @@ class _HomePageState extends State<HomePage> {
     _loadDisplayedPoints();
     _loadDisplayedChaussees();
     _loadDisplayedSpecialLines();
+    _loadDownloadedPoints();
 
     homeController.addListener(() {
       setState(() {
@@ -109,11 +113,30 @@ class _HomePageState extends State<HomePage> {
     ));*/
   }
 
+  Future<void> _refreshAllPoints() async {
+    print('🔄 Rafraîchissement de tous les points...');
+    await _loadDisplayedPoints(); // Points locaux (rouges)
+    await _loadDownloadedPoints(); // Points téléchargés (verts)
+  }
+
+  Future<void> _loadDownloadedPoints() async {
+    try {
+      final markers = await _downloadedPointsService.getDownloadedPointsMarkers();
+      setState(() {
+        _downloadedPointsMarkers = markers;
+      });
+      print('✅ ${markers.length} points téléchargés chargés (verts)');
+    } catch (e) {
+      print('❌ Erreur chargement points téléchargés: $e');
+    }
+  }
+
 // Dans _HomePageState (home_page.dart)
 // ⭐⭐ AJOUTER CETTE MÉTHODE SEULEMENT ⭐⭐
   Future<void> _refreshAfterNavigation() async {
     print('🔄 Rafraîchissement après navigation...');
-    await _loadDisplayedSpecialLines(); // Seulement les lignes spéciales
+    await _loadDisplayedSpecialLines();
+    await _refreshAllPoints(); // Seulement les lignes spéciales
   }
 
   Future<void> _loadDisplayedSpecialLines() async {
@@ -941,6 +964,7 @@ class _HomePageState extends State<HomePage> {
       context,
       MaterialPageRoute(builder: (context) => const DataCategoriesPage()),
     ).then((_) {
+      _refreshAllPoints();
       // ⭐⭐ RAFRAÎCHIR TOUJOURS À LE RETOUR ⭐⭐
       _loadDisplayedPoints();
       _loadDisplayedPistes();
@@ -1191,7 +1215,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     // Préparer les markers
     final Set<Marker> markersSet = Set<Marker>.from(_displayedPointsMarkers);
-
+    if (_showDownloadedPoints) {
+      markersSet.addAll(_downloadedPointsMarkers); // Verts (téléchargés)
+    }
     // Préparer les polylines
     final allPolylines = Set<Polyline>.from(collectedPolylines);
     allPolylines.addAll(_finishedPistes);
@@ -1286,7 +1312,51 @@ class _HomePageState extends State<HomePage> {
                         color: Colors.black.withOpacity(0.2),
                       ),
                     ),
-
+// Dans le Stack de la méthode build() - Positionnez où vous voulez
+                  Positioned(
+                    top: 100, // Ajustez la position selon vos besoins
+                    right: 16,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black26, blurRadius: 4),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _showDownloadedPoints = !_showDownloadedPoints;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(_showDownloadedPoints ? 'Points téléchargés affichés (verts)' : 'Points téléchargés masqués'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: Icon(
+                              _showDownloadedPoints ? Icons.visibility : Icons.visibility_off,
+                              color: _showDownloadedPoints ? Colors.green : Colors.grey,
+                            ),
+                            tooltip: _showDownloadedPoints ? 'Masquer les points téléchargés' : 'Afficher les points téléchargés',
+                          ),
+                          Text(
+                            'Données serveur',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
+                  ),
                   // === AJOUTEZ ICI === //
                   Positioned(
                     bottom: 200,
@@ -1499,5 +1569,158 @@ class SpecialLinesService {
       print('❌ Erreur chargement lignes spéciales: $e');
       return {};
     }
+  }
+}
+
+// Dans home_page.dart - Ajoutez cette classe
+class DownloadedPointsService {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  Future<Set<Marker>> getDownloadedPointsMarkers() async {
+    try {
+      // Récupérer tous les points avec downloaded = 1 (téléchargés depuis le serveur)
+      final List<String> pointTables = [
+        'localites',
+        'ecoles',
+        'marches',
+        'services_santes',
+        'batiments_administratifs',
+        'infrastructures_hydrauliques',
+        'autres_infrastructures',
+        'ponts',
+        'buses',
+        'dalots',
+        'points_critiques',
+        'points_coupures'
+      ];
+
+      final Set<Marker> markers = {};
+
+      for (var tableName in pointTables) {
+        try {
+          final db = await _dbHelper.database;
+
+          // ⭐⭐ FILTRE CRITIQUE : downloaded = 1 (données téléchargées) ⭐⭐
+          final points = await db.query(
+            tableName,
+            where: 'downloaded = ?',
+            whereArgs: [
+              1
+            ],
+          );
+
+          for (var point in points) {
+            final coordinates = _getCoordinatesFromPoint(point, tableName);
+            if (coordinates['lat'] != null && coordinates['lng'] != null) {
+              markers.add(Marker(
+                markerId: MarkerId('downloaded_${tableName}_${point['id']}'),
+                position: LatLng(
+                  (coordinates['lat'] as num).toDouble(),
+                  (coordinates['lng'] as num).toDouble(),
+                ),
+                infoWindow: InfoWindow(
+                  title: '${_getEntityTypeFromTable(tableName)}: ${point['nom'] ?? 'Sans nom'}',
+                  snippet: 'Code Piste: ${point['code_piste'] ?? 'N/A'}\n'
+                      'Enquêteur: ${point['enqueteur'] ?? 'Autre utilisateur'}',
+                ),
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen), // ⭐⭐ VERT ⭐⭐
+              ));
+            }
+          }
+        } catch (e) {
+          print('❌ Erreur table $tableName: $e');
+        }
+      }
+
+      print('📍 ${markers.length} points téléchargés (verts) chargés');
+      return markers;
+    } catch (e) {
+      print('❌ Erreur dans getDownloadedPointsMarkers: $e');
+      return {};
+    }
+  }
+
+  Map<String, dynamic> _getCoordinatesFromPoint(Map<String, dynamic> point, String tableName) {
+    final coordinateMappings = {
+      'localites': {
+        'lat': 'y_localite',
+        'lng': 'x_localite'
+      },
+      'ecoles': {
+        'lat': 'y_ecole',
+        'lng': 'x_ecole'
+      },
+      'marches': {
+        'lat': 'y_marche',
+        'lng': 'x_marche'
+      },
+      'services_santes': {
+        'lat': 'y_sante',
+        'lng': 'x_sante'
+      },
+      'batiments_administratifs': {
+        'lat': 'y_batiment_administratif',
+        'lng': 'x_batiment_administratif'
+      },
+      'infrastructures_hydrauliques': {
+        'lat': 'y_infrastructure_hydraulique',
+        'lng': 'x_infrastructure_hydraulique'
+      },
+      'autres_infrastructures': {
+        'lat': 'y_autre_infrastructure',
+        'lng': 'x_autre_infrastructure'
+      },
+      'ponts': {
+        'lat': 'y_pont',
+        'lng': 'x_pont'
+      },
+      'buses': {
+        'lat': 'y_buse',
+        'lng': 'x_buse'
+      },
+      'dalots': {
+        'lat': 'y_dalot',
+        'lng': 'x_dalot'
+      },
+      'points_critiques': {
+        'lat': 'y_point_critique',
+        'lng': 'x_point_critique'
+      },
+      'points_coupures': {
+        'lat': 'y_point_coupure',
+        'lng': 'x_point_coupure'
+      },
+    };
+
+    final mapping = coordinateMappings[tableName];
+    if (mapping != null) {
+      return {
+        'lat': point[mapping['lat']],
+        'lng': point[mapping['lng']],
+      };
+    }
+
+    return {
+      'lat': null,
+      'lng': null
+    };
+  }
+
+  String _getEntityTypeFromTable(String tableName) {
+    const entityTypes = {
+      'localites': 'Localité',
+      'ecoles': 'École',
+      'marches': 'Marché',
+      'services_santes': 'Service de Santé',
+      'batiments_administratifs': 'Bâtiment Administratif',
+      'infrastructures_hydrauliques': 'Infrastructure Hydraulique',
+      'autres_infrastructures': 'Autre Infrastructure',
+      'ponts': 'Pont',
+      'buses': 'Buse',
+      'dalots': 'Dalot',
+      'points_critiques': 'Point Critique',
+      'points_coupures': 'Point de Coupure',
+    };
+    return entityTypes[tableName] ?? tableName;
   }
 }
