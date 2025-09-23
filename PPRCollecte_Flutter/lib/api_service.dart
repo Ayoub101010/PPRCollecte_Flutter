@@ -700,7 +700,8 @@ class ApiService {
   /// Méthode générique pour récupérer des données
   static Future<List<dynamic>> fetchData(String endpoint) async {
     try {
-      final url = Uri.parse('$baseUrl/api/$endpoint/');
+      final url = Uri.parse('$baseUrl/api/$endpoint/?commune_id=$communeId');
+      print('🌐 Téléchargement $endpoint pour commune_id: $communeId');
       final response = await http.get(
         url,
         headers: {
@@ -790,7 +791,9 @@ class ApiService {
 
   static Future<List<dynamic>> fetchChausseesTest() async {
     try {
-      final url = Uri.parse('$baseUrl/api/chaussees_test/');
+      final url = Uri.parse('$baseUrl/api/chaussees_test/?commune_id=$communeId');
+
+      print('🌐 Téléchargement chaussees_test pour commune_id: $communeId');
       final response = await http.get(
         url,
         headers: {
@@ -801,6 +804,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('✅ ${data['features']?.length ?? 0} chaussées récupérées pour commune_id: $communeId');
         return data['features']; // Extraire les features du GeoJSON
       } else {
         print('❌ Erreur GET (chaussees_test): ${response.statusCode}');
@@ -815,7 +819,9 @@ class ApiService {
   // Dans ApiService, ajouter cette méthode
   static Future<List<dynamic>> fetchPistes() async {
     try {
-      final url = Uri.parse('$baseUrl/api/pistes/');
+      final url = Uri.parse('$baseUrl/api/pistes/?communes_rurales_id=$communeId');
+
+      print('🌐 Téléchargement pistes pour communes_rurales_id: $communeId');
       final response = await http.get(
         url,
         headers: {
@@ -826,6 +832,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('✅ ${data['features']?.length ?? 0} pistes récupérées pour communes_rurales_id: $communeId');
         return data['features']; // Extraire les features du GeoJSON
       } else {
         print('❌ Erreur GET (pistes): ${response.statusCode}');

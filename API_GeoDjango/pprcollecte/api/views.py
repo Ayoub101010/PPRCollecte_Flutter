@@ -46,53 +46,127 @@ class CommunesRuralesListCreateAPIView(generics.ListCreateAPIView):
         
         return queryset.order_by('nom')
 
+# Modifiez toutes vos vues pour qu'elles ressemblent à ceci :
+
 class ServicesSantesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = ServicesSantes.objects.all()
     serializer_class = ServicesSantesSerializer
+    
+    def get_queryset(self):
+        queryset = ServicesSantes.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class AutresInfrastructuresListCreateAPIView(generics.ListCreateAPIView):
-    queryset = AutresInfrastructures.objects.all()
     serializer_class = AutresInfrastructuresSerializer
+    
+    def get_queryset(self):
+        queryset = AutresInfrastructures.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class BacsListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Bacs.objects.all()
     serializer_class = BacsSerializer
+    
+    def get_queryset(self):
+        queryset = Bacs.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class BatimentsAdministratifsListCreateAPIView(generics.ListCreateAPIView):
-    queryset = BatimentsAdministratifs.objects.all()
     serializer_class = BatimentsAdministratifsSerializer
+    
+    def get_queryset(self):
+        queryset = BatimentsAdministratifs.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class BusesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Buses.objects.all()
     serializer_class = BusesSerializer
+    
+    def get_queryset(self):
+        queryset = Buses.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class DalotsListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Dalots.objects.all()
     serializer_class = DalotsSerializer
+    
+    def get_queryset(self):
+        queryset = Dalots.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class EcolesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Ecoles.objects.all()
     serializer_class = EcolesSerializer
+    
+    def get_queryset(self):
+        queryset = Ecoles.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class InfrastructuresHydrauliquesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = InfrastructuresHydrauliques.objects.all()
     serializer_class = InfrastructuresHydrauliquesSerializer
+    
+    def get_queryset(self):
+        queryset = InfrastructuresHydrauliques.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class LocalitesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Localites.objects.all()
     serializer_class = LocalitesSerializer
+    
+    def get_queryset(self):
+        queryset = Localites.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class MarchesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Marches.objects.all()
     serializer_class = MarchesSerializer
+    
+    def get_queryset(self):
+        queryset = Marches.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class PassagesSubmersiblesListCreateAPIView(generics.ListCreateAPIView):
-    queryset = PassagesSubmersibles.objects.all()
     serializer_class = PassagesSubmersiblesSerializer
+    
+    def get_queryset(self):
+        queryset = PassagesSubmersibles.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 class PontsListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Ponts.objects.all()
     serializer_class = PontsSerializer
+    
+    def get_queryset(self):
+        queryset = Ponts.objects.all()
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            queryset = queryset.filter(commune_id=commune_id)
+        return queryset
 
 
 
@@ -125,8 +199,15 @@ class LoginAPIView(APIView):
 
 
 class PisteListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Piste.objects.all()
     serializer_class = PisteSerializer
+    
+    def get_queryset(self):
+        queryset = Piste.objects.all()
+        # Pour les pistes, le champ s'appelle 'communes_rurales_id'
+        commune_id = self.request.query_params.get('communes_rurales_id')
+        if commune_id:
+            queryset = queryset.filter(communes_rurales_id=commune_id)
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save()

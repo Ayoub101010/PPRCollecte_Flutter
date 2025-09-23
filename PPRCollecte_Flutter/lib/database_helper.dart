@@ -1606,14 +1606,15 @@ class DatabaseHelper {
 
       if (existing.isEmpty) {
         final communeId = await _getCommuneId();
+        final coordinates = geometry['coordinates'][0];
         await db.insert(
           'bacs',
           {
             'id': properties['sqlite_id'],
-            'x_debut_traversee_bac': geometry['coordinates'][0],
-            'y_debut_traversee_bac': geometry['coordinates'][1],
-            'x_fin_traversee_bac': properties['x_fin_traversee_bac'] ?? 'Non spécifié',
-            'y_fin_traversee_bac': properties['y_fin_traversee_bac'] ?? 'Non spécifié',
+            'x_debut_traversee_bac': coordinates[0][0], // longitude début
+            'y_debut_traversee_bac': coordinates[0][1], // latitude début
+            'x_fin_traversee_bac': coordinates[1][0], // longitude fin
+            'y_fin_traversee_bac': coordinates[1][1], // latitude fin
             'nom': properties['nom'] ?? 'Sans nom',
             'type_bac': properties['type_bac'] ?? 'Non spécifié',
             'nom_cours_eau': properties['nom_cours_eau'] ?? 'Non spécifié',
@@ -1752,14 +1753,15 @@ class DatabaseHelper {
 
       if (existing.isEmpty) {
         final communeId = await _getCommuneId();
+        final coordinates = geometry['coordinates'][0];
         await db.insert(
           'passages_submersibles',
           {
             'id': properties['sqlite_id'],
-            'x_debut_passage_submersible': geometry['coordinates'][0],
-            'y_debut_passage_submersible': geometry['coordinates'][1],
-            'x_fin_passage_submersible': properties['x_fin_passage_submersible'] ?? 'Non spécifié',
-            'y_fin_passage_submersible': properties['y_fin_passage_submersible'] ?? 'Non spécifié',
+            'x_debut_passage_submersible': coordinates[0][0], // longitude début
+            'y_debut_passage_submersible': coordinates[0][1], // latitude début
+            'x_fin_passage_submersible': coordinates[1][0], // longitude fin
+            'y_fin_passage_submersible': coordinates[1][1], // latitude fin
             'nom': properties['nom'] ?? 'Sans nom',
             'type_materiau': properties['type_materiau'] ?? 'Non spécifié',
             'enqueteur': properties['enqueteur'] ?? 'Sync',
