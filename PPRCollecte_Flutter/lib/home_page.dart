@@ -613,12 +613,20 @@ class _HomePageState extends State<HomePage> {
         _finishedPistes.add(Polyline(
           polylineId: PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
           points: result['points'],
-          color: Colors.blue,
-          width: 4,
+          color: Colors.brown, // ✅ couleur marron
+          width: 3,
+          patterns: [
+            PatternItem.dot,
+            PatternItem.gap(10)
+          ], // ✅ style pointillé
         ));
       });
       final storageHelper = SimpleStorageHelper();
-      await storageHelper.saveDisplayedPiste(result['points'], Colors.blue, 4.0);
+      await storageHelper.saveDisplayedPiste(
+        result['points'],
+        Colors.brown, // ✅ couleur marron
+        3.0, // largeur
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Piste enregistrée avec succès'),
@@ -651,14 +659,26 @@ class _HomePageState extends State<HomePage> {
           final points = pointsData.map((p) => LatLng((p['latitude'] ?? p['lat']) as double, (p['longitude'] ?? p['lng']) as double)).toList();
 
           // ⭐⭐ 3. UTILISER LA NOUVELLE MÉTHODE QUI NE SUPPRIME PAS ⭐⭐
-          await storageHelper.saveDisplayedPiste(points, Colors.blue, 4.0);
+          await storageHelper.saveDisplayedPiste(points, Colors.brown, 3.0);
         } catch (e) {
           print('❌ Erreur recréation piste ${piste['id']}: $e');
         }
       }
 
-      // ⭐⭐ 4. CHARGER LES PISTES FILTRÉES ⭐⭐
-      final displayedPistes = await storageHelper.loadDisplayedPistes();
+      final displayedPistesRaw = await storageHelper.loadDisplayedPistes();
+
+      final displayedPistes = displayedPistesRaw.map((p) {
+        return Polyline(
+          polylineId: p.polylineId ?? PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
+          points: p.points,
+          color: p.color ?? Colors.brown, // force marron si null
+          width: p.width ?? 3,
+          patterns: [
+            PatternItem.dot,
+            PatternItem.gap(10)
+          ], // pointillé
+        );
+      }).toList();
 
       setState(() {
         _finishedPistes = displayedPistes;

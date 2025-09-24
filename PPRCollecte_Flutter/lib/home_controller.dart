@@ -22,7 +22,7 @@ class HomeController extends ChangeNotifier {
   bool isOnline = true;
   LatLng userPosition = const LatLng(7.5, 10.5);
   Set<Marker> formMarkers = {}; // Marqueurs des formulaires enregistrés
-
+  final Set<Polyline> collectedPolylines = <Polyline>{};
   // Anciens états ligne pour compatibilité
   bool lineActive = false;
   bool linePaused = false;
@@ -193,7 +193,6 @@ class HomeController extends ChangeNotifier {
 
 //  Une methode pour tester les  pistes dans l'emulateur à supprimer après
   void addRealisticPisteSimulation() async {
-    // ← async ajouté ici
     if (!hasActiveCollection) return;
 
     final random = Random();
@@ -203,6 +202,8 @@ class HomeController extends ChangeNotifier {
     double currentLng = userPosition.longitude;
     double angle = random.nextDouble() * 2 * pi;
     double curveIntensity = 0.08;
+
+    List<LatLng> pistePoints = []; // ← liste pour la polyline
 
     for (int i = 0; i < numberOfPoints; i++) {
       // Distance entre points (15-25m)
@@ -216,14 +217,33 @@ class HomeController extends ChangeNotifier {
       currentLat += distance * cos(angle);
       currentLng += distance * sin(angle);
 
-      // Ajout du point
-      addManualPointToCollection(activeCollectionType == 'ligne' ? CollectionType.ligne : CollectionType.chaussee);
+      final point = LatLng(currentLat, currentLng);
+      pistePoints.add(point);
 
-      // Délai progressif - MAINTENANT AVEC await
+      // Si tu veux continuer à stocker les points dans ta collection
+      addManualPointToCollection(
+        activeCollectionType == 'ligne' ? CollectionType.ligne : CollectionType.chaussee,
+      );
+
+      // Délai progressif pour simulation
       await Future.delayed(Duration(milliseconds: 20 + random.nextInt(30)));
     }
 
-    print('✅ $numberOfPoints points réalistes simulés');
+    // ✅ Ajout de la polyline normalisée
+    final newPolyline = Polyline(
+      polylineId: PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
+      points: pistePoints,
+      color: Colors.brown, // norme : piste non revêtue
+      width: 3,
+      patterns: [
+        PatternItem.dot,
+        PatternItem.gap(10)
+      ], // style pointillé
+    );
+
+    collectedPolylines.add(newPolyline);
+
+    print('✅ $numberOfPoints points réalistes simulés et reliés en polyline');
     notifyListeners();
   }
 
