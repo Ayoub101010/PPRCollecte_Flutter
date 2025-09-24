@@ -68,6 +68,7 @@ class _HomePageState extends State<HomePage> {
   final DownloadedPointsService _downloadedPointsService = DownloadedPointsService();
   Set<Marker> _downloadedPointsMarkers = {};
   bool _showDownloadedPoints = true;
+  MapType _currentMapType = MapType.normal;
   @override
   void initState() {
     super.initState();
@@ -111,6 +112,12 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+  void _toggleMapType() {
+    setState(() {
+      _currentMapType = _currentMapType == MapType.normal ? MapType.satellite : MapType.normal;
+    });
   }
 
   Future<void> _refreshAllPoints() async {
@@ -1296,6 +1303,7 @@ class _HomePageState extends State<HomePage> {
                     polylines: allPolylines,
                     onMapCreated: _onMapCreated,
                     formMarkers: formMarkers,
+                    mapType: _currentMapType,
                   ),
                   if (isSyncing)
                     BackdropFilter(
@@ -1314,12 +1322,12 @@ class _HomePageState extends State<HomePage> {
                     ),
 // Dans le Stack de la méthode build() - Positionnez où vous voulez
                   Positioned(
-                    top: 100, // Ajustez la position selon vos besoins
-                    right: 16,
+                    top: 60, // Ajustez la position selon vos besoins
+                    right: 10,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(color: Colors.black26, blurRadius: 4),
                         ],
@@ -1420,6 +1428,14 @@ class _HomePageState extends State<HomePage> {
                     isSpecialCollection: _isSpecialCollection, // ← NOUVEAU
                     onStopSpecial: finishSpecialCollection,
                   ),
+                  MapTypeToggle(
+                    currentMapType: _currentMapType,
+                    onMapTypeChanged: (newType) {
+                      setState(() {
+                        _currentMapType = newType;
+                      });
+                    },
+                  ),
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
 
@@ -1437,7 +1453,7 @@ class _HomePageState extends State<HomePage> {
                       topOffset: homeController.ligneCollection != null ? 70 : 16,
                     ),
 
-                  DataCountWidget(count: collectedMarkers.length + collectedPolylines.length),
+                  // DataCountWidget(count: collectedMarkers.length + collectedPolylines.length),
                   // Remplacez le Positioned actuel par ceci :
                   if (isDownloading)
                     Positioned(
