@@ -120,7 +120,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
           } else if (widget.dataFilter == "synced") {
             filteredData = allPistes.where((piste) => piste['synced'] == 1 && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == ApiService.userId).toList();
           } else if (widget.dataFilter == "saved") {
-            filteredData = allPistes.where((piste) => piste['downloaded'] == 1).toList();
+            filteredData = allPistes.where((piste) => piste['downloaded'] == 1 && piste['saved_by_user_id'] == ApiService.userId).toList();
           } else {
             filteredData = allPistes;
           }
@@ -135,7 +135,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
           } else if (widget.dataFilter == "synced") {
             filteredData = allChaussees.where((ch) => ch['synced'] == 1 && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == ApiService.userId).toList();
           } else if (widget.dataFilter == "saved") {
-            filteredData = allChaussees.where((ch) => ch['downloaded'] == 1).toList();
+            filteredData = allChaussees.where((ch) => ch['downloaded'] == 1 && ch['saved_by_user_id'] == ApiService.userId).toList();
           } else {
             filteredData = allChaussees;
           }
@@ -162,7 +162,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         } else if (widget.dataFilter == "synced") {
           filteredData = allData.where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == ApiService.userId).toList();
         } else if (widget.dataFilter == "saved") {
-          filteredData = allData.where((item) => item['downloaded'] == 1).toList();
+          filteredData = allData.where((item) => item['downloaded'] == 1 && item['saved_by_user_id'] == ApiService.userId).toList();
         } else {
           filteredData = allData;
         }

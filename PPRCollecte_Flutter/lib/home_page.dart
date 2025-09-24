@@ -1603,9 +1603,10 @@ class DownloadedPointsService {
           // ⭐⭐ FILTRE CRITIQUE : downloaded = 1 (données téléchargées) ⭐⭐
           final points = await db.query(
             tableName,
-            where: 'downloaded = ?',
+            where: 'downloaded = ? AND saved_by_user_id = ?',
             whereArgs: [
-              1
+              1,
+              ApiService.userId
             ],
           );
 
@@ -1621,7 +1622,8 @@ class DownloadedPointsService {
                 infoWindow: InfoWindow(
                   title: '${_getEntityTypeFromTable(tableName)}: ${point['nom'] ?? 'Sans nom'}',
                   snippet: 'Code Piste: ${point['code_piste'] ?? 'N/A'}\n'
-                      'Enquêteur: ${point['enqueteur'] ?? 'Autre utilisateur'}',
+                      'Enquêteur: ${point['enqueteur'] ?? 'Autre utilisateur'}\n'
+                      'Créé par: User ${point['login_id']}',
                 ),
                 icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen), // ⭐⭐ VERT ⭐⭐
               ));

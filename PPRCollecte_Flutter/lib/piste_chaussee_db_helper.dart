@@ -67,6 +67,7 @@ class SimpleStorageHelper {
             updated_at TEXT,
             sync_status TEXT DEFAULT 'pending',
             login_id INTEGER,
+            saved_by_user_id INTEGER,
             synced INTEGER DEFAULT 0,
             date_sync TEXT,
             downloaded INTEGER DEFAULT 0
@@ -96,6 +97,7 @@ class SimpleStorageHelper {
     
     sync_status TEXT DEFAULT 'pending', 
     login_id INTEGER, 
+    saved_by_user_id INTEGER,
     synced INTEGER DEFAULT 0,
     date_sync TEXT,
     downloaded INTEGER DEFAULT 0
@@ -670,7 +672,12 @@ class SimpleStorageHelper {
       final db = await database;
       final properties = pisteData['properties'];
       final geometry = pisteData['geometry'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       // Extraire les coordonnées du MultiLineString GeoJSON
       final coordinates = geometry['coordinates'][0];
       final pointsJson = jsonEncode(coordinates
@@ -689,9 +696,10 @@ class SimpleStorageHelper {
       // Vérifier si la piste existe déjà (par id PostgreSQL)
       final existing = await db.query(
         'pistes',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          pisteData['id']
+          pisteData['id'],
+          ApiService.userId
         ], // ID PostgreSQL
       );
 
@@ -726,7 +734,8 @@ class SimpleStorageHelper {
           'points_json': pointsJson,
           'created_at': formatDate(properties['created_at']),
           'updated_at': formatDate(properties['updated_at']),
-          'login_id': properties['login_id'],
+          'login_id': dataUserId ?? 'Non spécifié',
+          'saved_by_user_id': ApiService.userId,
           'sync_status': 'downloaded',
           'synced': 0,
           'date_sync': DateTime.now().toIso8601String(),
@@ -965,7 +974,12 @@ class SimpleStorageHelper {
       final db = await database;
       final properties = chausseeData['properties'];
       final geometry = chausseeData['geometry'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       // Extraire les coordonnées du MultiLineString GeoJSON
       final coordinates = geometry['coordinates'][0];
       final pointsJson = jsonEncode(coordinates
@@ -978,9 +992,10 @@ class SimpleStorageHelper {
       // Vérifier si la chaussée existe déjà (par id PostgreSQL)
       final existing = await db.query(
         'chaussees',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          chausseeData['id']
+          chausseeData['id'],
+          ApiService.userId
         ], // ID PostgreSQL
       );
 
@@ -1004,7 +1019,8 @@ class SimpleStorageHelper {
           'created_at': properties['created_at'],
           'updated_at': properties['updated_at'],
           'sync_status': 'downloaded',
-          'login_id': properties['login'],
+          'login_id': dataUserId ?? 'Non spécifié',
+          'saved_by_user_id': ApiService.userId,
           'synced': 0,
           'date_sync': DateTime.now().toIso8601String(),
           'downloaded': 1, // ← MARQUÉ COMME TÉLÉCHARGÉ

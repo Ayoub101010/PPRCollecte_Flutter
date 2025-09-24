@@ -122,6 +122,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,               -- ← COLONNE AJOUTÉE
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -143,6 +144,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,               -- ← COLONNE AJOUTÉE
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -164,6 +166,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -185,6 +188,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -206,6 +210,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -227,6 +232,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -248,6 +254,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -271,6 +278,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -295,6 +303,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -315,6 +324,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -336,6 +346,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -359,6 +370,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -379,6 +391,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -399,6 +412,7 @@ class DatabaseHelper {
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
       login_id INTEGER,            
+      saved_by_user_id INTEGER,
       commune_id INTEGER
     )
   ''');
@@ -1204,12 +1218,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'localites',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1230,7 +1250,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1254,12 +1275,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'ecoles',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1280,7 +1307,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1303,12 +1331,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'marches',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1329,7 +1363,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1352,12 +1387,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'services_santes',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1378,7 +1419,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1400,12 +1442,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'batiments_administratifs',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1426,7 +1474,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1448,12 +1497,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'infrastructures_hydrauliques',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1474,7 +1529,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1496,12 +1552,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'autres_infrastructures',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1522,7 +1584,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1544,12 +1607,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'ponts',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1572,7 +1641,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1594,12 +1664,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'bacs',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1624,7 +1700,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1646,12 +1723,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'buses',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1671,7 +1754,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1693,12 +1777,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'dalots',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1719,7 +1809,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1741,12 +1832,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'passages_submersibles',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1770,7 +1867,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1792,12 +1890,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'points_critiques',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1817,7 +1921,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1839,12 +1944,18 @@ class DatabaseHelper {
       final properties = geoJsonData['properties'];
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
+      final dataUserId = properties['login_id'];
 
+      if (dataUserId == ApiService.userId) {
+        print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
       final existing = await db.query(
         'points_coupures',
-        where: 'id = ?',
+        where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          sqliteId
+          sqliteId,
+          ApiService.userId
         ],
         limit: 1,
       );
@@ -1864,7 +1975,8 @@ class DatabaseHelper {
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
-            'login_id': properties['login_id'] ?? 'Non spécifié',
+            'login_id': dataUserId ?? 'Non spécifié',
+            'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
