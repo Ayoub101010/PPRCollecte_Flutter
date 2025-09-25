@@ -140,6 +140,7 @@ class _DataListViewState extends State<DataListView> {
   }
 
   Widget _buildListItem(Map<String, dynamic> item, BuildContext context) {
+    final hasModification = item['updated_at'] != null && item['updated_at'] != item['created_at'];
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
@@ -157,7 +158,11 @@ class _DataListViewState extends State<DataListView> {
             // ✅ DATES IMPORTANTES
             if (item['created_at'] != null) Text('Créé: ${_formatDate(item['created_at'])}'),
 
-            if (item['updated_at'] != null && item['updated_at'] != item['created_at']) Text('Modifié: ${_formatDate(item['updated_at'])}', style: const TextStyle(color: Colors.green)),
+            if (hasModification)
+              Text(
+                'Modifié: ${_formatDate(item['updated_at'])}',
+                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+              ),
 
             if (item['commune_rurale_id'] != null) Text('Commune: ${item['commune_rurale_id']}'),
 
@@ -302,7 +307,7 @@ class _DataListViewState extends State<DataListView> {
     try {
       final date = DateTime.parse(dateString);
       return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
-          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+          '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}'; // ← AJOUT DE L'HEURE
     } catch (e) {
       return dateString;
     }

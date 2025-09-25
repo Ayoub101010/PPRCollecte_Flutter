@@ -65,26 +65,25 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
   void _initializeForm() {
     if (widget.isEditingMode && widget.initialData != null) {
       _fillFormWithExistingData();
-    }
-    final String? codePisteToUse;
-    // ⭐⭐ PRÉ-REMPLIR AVEC LE CODE PISTE LE PLUS PROCHE ⭐⭐
-    if (widget.nearestPisteCode != null) {
-      codePisteToUse = widget.nearestPisteCode;
+      // 👉 En édition : on ne touche pas au code piste existant
+      _codePisteController.text = widget.initialData!['code_piste'] ?? 'CH_${DateTime.now().millisecondsSinceEpoch}';
     } else {
-      // ⭐⭐ SOLUTION DE SECOURS: Générer un code par défaut ⭐⭐
-      codePisteToUse = 'CH_${DateTime.now().millisecondsSinceEpoch}';
+      // 👉 En création : utiliser la piste la plus proche
+      final String codePisteToUse = (widget.nearestPisteCode != null && widget.nearestPisteCode!.isNotEmpty) ? widget.nearestPisteCode! : 'CH_${DateTime.now().millisecondsSinceEpoch}';
+
+      _codePisteController.text = codePisteToUse;
     }
 
-    _codePisteController.text = codePisteToUse!;
-    // Récupérer automatiquement l'utilisateur connecté et l'heure actuelle
-    _userLoginController.text = widget.agentName ?? _getCurrentUser(); // À implémenter selon votre système d'auth
-    // Date de création = maintenant par défaut
+    // Récupérer automatiquement l'utilisateur connecté
+    _userLoginController.text = widget.agentName ?? _getCurrentUser(); // selon ton système d’auth
+
+    // Date de création = maintenant (par défaut en création)
     _dateCreation = DateTime.now();
 
-    // Date de modification = maintenant (automatique)
+    // Date de modification = null au départ (mise à jour lors de l’édition)
     _dateModification = null;
-    // Initialisation si nécessaire
-    // Les coordonnées seront calculées automatiquement depuis chausseePoints
+
+    // 👉 Les coordonnées seront calculées automatiquement depuis chausseePoints
   }
 
   void _fillFormWithExistingData() {
@@ -149,11 +148,16 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
 
     try {
       await Future.delayed(const Duration(seconds: 1));
-
+      String codePiste;
+      if (widget.isEditingMode && widget.initialData != null) {
+        codePiste = widget.initialData!['code_piste'] ?? _codePisteController.text;
+      } else {
+        codePiste = _codePisteController.text;
+      }
       // ✅ DONNÉES SELON VOS SPÉCIFICATIONS
       final chausseeData = {
         // Champs saisis par l'utilisateur
-        'code_piste': _codePisteController.text,
+        'code_piste': codePiste,
         'code_gps': _codeGpsController.text,
         'endroit': _endroitController.text,
         'type_chaussee': _typeChaussee,
@@ -176,7 +180,10 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
         'distance_totale_m': _calculateTotalDistance(widget.chausseePoints),
         'nombre_points': widget.chausseePoints.length,
         'created_at': widget.isEditingMode && widget.initialData != null ? widget.initialData!['created_at'] : DateTime.now().toIso8601String(),
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': widget.isEditingMode && widget.initialData != null
+            ? DateTime.now().toIso8601String() // ← uniquement si modification
+            : null, // ← jamais à la création
+
         'is_editing': widget.isEditingMode,
 
         'sync_status': 'pending',

@@ -671,8 +671,10 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'y_destination': widget.linePoints.last.longitude, // ← Dernier point
 
         // ✅ Dates
-        'created_at': _dateCreation?.toIso8601String() ?? DateTime.now().toIso8601String(),
-        'updated_at': _dateModification?.toIso8601String(),
+        'created_at': widget.initialData != null ? widget.initialData!['created_at'] : DateTime.now().toIso8601String(),
+        'updated_at': widget.initialData != null
+            ? DateTime.now().toIso8601String() // seulement si modification
+            : null,
         'is_editing': widget.isEditingMode,
 
         'sync_status': 'pending',
@@ -864,7 +866,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
       _entrepriseController.clear();
 
       // Réinitialiser les sélections
-      _communeRurale = null;
+
       _typeOccupation = null;
       _debutOccupation = null;
       _finOccupation = null;

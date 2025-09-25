@@ -231,7 +231,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         entityData['date_creation'] = _formData['date_creation']; // Garder l'original
 
         // Seulement mettre à jour la date de modification avec l'heure actuelle
-        entityData['date_modification'] = formatDateWithCurrentTime(DateTime.now().toIso8601String());
+        final now = DateTime.now();
+        entityData['date_modification'] = DateTime(now.year, now.month, now.day, now.hour, now.minute, now.second).toIso8601String();
       } else {
         // Si c'est une création, ajouter la date de création avec l'heure actuelle
         entityData['date_creation'] = formatDateWithCurrentTime(_formData['date_creation']);
