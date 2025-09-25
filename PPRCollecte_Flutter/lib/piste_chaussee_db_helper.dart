@@ -120,11 +120,12 @@ class SimpleStorageHelper {
   CREATE TABLE IF NOT EXISTS displayed_chaussees (
     id INTEGER PRIMARY KEY,
     points_json TEXT NOT NULL,
-    color INTEGER NOT NULL,
+    color INTEGER ,
     width INTEGER NOT NULL,
     created_at TEXT NOT NULL,
     login_id INTEGER NOT NULL,
     code_piste TEXT,
+    type_chaussee TEXT,
     endroit TEXT
   )
 ''');
@@ -134,7 +135,13 @@ class SimpleStorageHelper {
     );
   }
 
-  Future<void> saveDisplayedChaussee(List<LatLng> points, Color color, double width, String codePiste, String endroit) async {
+  Future<void> saveDisplayedChaussee(
+    List<LatLng> points,
+    String typeChaussee,
+    double width,
+    String codePiste,
+    String endroit,
+  ) async {
     try {
       final db = await database;
       final pointsJson = jsonEncode(points
@@ -144,10 +151,6 @@ class SimpleStorageHelper {
               })
           .toList());
 
-      // ⭐⭐ SUPPRIMER CETTE LIGNE QUI EFFACE TOUT ⭐⭐
-      // await db.delete('displayed_chaussees', where: 'login_id = ?', whereArgs: [ApiService.userId]);
-
-      // ⭐⭐ AJOUTER SANS SUPPRIMER - vérifier si existe déjà ⭐⭐
       final existing = await db.query(
         'displayed_chaussees',
         where: 'login_id = ? AND code_piste = ?',
@@ -158,12 +161,11 @@ class SimpleStorageHelper {
       );
 
       if (existing.isNotEmpty) {
-        // Mettre à jour l'existante
         await db.update(
           'displayed_chaussees',
           {
             'points_json': pointsJson,
-            'color': color.value,
+            'type_chaussee': typeChaussee, // ✅ enregistré
             'width': width.toInt(),
             'endroit': endroit,
             'created_at': DateTime.now().toIso8601String(),
@@ -175,10 +177,9 @@ class SimpleStorageHelper {
           ],
         );
       } else {
-        // Ajouter une nouvelle
         await db.insert('displayed_chaussees', {
           'points_json': pointsJson,
-          'color': color.value,
+          'type_chaussee': typeChaussee, // ✅ enregistré
           'width': width.toInt(),
           'login_id': ApiService.userId,
           'code_piste': codePiste,
@@ -187,9 +188,48 @@ class SimpleStorageHelper {
         });
       }
 
-      print('✅ Chaussée affichée sauvegardée pour user: ${ApiService.userId}');
+      print('✅ Chaussée sauvegardée avec type: $typeChaussee');
     } catch (e) {
-      print('❌ Erreur sauvegarde chaussée affichée: $e');
+      print('❌ Erreur sauvegarde chaussée: $e');
+    }
+  }
+
+  Color getChausseeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'bitume':
+        return Colors.black;
+      case 'terre':
+        return Colors.brown;
+      case 'latérite': // ← minuscule
+        return Colors.red.shade700;
+      case 'bouwal':
+        return Colors.yellow.shade700;
+      default:
+        return Colors.blueGrey; // inconnu / autre
+    }
+  }
+
+  List<PatternItem> getChausseePattern(String type) {
+    switch (type.toLowerCase()) {
+      case 'bitume':
+        return <PatternItem>[]; // ligne continue
+      case 'terre':
+        return [
+          PatternItem.dash(20),
+          PatternItem.gap(10),
+        ];
+      case 'latérite': // ← minuscule
+        return [
+          PatternItem.dash(10),
+          PatternItem.gap(10),
+        ];
+      case 'bouwal':
+        return [
+          PatternItem.dot,
+          PatternItem.gap(5),
+        ];
+      default:
+        return <PatternItem>[]; // ligne continue par défaut
     }
   }
 
@@ -267,7 +307,7 @@ class SimpleStorageHelper {
       for (final map in maps) {
         final pointsData = jsonDecode(map['points_json']) as List;
         final List<LatLng> points = [];
-
+        final typeChaussee = map['type_chaussee'] as String? ?? "inconnu";
         for (final p in pointsData) {
           final lat = p['lat'] as double?;
           final lng = p['lng'] as double?;
@@ -280,8 +320,9 @@ class SimpleStorageHelper {
           polylines.add(Polyline(
             polylineId: PolylineId('displayed_chaussee_${map['id']}'),
             points: points,
-            color: Color(map['color'] as int),
+            color: getChausseeColor(typeChaussee),
             width: map['width'] as int,
+            patterns: getChausseePattern(typeChaussee),
           ));
         }
       }

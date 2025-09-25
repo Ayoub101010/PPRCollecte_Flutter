@@ -192,7 +192,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
         await storageHelper.debugPrintAllChaussees();
         await storageHelper.saveDisplayedChaussee(
             widget.chausseePoints, // Points de la chaussée
-            const Color(0xFFFF9800), // Couleur orange
+            chausseeData['type_chaussee'] ?? 'inconnu', // Couleur orange
             4.0, // Épaisseur de la ligne
             chausseeData['code_piste'], // ⭐⭐ MÊME CODE_PISTE ⭐⭐
             chausseeData['endroit'] ?? 'Sans endroit' // Endroit

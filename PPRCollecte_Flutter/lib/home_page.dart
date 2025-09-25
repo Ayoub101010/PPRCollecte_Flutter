@@ -288,33 +288,33 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  List<PatternItem> getChausseePattern(String type) {
+    switch (type.toLowerCase()) {
+      case 'asphalte':
+        return <PatternItem>[]; // ligne continue
+      case 'terre':
+        return [
+          PatternItem.dash(20),
+          PatternItem.gap(10)
+        ];
+      case 'béton':
+        return [
+          PatternItem.dot,
+          PatternItem.gap(5)
+        ];
+      case 'pavée':
+        return [
+          PatternItem.dash(10),
+          PatternItem.gap(5)
+        ];
+      default:
+        return <PatternItem>[]; // par défaut, ligne continue
+    }
+  }
+
   Future<void> _loadDisplayedChaussees() async {
     try {
       final storageHelper = SimpleStorageHelper();
-
-      // ⭐⭐ SUPPRIMER CETTE LIGNE INUTILE ⭐⭐
-      // final db = await storageHelper.database;
-
-      // ⭐⭐ 2. FILTRER UNIQUEMENT LES CHAUSSÉES DE L'UTILISATEUR COURANT ⭐⭐
-      final allChaussees = await storageHelper.getAllChausseesMaps();
-      final userChaussees = allChaussees.where((ch) => ch['login_id'] == ApiService.userId).toList();
-
-      print('📊 Chaussées trouvées: ${allChaussees.length}, Chaussées utilisateur: ${userChaussees.length}');
-
-      for (final chaussee in userChaussees) {
-        try {
-          final pointsJson = chaussee['points_json'] as String;
-          final pointsData = jsonDecode(pointsJson) as List;
-          final points = pointsData.map((p) => LatLng((p['latitude'] ?? p['lat']) as double, (p['longitude'] ?? p['lng']) as double)).toList();
-
-          // ⭐⭐ 3. UTILISER LA NOUVELLE MÉTHODE QUI NE SUPPRIME PAS ⭐⭐
-          await storageHelper.saveDisplayedChaussee(points, const Color(0xFFFF9800), 4.0, chaussee['code_piste'] ?? 'Sans_code', chaussee['endroit'] ?? 'Sans_endroit');
-        } catch (e) {
-          print('❌ Erreur recréation chaussée ${chaussee['id']}: $e');
-        }
-      }
-
-      // ⭐⭐ 4. CHARGER LES CHAUSSÉES FILTRÉES ⭐⭐
       final displayedChaussees = await storageHelper.loadDisplayedChaussees();
 
       setState(() {
@@ -745,6 +745,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Color getChausseeColor(String type) {
+    switch (type.toLowerCase()) {
+      case 'bitume':
+        return Colors.black;
+      case 'terre':
+        return Colors.brown;
+      case 'latérite': // ← minuscule
+        return Colors.red.shade700;
+      case 'bouwal':
+        return Colors.yellow.shade700;
+      default:
+        return Colors.blueGrey; // inconnu / autre
+    }
+  }
+
   Future<void> finishChausseeCollection() async {
     final result = homeController.finishChausseeCollection();
     if (result == null) {
@@ -769,21 +784,24 @@ class _HomePageState extends State<HomePage> {
 
     if (formResult != null) {
       setState(() {
+        final typeChaussee = formResult['type_chaussee'] ?? 'inconnu';
         collectedPolylines.add(Polyline(
           polylineId: PolylineId('chaussee_${collectedPolylines.length + 1}'),
           points: result['points'],
-          color: const Color(0xFFFF9800),
+          color: getChausseeColor(typeChaussee),
           width: 4,
+          patterns: getChausseePattern(typeChaussee),
         ));
       });
       final storageHelper = SimpleStorageHelper();
       await storageHelper.saveDisplayedChaussee(
-          result['points'],
-          const Color(0xFFFF9800),
-          4.0,
-          formResult['code_piste'] ?? 'Sans_code', // ← Code piste
-          formResult['endroit'] ?? 'Sans_endroit' // ← Endroit
-          );
+        result['points'],
+        formResult['type_chaussee'] ?? 'inconnu', // ✅ type chaussée
+        4.0,
+        formResult['code_piste'] ?? 'Sans_code',
+        formResult['endroit'] ?? 'Sans_endroit',
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Chaussée enregistrée avec succès'),
@@ -1576,31 +1594,44 @@ class SpecialLinesService {
 
       for (var line in lines) {
         final specialType = line['special_type'] as String;
-        final lineColor = specialType == "Bac" ? Colors.purple : Colors.deepPurple;
+
+        Color lineColor;
+        List<PatternItem> linePattern;
+
+        switch (specialType.toLowerCase()) {
+          case 'bac':
+            lineColor = Colors.purple;
+            linePattern = [
+              PatternItem.dash(15),
+              PatternItem.gap(5)
+            ];
+            break;
+          case 'passage submersible':
+            lineColor = Colors.cyan;
+            linePattern = [
+              PatternItem.dash(10),
+              PatternItem.gap(5)
+            ];
+            break;
+          default:
+            lineColor = Colors.blueGrey;
+            linePattern = [];
+        }
 
         polylines.add(Polyline(
           polylineId: PolylineId('special_line_${line['id']}'),
           points: [
-            LatLng(
-              (line['lat_debut'] as num).toDouble(),
-              (line['lng_debut'] as num).toDouble(),
-            ),
-            LatLng(
-              (line['lat_fin'] as num).toDouble(),
-              (line['lng_fin'] as num).toDouble(),
-            ),
+            LatLng((line['lat_debut'] as num).toDouble(), (line['lng_debut'] as num).toDouble()),
+            LatLng((line['lat_fin'] as num).toDouble(), (line['lng_fin'] as num).toDouble()),
           ],
           color: lineColor,
           width: 4,
-          patterns: [
-            PatternItem.dash(10),
-            PatternItem.gap(5)
-          ],
+          patterns: linePattern,
         ));
       }
 
       print('📍 ${polylines.length} lignes spéciales chargées');
-      return polylines;
+      return polylines.toSet();
     } catch (e) {
       print('❌ Erreur chargement lignes spéciales: $e');
       return {};
