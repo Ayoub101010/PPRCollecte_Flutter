@@ -197,17 +197,12 @@ class LocalitesSerializer(GeoFeatureModelSerializer):
         }
     
     def to_internal_value(self, data):
-        # Faire une copie pour éviter de modifier l'original
-        data = data.copy()
         
         if 'x_localite' in data and 'y_localite' in data:
-            x = float(data.get('x_localite'))
-            y = float(data.get('y_localite'))
+            x = float(data['x_localite'])
+            y = float(data['y_localite'])
             # Créer le Point géométrique
             data['geom'] = Point(x, y, srid=4326)
-            # Supprimer les champs x et y pour éviter les erreurs
-            data['x_localite', None]
-            data['y_localite', None]
         
         return super().to_internal_value(data)
 
