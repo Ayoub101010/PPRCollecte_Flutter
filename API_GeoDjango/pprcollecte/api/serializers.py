@@ -5,10 +5,10 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
 )
 from django.contrib.gis.geos import Point
-
+from django.contrib.gis.geos import LineString, MultiLineString
 class RegionSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Region
@@ -380,3 +380,30 @@ class CommuneSearchSerializer(serializers.ModelSerializer):
         prefecture = obj.prefectures_id.nom if obj.prefectures_id else "N/A"
         region = obj.prefectures_id.regions_id.nom if obj.prefectures_id and obj.prefectures_id.regions_id else "N/A"
         return f"{obj.nom}, {prefecture}, {region}"
+    
+
+
+class ChausseesTestSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = ChausseesTest
+        geo_field = "geom"
+        fields = '__all__'
+        extra_kwargs = {
+            'fid': {'required': False},  # Auto-généré
+            'id': {'required': False, 'allow_null': True},
+        }
+
+    def to_internal_value(self, data):
+        if ('x_debut_ch' in data and 'y_debut_ch' in data and 
+            'x_fin_ch' in data and 'y_fin_chau' in data):
+
+            x_debut = float(data['x_debut_ch'])
+            y_debut = float(data['y_debut_ch'])
+            x_fin = float(data['x_fin_ch'])
+            y_fin = float(data['y_fin_chau'])
+
+            # Créer une LineString puis forcer MultiLineString
+            line = LineString((x_debut, y_debut), (x_fin, y_fin), srid=4326)
+            data['geom'] = MultiLineString(line, srid=4326)
+
+        return super().to_internal_value(data)

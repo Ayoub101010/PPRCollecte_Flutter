@@ -151,6 +151,58 @@ class Piste(models.Model):
     def __str__(self):
         return f"Piste {self.code_piste} - {self.nom_origine_piste} â†’ {self.nom_destination_piste}"
 
+from django.contrib.gis.db import models
+
+class ChausseesTest(models.Model):
+    fid = models.BigAutoField(primary_key=True)
+    id = models.BigIntegerField(null=True, blank=True)
+    geom = models.MultiLineStringField(srid=4326, null=True, blank=True)
+    x_debut_ch = models.FloatField(null=True, blank=True)
+    y_debut_ch = models.FloatField(null=True, blank=True)
+    x_fin_ch = models.FloatField(null=True, blank=True)
+    y_fin_chau = models.FloatField(null=True, blank=True)
+    type_chaus = models.CharField(max_length=254, null=True, blank=True)
+    etat_piste = models.CharField(max_length=254, null=True, blank=True)
+    created_at = models.CharField(max_length=50, null=True, blank=True)
+    updated_at = models.CharField(max_length=50, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+    endroit = models.CharField(max_length=32, null=True, blank=True)
+
+    # FK vers Piste (via code_piste)
+    code_piste = models.ForeignKey(
+        'Piste',   # ← corriger ici
+        to_field='code_piste',
+        on_delete=models.CASCADE,
+        db_column='code_piste',
+        null=True,
+        blank=True
+    )
+
+    # FK vers Login
+    login = models.ForeignKey(
+        'Login',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='login_id'
+    )
+
+    # FK vers CommuneRurale
+    communes_rurales_id = models.ForeignKey(
+        'CommuneRurale',   # ← corriger ici
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='communes_rurales_id'
+    )
+
+    class Meta:
+        db_table = 'chaussees_test'
+        managed = False
+
+    def __str__(self):
+        return f"Chaussee {self.fid}"
+
 
 
 class ServicesSantes(models.Model):

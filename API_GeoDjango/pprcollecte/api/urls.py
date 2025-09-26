@@ -7,7 +7,7 @@ from .views import (
     EcolesListCreateAPIView, InfrastructuresHydrauliquesListCreateAPIView, LocalitesListCreateAPIView,
     MarchesListCreateAPIView, PassagesSubmersiblesListCreateAPIView, PontsListCreateAPIView,
     CommunesRuralesListCreateAPIView, PrefecturesListCreateAPIView, RegionsListCreateAPIView,
-    UserManagementAPIView,
+    UserManagementAPIView,ChausseesTestListCreateAPIView
 )
 from .temporal_views import TemporalAnalysisAPIView
 from .geographic_api import GeographyHierarchyAPIView, ZoomToLocationAPIView
@@ -47,4 +47,5 @@ urlpatterns = [
     
     #  URLs spatiales (sans doublon)
     path('', include('api.spatial_urls')),
+path('api/chaussees_test/', ChausseesTestListCreateAPIView.as_view(), name='chaussees_test-list-create'),
 ]

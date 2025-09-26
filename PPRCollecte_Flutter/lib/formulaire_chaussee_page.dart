@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 import 'piste_chaussee_db_helper.dart';
 import 'api_service.dart';
+import 'database_helper.dart';
 
 class FormulaireChausseePage extends StatefulWidget {
   final List<LatLng> chausseePoints;
@@ -148,6 +149,15 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
 
     try {
       await Future.delayed(const Duration(seconds: 1));
+      int? communeRuralesId;
+      if (ApiService.communeId != null) {
+        // En ligne : utiliser l'API
+        communeRuralesId = ApiService.communeId;
+      } else {
+        // Hors ligne : utiliser la base locale
+        final currentUser = await DatabaseHelper().getCurrentUser();
+        communeRuralesId = currentUser?['communes_rurales'] as int?;
+      }
       String codePiste;
       if (widget.isEditingMode && widget.initialData != null) {
         codePiste = widget.initialData!['code_piste'] ?? _codePisteController.text;
@@ -158,6 +168,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
       final chausseeData = {
         // Champs saisis par l'utilisateur
         'code_piste': codePiste,
+        'commune_rurales': communeRuralesId,
         'code_gps': _codeGpsController.text,
         'endroit': _endroitController.text,
         'type_chaussee': _typeChaussee,

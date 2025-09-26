@@ -12,14 +12,14 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region,ChausseesTest
 )
 from .serializers import (
     ServicesSantesSerializer, AutresInfrastructuresSerializer, BacsSerializer,
     BatimentsAdministratifsSerializer, BusesSerializer, DalotsSerializer,
     EcolesSerializer, InfrastructuresHydrauliquesSerializer, LocalitesSerializer,
     MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer, CommuneRuraleSerializer,
-      PrefectureSerializer, RegionSerializer,UserCreateSerializer, UserUpdateSerializer
+      PrefectureSerializer, RegionSerializer,UserCreateSerializer, UserUpdateSerializer,ChausseesTestSerializer
 )
 
 class RegionsListCreateAPIView(generics.ListCreateAPIView):
@@ -45,7 +45,19 @@ class CommunesRuralesListCreateAPIView(generics.ListCreateAPIView):
             queryset = queryset.filter(nom__icontains=search)
         
         return queryset.order_by('nom')
+class ChausseesTestListCreateAPIView(generics.ListCreateAPIView):
+    
+    serializer_class = ChausseesTestSerializer
+    def get_queryset(self):
+        queryset = ChausseesTest.objects.all()
+        # Pour les pistes, le champ s'appelle 'communes_rurales_id'
+        commune_id = self.request.query_params.get('communes_rurales_id')
+        if commune_id:
+            queryset = queryset.filter(communes_rurales_id=commune_id)
+        return queryset
 
+    def perform_create(self, serializer):
+        serializer.save()
 # Modifiez toutes vos vues pour qu'elles ressemblent à ceci :
 
 class ServicesSantesListCreateAPIView(generics.ListCreateAPIView):

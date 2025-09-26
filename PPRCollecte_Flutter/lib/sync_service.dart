@@ -211,6 +211,7 @@ class SyncService {
       },
       'properties': {
         'id': localData['id'],
+        'communes_rurales_id': localData['commune_rurales'],
         'x_debut_ch': localData['x_debut_chaussee'],
         'y_debut_ch': localData['y_debut_chaussee'],
         'x_fin_ch': localData['x_fin_chaussee'],
@@ -768,7 +769,7 @@ class SyncService {
       for (var chaussee in chaussees) {
         // Vérifier que la chaussée appartient à la bonne commune
         final properties = chaussee['properties'];
-        if (properties['commune_id'] == ApiService.communeId) {
+        if (properties['communes_rurales_id'] == ApiService.communeId) {
           final storageHelper = SimpleStorageHelper();
           await storageHelper.saveOrUpdateChausseeTest(chaussee);
           result.successCount++;

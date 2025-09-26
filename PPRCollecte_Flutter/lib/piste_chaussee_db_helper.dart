@@ -80,6 +80,7 @@ class SimpleStorageHelper {
           CREATE TABLE chaussees (
             id INTEGER PRIMARY KEY ,
             code_piste TEXT NOT NULL,
+            commune_rurales INTEGER,
             code_gps TEXT ,
             user_login TEXT ,
             endroit TEXT NOT NULL,

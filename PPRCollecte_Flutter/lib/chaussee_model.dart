@@ -14,6 +14,7 @@ int generateTimestampChaussId() {
 class ChausseeModel {
   final int? id;
   final String codePiste;
+  final int? communeRurales;
   final String codeGps;
   final String endroit;
   final String? typeChaussee;
@@ -32,6 +33,7 @@ class ChausseeModel {
   ChausseeModel({
     int? id,
     required this.codePiste,
+    this.communeRurales,
     required this.codeGps,
     required this.endroit,
     this.typeChaussee,
@@ -55,6 +57,7 @@ class ChausseeModel {
     return ChausseeModel(
       id: formData['id'] ?? generateTimestampChaussId(),
       codePiste: formData['code_piste'] ?? '',
+      communeRurales: formData['commune_rurales'],
       codeGps: formData['code_gps'] ?? '',
       endroit: formData['endroit'] ?? '',
       typeChaussee: formData['type_chaussee'],
@@ -76,6 +79,7 @@ class ChausseeModel {
     return {
       'id': id,
       'code_piste': codePiste,
+      'commune_rurales': communeRurales,
       'code_gps': codeGps,
       'endroit': endroit,
       'type_chaussee': typeChaussee,
