@@ -447,6 +447,12 @@ class DatabaseHelper {
           'email': 'test@ppr.com',
           'password': '12345678',
           'role': 'enqueteur',
+          'communes_rurales': 0,
+          'commune_nom': 'CommuneTest',
+          'prefecture_nom': 'test',
+          'prefecture_id': 0,
+          'region_nom': 'test',
+          'region_id': 0,
           'date_creation': DateTime.now().toIso8601String(),
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
@@ -455,6 +461,18 @@ class DatabaseHelper {
     } catch (e) {
       print('⚠️ Erreur insertion utilisateur: $e');
     }
+  }
+
+  Future<void> _ensureAppSessionTable() async {
+    final db = await database;
+    await db.execute('''
+    CREATE TABLE IF NOT EXISTS app_session (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      current_user_email TEXT,
+      last_login TEXT,
+      is_logged_in INTEGER DEFAULT 0
+    )
+  ''');
   }
 
   Future<void> setCurrentUserEmail(String email) async {
@@ -495,12 +513,39 @@ class DatabaseHelper {
   Future<String?> getCurrentUserEmail() async {
     try {
       final db = await database;
+      await _ensureAppSessionTable();
+
       final result = await db.query('app_session', limit: 1);
 
-      if (result.isNotEmpty && result.first['is_logged_in'] == 1) {
-        final email = result.first['current_user_email'] as String?;
-        print('📧 Email utilisateur récupéré: $email');
-        return email;
+      if (result.isNotEmpty) {
+        final row = result.first;
+        final isLoggedRaw = row['is_logged_in'];
+        final isLogged = (isLoggedRaw is int) ? isLoggedRaw : int.tryParse(isLoggedRaw.toString()) ?? 0;
+
+        if (isLogged == 1) {
+          final email = row['current_user_email'] as String?;
+          if (email != null && email.isNotEmpty) {
+            print('📧 Email utilisateur récupéré (session): $email');
+            return email;
+          }
+        }
+      }
+
+      // 🔁 Fallback: prendre le dernier user si session absente
+      final last = await db.query(
+        'users',
+        columns: [
+          'email'
+        ],
+        orderBy: 'date_creation DESC', // ou 'id DESC' si tu préfères
+        limit: 1,
+      );
+      if (last.isNotEmpty) {
+        final email = last.first['email'] as String?;
+        if (email != null && email.isNotEmpty) {
+          print('📧 Email utilisateur récupéré (fallback last user): $email');
+          return email;
+        }
       }
 
       print('ℹ️ Aucun utilisateur connecté');
@@ -524,29 +569,40 @@ class DatabaseHelper {
   Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
       final db = await database;
+
+      // 1) via session / fallback last user
       final currentEmail = await getCurrentUserEmail();
 
-      if (currentEmail == null) {
-        print('ℹ️ Aucun utilisateur connecté');
-        return null;
+      if (currentEmail != null && currentEmail.isNotEmpty) {
+        final result = await db.query(
+          'users',
+          where: 'email = ?',
+          whereArgs: [
+            currentEmail
+          ],
+          limit: 1,
+        );
+        if (result.isNotEmpty) {
+          print('✅ Utilisateur courant récupéré: $currentEmail');
+          return result.first;
+        } else {
+          print('❌ Utilisateur non trouvé dans la base: $currentEmail');
+        }
       }
 
-      final result = await db.query(
+      // 2) Vrai fallback : dernier user local
+      final rows2 = await db.query(
         'users',
-        where: 'email = ?',
-        whereArgs: [
-          currentEmail
-        ],
+        orderBy: 'date_creation DESC',
         limit: 1,
       );
-
-      if (result.isNotEmpty) {
-        print('✅ Utilisateur courant récupéré: $currentEmail');
-        return result.first;
-      } else {
-        print('❌ Utilisateur non trouvé dans la base: $currentEmail');
-        return null;
+      if (rows2.isNotEmpty) {
+        print('✅ Utilisateur (fallback last user): ${rows2.first['email']}');
+        return rows2.first;
       }
+
+      print('ℹ️ Aucun utilisateur disponible en local');
+      return null;
     } catch (e) {
       print("❌ Erreur getCurrentUser: $e");
       return null;
@@ -2016,11 +2072,11 @@ class DatabaseHelper {
       special_type TEXT NOT NULL,
       line_name TEXT NOT NULL,
       code_piste TEXT,
-      login_id INTEGER NOT NULL,
+      login_id INTEGER ,
       date_created TEXT NOT NULL
     )
   ''');
-
+    final loginId = await _resolveLoginId();
     await db.insert(
       'displayed_special_lines',
       {
@@ -2033,7 +2089,7 @@ class DatabaseHelper {
         'special_type': specialType,
         'line_name': name,
         'code_piste': codePiste,
-        'login_id': ApiService.userId,
+        'login_id': loginId,
         'date_created': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -2093,11 +2149,11 @@ class DatabaseHelper {
       point_type TEXT NOT NULL,
       point_name TEXT NOT NULL,
       code_piste TEXT,
-      login_id INTEGER NOT NULL,
+      login_id INTEGER ,
       date_created TEXT NOT NULL
     )
   ''');
-
+    final loginId = await _resolveLoginId();
     await db.insert(
       'displayed_points',
       {
@@ -2108,13 +2164,71 @@ class DatabaseHelper {
         'point_type': type,
         'point_name': name,
         'code_piste': codePiste,
-        'login_id': ApiService.userId,
+        'login_id': loginId,
         'date_created': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
     print('✅ Point sauvegardé pour affichage: $name (ID: $id)');
+  }
+
+// Helper minimal pour résoudre login_id : API > users > null
+  Future<int?> _resolveLoginId() async {
+    // 1) Priorité à l'API
+    final dynamic apiRaw = ApiService.userId; // peut être int? ou String?
+    int? apiId;
+    if (apiRaw is int) {
+      apiId = apiRaw;
+    } else if (apiRaw is String) {
+      apiId = int.tryParse(apiRaw);
+    }
+    if (apiId != null && apiId > 0) return apiId;
+
+    // 2) Sinon, on tente l'utilisateur courant (email) s'il est stocké
+    try {
+      final email = await getCurrentUserEmail(); // si tu l'as déjà dans DatabaseHelper
+      if (email != null && email.isNotEmpty) {
+        final db = await database;
+        final byMail = await db.query(
+          'users',
+          columns: [
+            'id'
+          ],
+          where: 'email = ?',
+          whereArgs: [
+            email
+          ],
+          limit: 1,
+        );
+        if (byMail.isNotEmpty) {
+          final v = byMail.first['id'];
+          if (v is int) return v;
+          if (v is String) return int.tryParse(v);
+        }
+      }
+    } catch (_) {
+      // si getCurrentUserEmail n'existe pas chez toi, on ignore
+    }
+
+    // 3) Dernier fallback : dernier user (si tu as date_creation)
+    final db = await database;
+    final last = await db.query(
+      'users',
+      columns: [
+        'id'
+      ],
+      orderBy: 'date_creation DESC',
+      limit: 1,
+    );
+    if (last.isNotEmpty) {
+      final v = last.first['id'];
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v);
+    }
+
+    // 4) Rien trouvé
+    return null;
   }
 
   Future<List<Map<String, dynamic>>> loadDisplayedPoints() async {

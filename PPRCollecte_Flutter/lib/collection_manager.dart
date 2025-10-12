@@ -19,13 +19,13 @@ class CollectionManager extends ChangeNotifier {
   ChausseeCollection? get chausseeCollection => _chausseeCollection;
   SpecialCollection? get specialCollection => _specialCollection;
 
-  bool get hasActiveCollection => (_ligneCollection?.isActive ?? false) || (_chausseeCollection?.isActive ?? false);
-
+  bool get hasActiveCollection => (_ligneCollection?.isActive ?? false) || (_chausseeCollection?.isActive ?? false) || (_specialCollection?.isActive ?? false);
   bool get hasPausedCollection => (_ligneCollection?.isPaused ?? false) || (_chausseeCollection?.isPaused ?? false);
 
   String? get activeCollectionType {
     if (_ligneCollection?.isActive ?? false) return 'ligne';
     if (_chausseeCollection?.isActive ?? false) return 'chaussée';
+    if (_specialCollection?.isActive ?? false) return 'spéciale';
     return null;
   }
 

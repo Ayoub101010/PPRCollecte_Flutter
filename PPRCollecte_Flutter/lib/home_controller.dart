@@ -49,8 +49,8 @@ class HomeController extends ChangeNotifier {
     try {
       _collectionManager.startSpecialCollection(
         specialType: specialType,
-        initialPosition: userPosition,
-        locationStream: _locationService.onLocationChanged(),
+        initialPosition: userPosition, // ← ta position actuelle
+        locationStream: _locationService.onLocationChanged(), // ← flux GPS réel
       );
       notifyListeners();
     } catch (e) {
@@ -286,6 +286,7 @@ class HomeController extends ChangeNotifier {
   Future<void> startLigneCollection(String codePiste) async {
     try {
       _activePisteCode = codePiste; // ⭐⭐ STOCKER LE CODE ⭐⭐
+
       _collectionManager.startLigneCollection(
         codePiste: codePiste,
         initialPosition: userPosition,
