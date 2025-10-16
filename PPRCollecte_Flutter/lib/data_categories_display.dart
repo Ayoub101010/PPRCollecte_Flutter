@@ -11,6 +11,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng
 import 'formulaire_ligne_page.dart'; // Pour FormulaireLignePage
 import 'formulaire_chaussee_page.dart';
 import 'api_service.dart';
+import 'home_page.dart';
+import 'login_page.dart';
 
 class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
@@ -47,6 +49,280 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         }
       });
     }
+  }
+
+  double? _toDoubleStrict(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v.trim().replaceAll(',', '.'));
+    return null;
+  }
+
+  bool _isLat(double v) => v >= -90 && v <= 90;
+  bool _isLng(double v) => v >= -180 && v <= 180;
+
+  /// Valide une paire et corrige si inversion possible
+  LatLng? _validateAndFix(double? lat, double? lng) {
+    if (lat == null || lng == null) return null;
+    if (_isLat(lat) && _isLng(lng)) return LatLng(lat, lng);
+    if (_isLat(lng) && _isLng(lat)) return LatLng(lng, lat); // x/y inversés
+    return null;
+  }
+
+  /// WKT: "POINT(lon lat)"
+  // parse WKT "POINT(lon lat)"
+  LatLng? _parseWktPoint(String wkt) {
+    final m = RegExp(r'POINT\s*\(\s*([-\d\.,]+)\s+([-\d\.,]+)\s*\)', caseSensitive: false).firstMatch(wkt);
+    if (m == null) return null;
+    final lon = double.tryParse(m.group(1)!.replaceAll(',', '.'));
+    final lat = double.tryParse(m.group(2)!.replaceAll(',', '.'));
+    if (lat == null || lon == null) return null;
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+    return LatLng(lat, lon);
+  }
+
+// GeoJSON {"type":"Point","coordinates":[lon,lat]}
+  LatLng? _parseGeoJsonPoint(dynamic geo) {
+    try {
+      final obj = (geo is String) ? jsonDecode(geo) : geo;
+      if (obj is Map && obj['type']?.toString().toLowerCase() == 'point') {
+        final c = obj['coordinates'];
+        if (c is List && c.length >= 2) {
+          final lon = (c[0] is String) ? double.tryParse(c[0].replaceAll(',', '.')) : (c[0] as num).toDouble();
+          final lat = (c[1] is String) ? double.tryParse(c[1].replaceAll(',', '.')) : (c[1] as num).toDouble();
+          if (lat == null || lon == null) return null;
+          if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+          return LatLng(lat, lon);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+// essaie d'extraire lat/lng dans *ce row seulement*
+  LatLng? _extractPointFromRow(Map<String, dynamic> row) {
+    final r = <String, dynamic>{};
+    row.forEach((k, v) => r[k.toString().toLowerCase()] = v);
+
+    // 1) WKT / GeoJSON
+    for (final k in [
+      'wkt',
+      'geom_wkt',
+      'geometry',
+      'geom'
+    ]) {
+      final v = r[k];
+      if (v is String && v.toUpperCase().contains('POINT')) {
+        final pt = _parseWktPoint(v);
+        if (pt != null) return pt;
+      }
+    }
+    for (final k in [
+      'geojson',
+      'geom_geojson',
+      'point_geojson'
+    ]) {
+      final pt = _parseGeoJsonPoint(r[k]);
+      if (pt != null) return pt;
+    }
+
+    // 2) Paires évidentes, en respectant x=lon, y=lat
+    final pairs = <List<String>>[
+      [
+        'longitude',
+        'latitude'
+      ],
+      [
+        'lng',
+        'lat'
+      ],
+      [
+        'x',
+        'y'
+      ],
+      [
+        'lng_debut',
+        'lat_debut'
+      ],
+      [
+        'x_debut',
+        'y_debut'
+      ],
+      // variantes fréquentes par familles (sans “catégoriser” : on checke juste si les clés existent)
+      [
+        'lng_ecole',
+        'lat_ecole'
+      ],
+      [
+        'x_ecole',
+        'y_ecole'
+      ],
+      [
+        'lng_localite',
+        'lat_localite'
+      ],
+      [
+        'x_localite',
+        'y_localite'
+      ],
+      [
+        'lng_pont',
+        'lat_pont'
+      ],
+      [
+        'x_pont',
+        'y_pont'
+      ],
+      [
+        'lng_point',
+        'lat_point'
+      ],
+      [
+        'x_point',
+        'y_point'
+      ],
+      [
+        'lng_bat',
+        'lat_bat'
+      ],
+      [
+        'lng_sante',
+        'lat_sante'
+      ],
+      [
+        'lng_marche',
+        'lat_marche'
+      ],
+      [
+        'lng_hydro',
+        'lat_hydro'
+      ],
+      [
+        'lng_coupure',
+        'lat_coupure'
+      ],
+    ];
+    for (final p in pairs) {
+      final lng = r.containsKey(p[0]) ? r[p[0]] : null;
+      final lat = r.containsKey(p[1]) ? r[p[1]] : null;
+      if (lng == null || lat == null) continue;
+      final lon = (lng is String) ? double.tryParse(lng.replaceAll(',', '.')) : (lng is num ? lng.toDouble() : null);
+      final la = (lat is String) ? double.tryParse(lat.replaceAll(',', '.')) : (lat is num ? lat.toDouble() : null);
+      if (la == null || lon == null) continue;
+      if (la >= -90 && la <= 90 && lon >= -180 && lon <= 180) return LatLng(la, lon);
+      // inversion si on se trompe
+      if (lon >= -90 && lon <= 90 && la >= -180 && la <= 180) return LatLng(lon, la);
+    }
+
+    // 3) Heuristique finale : mappage regex d’une clé lat-like et lng-like dans CE row
+    String? latKey, lngKey;
+    for (final k in r.keys) {
+      if (latKey == null && (k.contains('latitude') || RegExp(r'(^|_)(lat|y)(_|$)').hasMatch(k))) {
+        latKey = k;
+      }
+      if (lngKey == null && (k.contains('longitude') || k.contains('lon') || RegExp(r'(^|_)(lng|x|long)(_|$)').hasMatch(k))) {
+        lngKey = k;
+      }
+      if (latKey != null && lngKey != null) break;
+    }
+    if (latKey != null && lngKey != null) {
+      final lat = (r[latKey] is String) ? double.tryParse((r[latKey] as String).replaceAll(',', '.')) : (r[latKey] as num?)?.toDouble();
+      final lng = (r[lngKey] is String) ? double.tryParse((r[lngKey] as String).replaceAll(',', '.')) : (r[lngKey] as num?)?.toDouble();
+      if (lat != null && lng != null) {
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return LatLng(lat, lng);
+        if (lng >= -90 && lng <= 90 && lat >= -180 && lat <= 180) return LatLng(lng, lat);
+      }
+    }
+
+    return null;
+  }
+
+  List<LatLng>? _extractPolyline(Map<String, dynamic> item) {
+    // Supporte: 'points_collectes' = List<Map>{latitude, longitude}
+    // ou 'points_json' (string JSON)
+    if (item['points_collectes'] is List) {
+      final list = (item['points_collectes'] as List).whereType<Map>().map((p) => LatLng((p['latitude'] as num).toDouble(), (p['longitude'] as num).toDouble())).toList();
+      if (list.isNotEmpty) return list;
+    }
+    if (item['points_json'] is String) {
+      try {
+        final raw = jsonDecode(item['points_json']);
+        if (raw is List) {
+          final list = raw.whereType<Map>().map((p) => LatLng((p['latitude'] as num).toDouble(), (p['longitude'] as num).toDouble())).toList();
+          if (list.isNotEmpty) return list;
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  Future<void> _goToMapForItem(Map<String, dynamic> item) async {
+    // 1) Construire la cible
+    MapFocusTarget? target;
+
+    // Types lignes: "Pistes" / "Chaussées" / (special: bacs/passages si tu les listes ici)
+    final poly = _extractPolyline(item);
+    if (poly != null && poly.isNotEmpty) {
+      target = MapFocusTarget.polyline(
+        polyline: poly,
+        label: (item['nom'] ?? item['line_name'] ?? item['name'] ?? '').toString(),
+        id: item['id']?.toString(),
+      );
+    } else {
+      // 2) Tenter le POINT *dans CE row seulement* :
+      LatLng? pt = _extractPointFromRow(item);
+
+      // 3) Si pas trouvé: RECHARGER CE ROW par id & table d’origine (si dispo)
+      if (pt == null) {
+        final id = item['id'] ?? item['ID'] ?? item['Id'];
+        final table = item['table'] ?? item['source_table'] ?? item['original_table'];
+        if (id != null && table != null) {
+          final db = await DatabaseHelper().database;
+          final res = await db.query(table.toString(),
+              where: 'id = ?',
+              whereArgs: [
+                id
+              ],
+              limit: 1);
+          if (res.isNotEmpty) {
+            pt = _extractPointFromRow(res.first);
+          }
+        }
+      }
+      if (pt != null) {
+        target = MapFocusTarget.point(
+          point: pt,
+          label: (item['nom'] ?? item['point_name'] ?? item['name'] ?? '').toString(),
+          id: item['id']?.toString(),
+        );
+      }
+    }
+
+    if (target == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Impossible de localiser cette donnée (pas de géométrie).")),
+      );
+      return;
+    }
+
+    // 2) Récupérer le nom d’agent pour construire HomePage proprement
+    final email = await DatabaseHelper().getCurrentUserEmail();
+    final fullName = await DatabaseHelper().getAgentFullName(email ?? '') ?? 'Utilisateur';
+
+    // 3) Aller sur la carte avec la cible
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomePage(
+          agentName: fullName,
+          onLogout: () {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
+          },
+          initialFocus: target, // ⬅️ important
+        ),
+      ),
+    );
   }
 
   void _onCategorySelected(String category) {
@@ -633,6 +909,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
             dataFilter: widget.dataFilter,
             onEdit: _editItem,
             onDelete: _deleteItem,
+            onView: (item) => _goToMapForItem(item),
           ),
         ),
       ],

@@ -6,6 +6,7 @@ class DataListView extends StatefulWidget {
   final String dataFilter;
   final Function(Map<String, dynamic>) onEdit;
   final Function(int) onDelete;
+  final void Function(Map<String, dynamic> item)? onView;
 
   const DataListView({
     super.key,
@@ -14,6 +15,7 @@ class DataListView extends StatefulWidget {
     required this.dataFilter,
     required this.onEdit,
     required this.onDelete,
+    this.onView,
   });
 
   @override
@@ -178,6 +180,15 @@ class _DataListViewState extends State<DataListView> {
             ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (widget.onView != null)
+                    IconButton(
+                      tooltip: 'Voir sur la carte',
+                      icon: const Icon(Icons.remove_red_eye_outlined),
+                      onPressed: () {
+                        final itemCopy = Map<String, dynamic>.from(item);
+                        widget.onView?.call(itemCopy);
+                      }, // item = ta map courante
+                    ),
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blue),
                     onPressed: () => widget.onEdit(item),

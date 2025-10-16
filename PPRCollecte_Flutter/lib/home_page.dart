@@ -22,13 +22,37 @@ import 'api_service.dart';
 import 'dart:convert'; // ⭐⭐ AJOUTEZ CET IMPORT ⭐⭐
 import 'special_line_form_page.dart'; // ← AJOUTEZ CET IMPORT
 
+class MapFocusTarget {
+  final String kind; // 'point' | 'polyline'
+  final LatLng? point;
+  final List<LatLng>? polyline;
+  final String? label;
+  final String? id;
+
+  const MapFocusTarget.point({
+    required LatLng this.point,
+    this.label,
+    this.id,
+  })  : kind = 'point',
+        polyline = null;
+
+  const MapFocusTarget.polyline({
+    required List<LatLng> this.polyline,
+    this.label,
+    this.id,
+  })  : kind = 'polyline',
+        point = null;
+}
+
 class HomePage extends StatefulWidget {
   final Function onLogout;
   final String agentName;
+  final MapFocusTarget? initialFocus;
   const HomePage({
     super.key,
     required this.onLogout,
     required this.agentName,
+    this.initialFocus,
   });
 
   @override
@@ -119,6 +143,61 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+  LatLngBounds _boundsFor(List<LatLng> pts) {
+    double minLat = pts.first.latitude, maxLat = pts.first.latitude;
+    double minLng = pts.first.longitude, maxLng = pts.first.longitude;
+    for (final p in pts) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+  }
+
+  Future<void> _focusOnTarget(MapFocusTarget target) async {
+    final controller = await _controller.future;
+
+    // optionnel: surligner temporairement
+    setState(() {
+      if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
+        // polyline de surbrillance
+        _displayedSpecialLines.add(Polyline(
+          polylineId: PolylineId('focus_${DateTime.now().millisecondsSinceEpoch}'),
+          points: target.polyline!,
+          color: Colors.purple, // contraste
+          width: 6,
+          patterns: [
+            PatternItem.dash(12),
+            PatternItem.gap(6),
+          ],
+        ));
+      } else if (target.kind == 'point' && target.point != null) {
+        // marqueur de surbrillance
+        _displayedPointsMarkers.add(Marker(
+          markerId: MarkerId('focus_${DateTime.now().millisecondsSinceEpoch}'),
+          position: target.point!,
+          infoWindow: InfoWindow(title: target.label ?? 'Point'),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+        ));
+      }
+    });
+
+    if (target.kind == 'point' && target.point != null) {
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(target.point!, 18),
+      );
+    } else if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
+      final b = _boundsFor(target.polyline!);
+      await controller.animateCamera(
+        CameraUpdate.newLatLngBounds(b, 64), // padding
+      );
+    }
   }
 
   void _toggleMapType() {
@@ -538,36 +617,25 @@ class _HomePageState extends State<HomePage> {
       // ⭐⭐ FILTRER SEULEMENT LES MARQUEURS VALIDES ⭐⭐
       final dbHelper = DatabaseHelper();
       final existingPoints = await dbHelper.loadDisplayedPoints();
-      final existingIds = existingPoints
-          .map(
-            (
-              p,
-            ) =>
-                p['id'] as int,
-          )
-          .toSet();
+      final existingKeys = existingPoints.map((p) {
+        final t = (p['original_table'] ?? '').toString();
+        final i = p['id'];
+        return '$t:$i';
+      }).toSet();
 
-      final validMarkers = markers.where(
-        (
-          marker,
-        ) {
-          final markerId = int.tryParse(
-            marker.markerId.value.replaceFirst(
-              'displayed_point_',
-              '',
-            ),
-          );
-          return markerId != null &&
-              existingIds.contains(
-                markerId,
-              );
-        },
-      ).toSet();
-      setState(
-        () {
-          _displayedPointsMarkers = validMarkers;
-        },
-      );
+      final validMarkers = markers.where((marker) {
+        // 'displayed_point:<table>:<id>'
+        final raw = marker.markerId.value;
+        final parts = raw.split(':');
+        if (parts.length != 3) return false;
+        final key = '${parts[1]}:${parts[2]}';
+        return existingKeys.contains(key);
+      }).toSet();
+
+      setState(() {
+        _displayedPointsMarkers = markers;
+      });
+
       print(
         '📍 ${validMarkers.length} points affichés valides',
       );
@@ -597,6 +665,16 @@ class _HomePageState extends State<HomePage> {
         ),
       );
       _lastCameraPosition = userPosition;
+    }
+    // ... à la fin de _onMapCreated, quand tout est prêt :
+    try {
+      if (widget.initialFocus != null) {
+        // petit délai pour laisser GoogleMap finir son premier layout
+        await Future.delayed(const Duration(milliseconds: 150));
+        await _focusOnTarget(widget.initialFocus!);
+      }
+    } catch (e) {
+      debugPrint('Focus initial échoué: $e');
     }
   }
 
@@ -2136,13 +2214,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   // === AJOUTEZ ICI === //
-                  /*Positioned(
+                  Positioned(
                     bottom: 200,
                     right: 16,
                     child: Visibility(
-                      visible:
-                          kDebugMode &&
-                          homeController.hasActiveCollection,
+                      visible: kDebugMode && homeController.hasActiveCollection,
                       child: FloatingActionButton(
                         onPressed: () {
                           homeController.addRealisticPisteSimulation();
@@ -2169,15 +2245,13 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'dev_button',
                       ),
                     ),
-                  ),*/
+                  ),
                   // Ajouter dans la section des boutons de debug
-                  /*  Positioned(
+                  Positioned(
                     bottom: 120,
                     right: 16,
                     child: Visibility(
-                      visible:
-                          _isSpecialCollection &&
-                          kDebugMode,
+                      visible: _isSpecialCollection && kDebugMode,
                       child: FloatingActionButton(
                         onPressed: () {
                           homeController.addManualPointToSpecialCollection();
@@ -2204,7 +2278,7 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'simulate_special_button',
                       ),
                     ),
-                  ),*/
+                  ),
                   // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(
@@ -2344,10 +2418,11 @@ class DisplayedPointsService {
         if (pointType == "Bac" || pointType == "Passage Submersible") {
           continue; // Ne pas créer de marqueur pour ces types
         }
+        final table = (point['original_table'] ?? '').toString();
         markers.add(
           Marker(
             markerId: MarkerId(
-              'displayed_point_${point['id']}',
+              'displayed_point:${table}:${point['id']}',
             ),
             position: LatLng(
               (point['latitude'] as num).toDouble(),

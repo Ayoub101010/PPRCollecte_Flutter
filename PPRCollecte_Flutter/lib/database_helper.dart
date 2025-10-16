@@ -2142,7 +2142,7 @@ class DatabaseHelper {
     // Créer une table dédiée pour l'affichage si elle n'existe pas
     await db.execute('''
     CREATE TABLE IF NOT EXISTS displayed_points (
-      id INTEGER PRIMARY KEY,
+      id INTEGER NOT NULL,
       original_table TEXT NOT NULL,
       latitude REAL NOT NULL,
       longitude REAL NOT NULL,
@@ -2150,7 +2150,8 @@ class DatabaseHelper {
       point_name TEXT NOT NULL,
       code_piste TEXT,
       login_id INTEGER ,
-      date_created TEXT NOT NULL
+      date_created TEXT NOT NULL,
+      PRIMARY KEY (id, original_table)
     )
   ''');
     final loginId = await _resolveLoginId();
@@ -2233,6 +2234,7 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> loadDisplayedPoints() async {
     final db = await database;
+    final loginId = await _resolveLoginId();
     final tableExists = await _tableExists(db, 'displayed_points');
     if (!tableExists) return [];
 
@@ -2241,7 +2243,7 @@ class DatabaseHelper {
       'displayed_points',
       where: 'login_id = ?', // ← NOUVEAU FILTRE
       whereArgs: [
-        ApiService.userId
+        loginId
       ], // ← ID de l'utilisateur connecté
     );
     // ============ FIN ============
