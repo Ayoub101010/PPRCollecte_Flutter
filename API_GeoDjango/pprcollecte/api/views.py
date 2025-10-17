@@ -5,9 +5,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
-
+from django.contrib.gis.db.models.functions import Transform
 from .models import Login
-from .serializers import LoginSerializer, PisteSerializer
+from .serializers import LoginSerializer, PisteReadSerializer, PisteWriteSerializer
 from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
@@ -199,15 +199,23 @@ class LoginAPIView(APIView):
 
 
 class PisteListCreateAPIView(generics.ListCreateAPIView):
-    serializer_class = PisteSerializer
-    
+
     def get_queryset(self):
-        queryset = Piste.objects.all()
-        # Pour les pistes, le champ s'appelle 'communes_rurales_id'
+        qs = Piste.objects.all()
+
         commune_id = self.request.query_params.get('communes_rurales_id')
         if commune_id:
-            queryset = queryset.filter(communes_rurales_id=commune_id)
-        return queryset
+            qs = qs.filter(communes_rurales_id=commune_id)
+
+        # IMPORTANT : on annote bien un alias 'geom_4326'
+        return qs.annotate(geom_4326=Transform('geom', 4326))
+
+    def get_serializer_class(self):
+        # GET => serializer lecture (expose geom_4326)
+        if self.request.method == 'GET':
+            return PisteReadSerializer
+        # POST/PUT => serializer écriture (reçoit/stocker en 32628)
+        return PisteWriteSerializer
 
     def perform_create(self, serializer):
         serializer.save()

@@ -96,6 +96,11 @@ class _HomePageState extends State<HomePage> {
   Set<Marker> _downloadedPointsMarkers = {};
   bool _showDownloadedPoints = true;
   MapType _currentMapType = MapType.normal;
+  // Téléchargés : Pistes
+  final DownloadedPistesService _downloadedPistesService = DownloadedPistesService();
+  Set<Polyline> _downloadedPistesPolylines = {};
+  bool _showDownloadedPistes = true; // comme pour les points
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +111,7 @@ class _HomePageState extends State<HomePage> {
     _loadDisplayedChaussees();
     _loadDisplayedSpecialLines();
     _loadDownloadedPoints();
+    _loadDownloadedPistes();
 
     homeController.addListener(
       () {
@@ -143,6 +149,25 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+  Future<void> _loadDownloadedPistes() async {
+    print('🔄 [_loadDownloadedPistes] start');
+    try {
+      final lines = await _downloadedPistesService.getDownloadedPistesPolylines();
+      print('📏 [_loadDownloadedPistes] ${lines.length} polylines reçues du service');
+
+      setState(() {
+        _downloadedPistesPolylines = lines;
+      });
+
+      // Sanity: affiche le nombre total de polylines envoyées à la map
+      final total = collectedPolylines.length + _finishedPistes.length + _finishedChaussees.length + _downloadedPistesPolylines.length;
+      print('🗺️  [_loadDownloadedPistes] total polylines (avant rendu): $total');
+    } catch (e) {
+      print('❌ [_loadDownloadedPistes] $e');
+    }
+    print('✅ [_loadDownloadedPistes] done');
   }
 
   LatLngBounds _boundsFor(List<LatLng> pts) {
@@ -213,7 +238,9 @@ class _HomePageState extends State<HomePage> {
       '🔄 Rafraîchissement de tous les points...',
     );
     await _loadDisplayedPoints(); // Points locaux (rouges)
-    await _loadDownloadedPoints(); // Points téléchargés (verts)
+    await _loadDownloadedPoints();
+    await _loadDownloadedPistes();
+// Points téléchargés (verts)
   }
 
   Future<void> _loadDownloadedPoints() async {
@@ -2021,6 +2048,13 @@ class _HomePageState extends State<HomePage> {
     allPolylines.addAll(
       _displayedSpecialLines,
     );
+    if (_showDownloadedPistes) {
+      allPolylines.addAll(_downloadedPistesPolylines);
+      print('🧩 [MAP] add downloaded pistes: ${_downloadedPistesPolylines.length} polylines');
+    }
+
+    print('🧮 [MAP] allPolylines size = ${allPolylines.length}');
+
     // Ajouter la ligne en cours si active (nouveau système)
     if (homeController.specialCollection != null) {
       final specialPoints = homeController.specialCollection!.points;
@@ -2213,6 +2247,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+
                   // === AJOUTEZ ICI === //
                   Positioned(
                     bottom: 200,
@@ -2303,6 +2338,21 @@ class _HomePageState extends State<HomePage> {
                         () {
                           _currentMapType = newType;
                         },
+                      );
+                    },
+                  ),
+                  DownloadedPistesToggle(
+                    isOn: _showDownloadedPistes,
+                    count: _downloadedPistesPolylines.length, // optionnel
+                    onChanged: (value) {
+                      setState(() => _showDownloadedPistes = value);
+                      print('🎚️ [_UI] _showDownloadedPistes = $_showDownloadedPistes '
+                          '(count=${_downloadedPistesPolylines.length})');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(value ? 'Pistes téléchargées : AFFICHÉES' : 'Pistes téléchargées : MASQUÉES'),
+                          duration: const Duration(milliseconds: 900),
+                        ),
                       );
                     },
                   ),
@@ -2706,5 +2756,227 @@ class DownloadedPointsService {
       'points_coupures': 'Point de Coupure',
     };
     return entityTypes[tableName] ?? tableName;
+  }
+}
+
+// Dans home_page.dart – Service d’affichage des pistes téléchargées (robuste + logs)
+class DownloadedPistesService {
+  final SimpleStorageHelper _storageHelper = SimpleStorageHelper();
+
+  // Brun proche orange
+  static const Color downloadedPisteColor = Color(0xFFB86E1D);
+
+  // --- Helpers robustes ---
+
+  /// Essaie d'extraire (lon, lat) depuis différents formats de point
+  LatLng? _parsePoint(dynamic item) {
+    try {
+      // 1) Liste [lon, lat]
+      if (item is List && item.length >= 2) {
+        final lon = (item[0] as num?)?.toDouble();
+        final lat = (item[1] as num?)?.toDouble();
+        if (lon != null && lat != null) return LatLng(lat, lon);
+      }
+
+      // 2) Map {lon, lat} / {x, y} / {longitude, latitude}
+      if (item is Map) {
+        // clés possibles
+        final candidatesLon = [
+          'lon',
+          'lng',
+          'x',
+          'longitude'
+        ];
+        final candidatesLat = [
+          'lat',
+          'y',
+          'latitude'
+        ];
+
+        double? lon;
+        double? lat;
+
+        for (final k in candidatesLon) {
+          if (item.containsKey(k)) {
+            final v = item[k];
+            if (v is num) lon = v.toDouble();
+            if (v is String) lon = double.tryParse(v);
+            break;
+          }
+        }
+        for (final k in candidatesLat) {
+          if (item.containsKey(k)) {
+            final v = item[k];
+            if (v is num) lat = v.toDouble();
+            if (v is String) lat = double.tryParse(v);
+            break;
+          }
+        }
+
+        if (lon != null && lat != null) return LatLng(lat, lon);
+
+        // parfois {lat, lon} inversés / noms différents
+        if (item.containsKey('latitude') && item.containsKey('longitude')) {
+          final lat2 = (item['latitude'] is num) ? (item['latitude'] as num).toDouble() : double.tryParse(item['latitude'].toString());
+          final lon2 = (item['longitude'] is num) ? (item['longitude'] as num).toDouble() : double.tryParse(item['longitude'].toString());
+          if (lat2 != null && lon2 != null) return LatLng(lat2, lon2);
+        }
+      }
+
+      // 3) String "lon,lat" ou "lon lat"
+      if (item is String) {
+        final s = item.trim();
+        final sep = s.contains(',') ? ',' : ' ';
+        final parts = s.split(sep).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        if (parts.length >= 2) {
+          final lon = double.tryParse(parts[0]);
+          final lat = double.tryParse(parts[1]);
+          if (lon != null && lat != null) return LatLng(lat, lon);
+        }
+      }
+    } catch (_) {
+      // ignore, on retourne null
+    }
+    return null;
+  }
+
+  /// Convertit une liste hétérogène (list/objects/strings) en List<LatLng>
+  List<LatLng> _toLatLngList(dynamic coords) {
+    final result = <LatLng>[];
+    if (coords is! List) return result;
+
+    for (final item in coords) {
+      final p = _parsePoint(item);
+      if (p != null) result.add(p);
+    }
+    return result;
+  }
+
+  /// Essaie d’extraire une liste de coordonnées d’un GeoJSON line-like
+  /// - MultiLineString: prend la première ligne
+  /// - LineString: prend la liste directement
+  dynamic _extractLineCoordsFromGeoJson(Map gj) {
+    final gType = (gj['type'] ?? '').toString();
+    final coords = gj['coordinates'];
+    if (gType == 'MultiLineString' && coords is List && coords.isNotEmpty) {
+      return coords.first; // [[lon,lat], ...]
+    }
+    if (gType == 'LineString' && coords is List) {
+      return coords;
+    }
+    return null;
+  }
+
+  Future<Set<Polyline>> getDownloadedPistesPolylines() async {
+    try {
+      final db = await _storageHelper.database;
+
+      print('🔎 [DL-PISTES] Chargement (downloaded=1, saved_by_user_id=${ApiService.userId})');
+      final pistes = await db.query(
+        'pistes',
+        where: 'downloaded = ? AND saved_by_user_id = ?',
+        whereArgs: [
+          1,
+          ApiService.userId
+        ],
+      );
+      print('📦 [DL-PISTES] ${pistes.length} ligne(s) trouvée(s) en SQLite (table pistes)');
+
+      // Stats rapides
+      int withPointsJson = 0, withGeom = 0, unusable = 0;
+      for (final r in pistes) {
+        final pj = r['points_json'];
+        final g = r['geom'];
+        if (pj is String && pj.trim().isNotEmpty)
+          withPointsJson++;
+        else if (g != null && g.toString().trim().startsWith('{'))
+          withGeom++;
+        else
+          unusable++;
+      }
+      print('🧮 [DL-PISTES] points_json OK: $withPointsJson | geom GeoJSON OK: $withGeom | sans exploitable: $unusable');
+
+      final polylines = <Polyline>{};
+      int added = 0, skipped = 0;
+
+      for (final row in pistes) {
+        final id = row['id'];
+        final code = row['code_piste'];
+        final createdAt = row['created_at'];
+
+        List<LatLng> points = [];
+
+        // 1) points_json prioritaire
+        final pointsJson = row['points_json'];
+        if (pointsJson is String && pointsJson.trim().isNotEmpty) {
+          // debug: petit aperçu
+          final preview = pointsJson.length > 120 ? pointsJson.substring(0, 120) + '…' : pointsJson;
+          print('🔤 [DL-PISTE:$id] $code -> points_json len=${pointsJson.length} preview="$preview"');
+
+          try {
+            final decoded = jsonDecode(pointsJson);
+            points = _toLatLngList(decoded);
+            print('✅ [DL-PISTE:$id] $code -> points_json converti: ${points.length} pts');
+          } catch (e) {
+            print('⚠️  [DL-PISTE:$id] $code -> points_json non décodable: $e');
+          }
+        }
+
+        // 2) sinon, geom (GeoJSON 4326)
+        if (points.isEmpty) {
+          final geom = row['geom'];
+          final gs = geom?.toString().trim() ?? '';
+          if (gs.startsWith('{')) {
+            try {
+              final gj = jsonDecode(gs);
+              final line = _extractLineCoordsFromGeoJson(gj);
+              if (line != null) {
+                final preview = line is List ? (line.isNotEmpty ? line.first.toString() : '[]') : line.toString();
+                print('🔤 [DL-PISTE:$id] $code -> geom.gj sample="$preview"');
+                points = _toLatLngList(line);
+                print('✅ [DL-PISTE:$id] $code -> geom converti: ${points.length} pts');
+              } else {
+                print('⚠️  [DL-PISTE:$id] $code -> GeoJSON type/structure non gérée');
+              }
+            } catch (e) {
+              print('⚠️  [DL-PISTE:$id] $code -> geom non décodable: $e');
+            }
+          } else if (gs.isNotEmpty) {
+            print('ℹ️  [DL-PISTE:$id] $code -> geom non-GeoJSON (ex: WKT/UTM), ignoré offline');
+          }
+        }
+
+        if (points.length < 2) {
+          print('🚫 [DL-PISTE:$id] $code -> moins de 2 points (${points.length}), skip (created_at=$createdAt)');
+          skipped++;
+          continue;
+        }
+
+        final first = points.first;
+        final last = points.last;
+        print('➕ [DL-PISTE:$id] $code -> polyline ${points.length} pts | '
+            'start=(${first.latitude},${first.longitude}) end=(${last.latitude},${last.longitude})');
+
+        final pl = Polyline(
+          polylineId: PolylineId('dl_piste_${id ?? DateTime.now().millisecondsSinceEpoch}'),
+          points: points,
+          color: downloadedPisteColor,
+          width: 3,
+          patterns: [
+            PatternItem.dot,
+            PatternItem.gap(10)
+          ],
+        );
+
+        polylines.add(pl);
+        added++;
+      }
+
+      print('🎯 [DL-PISTES] ajoutées: $added | ignorées: $skipped');
+      return polylines;
+    } catch (e) {
+      print('❌ [DL-PISTES] Erreur chargement: $e');
+      return {};
+    }
   }
 }

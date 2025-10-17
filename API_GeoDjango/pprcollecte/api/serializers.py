@@ -8,6 +8,9 @@ from .models import (
     Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
 )
 from django.contrib.gis.geos import Point
+from rest_framework_gis.fields import GeometryField
+from django.contrib.gis.geos import GEOSGeometry
+
 
 class RegionSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -286,21 +289,32 @@ class LoginSerializer(serializers.ModelSerializer):
 
 
 
-class PisteSerializer(GeoFeatureModelSerializer):
+# Écriture inchangée : on stocke en 32628
+class PisteWriteSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Piste
         geo_field = "geom"
-        fields = '__all__'
+        fields = "__all__"
 
     def to_internal_value(self, data):
-        # Si 'geom' existe, on force le SRID sur 32628
         if 'geom' in data and data['geom'] is not None:
-            from django.contrib.gis.geos import GEOSGeometry
             geom = GEOSGeometry(str(data['geom']))
-            geom.srid = 32628  # forcer SRID UTM
+            geom.srid = 32628  # UTM
             data['geom'] = geom
         return super().to_internal_value(data)
-    
+
+
+# LECTURE : expose l'annotation 'geom_4326' comme géométrie principale
+class PisteReadSerializer(GeoFeatureModelSerializer):
+    geom_4326 = GeometryField(read_only=True)  # annotation fournie par la view
+
+    class Meta:
+        model = Piste
+        geo_field = "geom_4326"  # <- devient la géométrie du Feature
+        # ⚠️ on EXCLUT le champ 'geom' pour ne pas l'avoir dans properties
+        exclude = ("geom",)
+
+        
 class UserCreateSerializer(serializers.ModelSerializer):
     """Serializer pour créer un nouvel utilisateur avec commune"""
     communes_rurales_id = serializers.PrimaryKeyRelatedField(

@@ -107,3 +107,81 @@ class MapTypeToggle extends StatelessWidget {
     );
   }
 }
+
+class DownloadedPistesToggle extends StatelessWidget {
+  final bool isOn;
+  final int count; // optionnel: nombre de polylignes téléchargées
+  final ValueChanged<bool> onChanged;
+
+  const DownloadedPistesToggle({
+    super.key,
+    required this.isOn,
+    required this.onChanged,
+    this.count = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // même placement que "Satellite", juste en dessous (ajuste top si besoin)
+    return Positioned(
+      top: 160, // 👈 sous le bouton Satellite (qui est à 110 chez toi)
+      right: 10,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: const [
+            BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onChanged(!isOn),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.alt_route, // ou Icons.route
+                    size: 22,
+                    color: isOn ? const Color(0xFFB86E1D) : Colors.grey, // brun-orangé quand ON
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Pistes téléchargées',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black87),
+                  ),
+                  if (count > 0) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isOn ? const Color(0xFFB86E1D).withOpacity(0.12) : Colors.grey.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isOn ? const Color(0xFFB86E1D) : Colors.grey,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isOn ? const Color(0xFFB86E1D) : Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
