@@ -65,7 +65,7 @@ class _HomePageState extends State<HomePage> {
     -6.841650,
   );
   bool gpsEnabled = true;
-
+  DateTime? _suspendAutoCenterUntil;
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
   List<Polyline> _finishedPistes = []; // ← AJOUTEZ ICI
@@ -100,7 +100,7 @@ class _HomePageState extends State<HomePage> {
   final DownloadedPistesService _downloadedPistesService = DownloadedPistesService();
   Set<Polyline> _downloadedPistesPolylines = {};
   bool _showDownloadedPistes = true; // comme pour les points
-
+  bool get _autoCenterSuspended => _suspendAutoCenterUntil != null && DateTime.now().isBefore(_suspendAutoCenterUntil!);
   @override
   void initState() {
     super.initState();
@@ -151,6 +151,12 @@ class _HomePageState extends State<HomePage> {
     ));*/
   }
 
+  void _suspendAutoCenterFor(Duration d) {
+    _suspendAutoCenterUntil = DateTime.now().add(d);
+    // Debug
+    // print('⏸️ auto-center suspendu jusqu\'à $_suspendAutoCenterUntil');
+  }
+
   Future<void> _loadDownloadedPistes() async {
     print('🔄 [_loadDownloadedPistes] start');
     try {
@@ -188,22 +194,22 @@ class _HomePageState extends State<HomePage> {
   Future<void> _focusOnTarget(MapFocusTarget target) async {
     final controller = await _controller.future;
 
-    // optionnel: surligner temporairement
+    // ⏸️ Empêche le recentrage sur l'utilisateur pendant le focus
+    _suspendAutoCenterFor(const Duration(seconds: 3));
+
     setState(() {
       if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
-        // polyline de surbrillance
         _displayedSpecialLines.add(Polyline(
           polylineId: PolylineId('focus_${DateTime.now().millisecondsSinceEpoch}'),
           points: target.polyline!,
-          color: Colors.purple, // contraste
+          color: Colors.purple,
           width: 6,
           patterns: [
             PatternItem.dash(12),
-            PatternItem.gap(6),
+            PatternItem.gap(6)
           ],
         ));
       } else if (target.kind == 'point' && target.point != null) {
-        // marqueur de surbrillance
         _displayedPointsMarkers.add(Marker(
           markerId: MarkerId('focus_${DateTime.now().millisecondsSinceEpoch}'),
           position: target.point!,
@@ -214,15 +220,77 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (target.kind == 'point' && target.point != null) {
-      await controller.animateCamera(
-        CameraUpdate.newLatLngZoom(target.point!, 18),
-      );
+      await controller.animateCamera(CameraUpdate.newLatLngZoom(target.point!, 18));
     } else if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
       final b = _boundsFor(target.polyline!);
-      await controller.animateCamera(
-        CameraUpdate.newLatLngBounds(b, 64), // padding
-      );
+      await controller.animateCamera(CameraUpdate.newLatLngBounds(b, 64));
     }
+
+    // 👇 Remplace TOUT ce bloc "Retrait auto du highlight (2s)"
+    final String focusPrefix = 'focus_';
+    final String focusId = _displayedSpecialLines.any((pl) => pl.polylineId.value.startsWith(focusPrefix))
+        ? _displayedSpecialLines.firstWhere((pl) => pl.polylineId.value.startsWith(focusPrefix)).polylineId.value
+        : _displayedPointsMarkers.any((m) => m.markerId.value.startsWith(focusPrefix))
+            ? _displayedPointsMarkers.firstWhere((m) => m.markerId.value.startsWith(focusPrefix)).markerId.value
+            : 'focus_${DateTime.now().millisecondsSinceEpoch}'; // fallback (rare)
+
+    final Duration keepFor = const Duration(seconds: 10); // mets 30s si tu veux
+    final startedAt = DateTime.now();
+
+// On garde une copie locale des éléments focus pour pouvoir les réinjecter si un refresh les efface
+    final polylineCopy = (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty)
+        ? Polyline(
+            polylineId: PolylineId(focusId),
+            points: target.polyline!,
+            color: Colors.purple,
+            width: 6,
+            patterns: [
+              PatternItem.dash(12),
+              PatternItem.gap(6)
+            ],
+          )
+        : null;
+
+    final markerCopy = (target.kind == 'point' && target.point != null)
+        ? Marker(
+            markerId: MarkerId(focusId),
+            position: target.point!,
+            infoWindow: InfoWindow(title: target.label ?? 'Point'),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+          )
+        : null;
+
+// ⏱️ Keep-alive: re-ajoute le focus s’il a été effacé par un refresh ailleurs
+    final timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      final elapsed = DateTime.now().difference(startedAt);
+      if (elapsed >= keepFor) {
+        t.cancel();
+        if (!mounted) return;
+        setState(() {
+          _displayedSpecialLines.removeWhere((pl) => pl.polylineId.value.startsWith(focusPrefix));
+          _displayedPointsMarkers.removeWhere((m) => m.markerId.value.startsWith(focusPrefix));
+        });
+        return;
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        // Réinjecte si disparu
+        if (polylineCopy != null && !_displayedSpecialLines.any((pl) => pl.polylineId.value == focusId)) {
+          _displayedSpecialLines = {
+            ..._displayedSpecialLines,
+            polylineCopy,
+          };
+        }
+        if (markerCopy != null && !_displayedPointsMarkers.any((m) => m.markerId.value == focusId)) {
+          _displayedPointsMarkers = {
+            ..._displayedPointsMarkers,
+            markerCopy,
+          };
+        }
+      });
+    });
   }
 
   void _toggleMapType() {
@@ -717,13 +785,13 @@ class _HomePageState extends State<HomePage> {
                 userPosition.longitude,
               ) >
               20;
-      if (shouldMove) {
+      if (_autoCenterSuspended) {
+        // Debug:
+        // print('⏭️ auto-center ignoré (focus en cours)');
+      } else if (shouldMove) {
         await controller.animateCamera(
           CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: userPosition,
-              zoom: 17,
-            ),
+            CameraPosition(target: userPosition, zoom: 17),
           ),
         );
         _lastCameraPosition = userPosition;

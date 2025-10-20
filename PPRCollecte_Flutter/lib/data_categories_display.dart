@@ -13,6 +13,13 @@ import 'formulaire_chaussee_page.dart';
 import 'api_service.dart';
 import 'home_page.dart';
 import 'login_page.dart';
+import 'dart:math' as math;
+
+const bool _DBG_FOCUS_POINT = true;
+
+extension on double {
+  double sqrt() => math.sqrt(this);
+}
 
 class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
@@ -51,6 +58,84 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     }
   }
 
+  double? _toD(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v.replaceAll(',', '.').trim());
+    return null;
+  }
+
+  bool _isLat(double v) => v >= -90 && v <= 90;
+  bool _isLon(double v) => v >= -180 && v <= 180;
+
+  /// Choisit la meilleure orientation entre (lat,lon) et (lon,lat)
+  LatLng? _bestLatLon(double? a, double? b) {
+    if (a == null || b == null) return null;
+    final cand1 = (_isLat(a) && _isLon(b)) ? LatLng(a, b) : null;
+    final cand2 = (_isLat(b) && _isLon(a)) ? LatLng(b, a) : null;
+    if (cand1 == null && cand2 == null) return null;
+    return cand1 ?? cand2; // cand1 prioritaire, sinon cand2
+  }
+
+// Conversion UTM -> WGS84 (lon/lat), zone par défaut = 28N (SRID 32628)
+  LatLng _utmToLatLng({
+    required double easting, // X
+    required double northing, // Y
+    int zone = 28,
+    bool northernHemisphere = true,
+  }) {
+    // Formules classiques (WGS84)
+    const double a = 6378137.0;
+    const double f = 1 / 298.257223563;
+    const double k0 = 0.9996;
+    final double b = a * (1 - f);
+    final double e = (1 - (b / a) * (b / a)).sqrt();
+
+    // helpers
+    double asinh(double x) => math.log(x + math.sqrt(x * x + 1));
+    double atanh(double x) => 0.5 * math.log((1 + x) / (1 - x));
+
+    // enlever les faux-est & faux-nord pour l’hémisphère sud
+    double x = easting - 500000.0;
+    double y = northing;
+    if (!northernHemisphere) y -= 10000000.0;
+
+    final double m = y / k0;
+    final double mu = m / (a * (1 - math.pow(e, 2) / 4 - 3 * math.pow(e, 4) / 64 - 5 * math.pow(e, 6) / 256));
+
+    final double e1 = (1 - math.sqrt(1 - e * e)) / (1 + math.sqrt(1 - e * e));
+    final double j1 = 3 * e1 / 2 - 27 * math.pow(e1, 3) / 32;
+    final double j2 = 21 * math.pow(e1, 2) / 16 - 55 * math.pow(e1, 4) / 32;
+    final double j3 = 151 * math.pow(e1, 3) / 96;
+    final double j4 = 1097 * math.pow(e1, 4) / 512;
+
+    final double fp = mu + j1 * math.sin(2 * mu) + j2 * math.sin(4 * mu) + j3 * math.sin(6 * mu) + j4 * math.sin(8 * mu);
+
+    final double e2 = (e * e) / (1 - e * e);
+    final double c1 = e2 * math.pow(math.cos(fp), 2);
+    final double t1 = math.pow(math.tan(fp), 2).toDouble();
+    final double r1 = a * (1 - e * e) / math.pow(1 - e * e * math.pow(math.sin(fp), 2), 1.5);
+    final double n1 = a / math.sqrt(1 - e * e * math.pow(math.sin(fp), 2));
+    final double d = x / (n1 * k0);
+
+    double q1 = n1 * math.tan(fp) / r1;
+    double q2 = (d * d) / 2;
+    double q3 = (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1 - 9 * e2) * math.pow(d, 4) / 24;
+    double q4 = (61 + 90 * t1 + 298 * c1 + 45 * t1 * t1 - 252 * e2 - 3 * c1 * c1) * math.pow(d, 6) / 720;
+    double lat = fp - q1 * (q2 - q3 + q4);
+
+    double q5 = d;
+    double q6 = (1 + 2 * t1 + c1) * math.pow(d, 3) / 6;
+    double q7 = (5 - 2 * c1 + 28 * t1 - 3 * c1 * c1 + 8 * e2 + 24 * t1 * t1) * math.pow(d, 5) / 120;
+    double lon = (q5 - q6 + q7) / math.cos(fp);
+
+    final double lonOrigin = (zone - 1) * 6 - 180 + 3; // méridien central
+    final double lonDeg = lonOrigin + lon * 180 / math.pi;
+    final double latDeg = lat * 180 / math.pi;
+
+    return LatLng(latDeg, lonDeg);
+  }
+
   double? _toDoubleStrict(dynamic v) {
     if (v == null) return null;
     if (v is num) return v.toDouble();
@@ -58,7 +143,6 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     return null;
   }
 
-  bool _isLat(double v) => v >= -90 && v <= 90;
   bool _isLng(double v) => v >= -180 && v <= 180;
 
   /// Valide une paire et corrige si inversion possible
@@ -67,6 +151,16 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     if (_isLat(lat) && _isLng(lng)) return LatLng(lat, lng);
     if (_isLat(lng) && _isLng(lat)) return LatLng(lng, lat); // x/y inversés
     return null;
+  }
+
+  LatLng _centroidOf(List<LatLng> line) {
+    if (line.isEmpty) return const LatLng(0, 0);
+    double sx = 0, sy = 0;
+    for (final p in line) {
+      sx += p.latitude;
+      sy += p.longitude;
+    }
+    return LatLng(sx / line.length, sy / line.length);
   }
 
   /// WKT: "POINT(lon lat)"
@@ -99,35 +193,52 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     return null;
   }
 
-// essaie d'extraire lat/lng dans *ce row seulement*
-  LatLng? _extractPointFromRow(Map<String, dynamic> row) {
+  /// Helper unique: extrait un Point WGS84 (lat, lon) depuis un item
+  LatLng? _extractPointWgs84(Map<String, dynamic> row) {
+    // 0) normalise les clés -> lowercase
     final r = <String, dynamic>{};
     row.forEach((k, v) => r[k.toString().toLowerCase()] = v);
 
-    // 1) WKT / GeoJSON
-    for (final k in [
-      'wkt',
-      'geom_wkt',
-      'geometry',
-      'geom'
-    ]) {
-      final v = r[k];
-      if (v is String && v.toUpperCase().contains('POINT')) {
-        final pt = _parseWktPoint(v);
-        if (pt != null) return pt;
-      }
-    }
-    for (final k in [
-      'geojson',
-      'geom_geojson',
-      'point_geojson'
-    ]) {
-      final pt = _parseGeoJsonPoint(r[k]);
-      if (pt != null) return pt;
+    if (_DBG_FOCUS_POINT) {
+      final show = r.keys.where((k) => k.contains('lat') || k.contains('lon') || k.contains('lng') || k.startsWith('x') || k.startsWith('y') || k == 'geom' || k == 'geometry' || k.contains('geojson') || k.contains('point')).toList();
+      // ignore: avoid_print
+      print('👁️ [FOCUS-ROW] keys=${show}');
     }
 
-    // 2) Paires évidentes, en respectant x=lon, y=lat
-    final pairs = <List<String>>[
+    // 1) GeoJSON Point (coordinates = [lon, lat])
+    for (final k in [
+      'geom',
+      'geometry',
+      'geojson',
+      'point_geojson',
+      'geom_geojson'
+    ]) {
+      final v = r[k];
+      if (v == null) continue;
+      try {
+        final obj = (v is String) ? jsonDecode(v) : v;
+        if (obj is Map && (obj['type']?.toString().toLowerCase() == 'point')) {
+          final c = obj['coordinates'];
+          if (c is List && c.length >= 2) {
+            final lon = _toD(c[0]);
+            final lat = _toD(c[1]);
+            final chosen = _bestLatLon(lat, lon);
+            if (chosen != null) {
+              if (_DBG_FOCUS_POINT) {
+                // ignore: avoid_print
+                print('✅ [FOCUS] GeoJSON -> lat=${chosen.latitude}, lon=${chosen.longitude}');
+              }
+              return chosen;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 2) Paires explicites par types (WGS84) — x=lon, y=lat
+    //    Ajout des dalots: x_dalot / y_dalot
+    final variantPairs = <List<String>>[
+      // génériques
       [
         'longitude',
         'latitude'
@@ -137,9 +248,14 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         'lat'
       ],
       [
+        'lon',
+        'lat'
+      ],
+      [
         'x',
         'y'
       ],
+      // début/fin
       [
         'lng_debut',
         'lat_debut'
@@ -148,15 +264,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         'x_debut',
         'y_debut'
       ],
-      // variantes fréquentes par familles (sans “catégoriser” : on checke juste si les clés existent)
-      [
-        'lng_ecole',
-        'lat_ecole'
-      ],
-      [
-        'x_ecole',
-        'y_ecole'
-      ],
+      // localités / écoles
       [
         'lng_localite',
         'lat_localite'
@@ -165,6 +273,40 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         'x_localite',
         'y_localite'
       ],
+      [
+        'lng_ecole',
+        'lat_ecole'
+      ],
+      [
+        'x_ecole',
+        'y_ecole'
+      ],
+      // marchés / santé / hydro / coupure / batiments
+      [
+        'lng_marche',
+        'lat_marche'
+      ],
+      [
+        'x_marche',
+        'y_marche'
+      ],
+      [
+        'lng_sante',
+        'lat_sante'
+      ],
+      [
+        'lng_hydro',
+        'lat_hydro'
+      ],
+      [
+        'lng_coupure',
+        'lat_coupure'
+      ],
+      [
+        'lng_bat',
+        'lat_bat'
+      ],
+      // ponts / points
       [
         'lng_pont',
         'lat_pont'
@@ -181,59 +323,76 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         'x_point',
         'y_point'
       ],
+      // 🆕 dalots
       [
-        'lng_bat',
-        'lat_bat'
+        'lng_dalot',
+        'lat_dalot'
       ],
       [
-        'lng_sante',
-        'lat_sante'
+        'x_dalot',
+        'y_dalot'
+      ],
+      // autres cas spéciaux si tu en as (bac, passage, etc.)
+      [
+        'lng_bac',
+        'lat_bac'
       ],
       [
-        'lng_marche',
-        'lat_marche'
+        'x_bac',
+        'y_bac'
       ],
       [
-        'lng_hydro',
-        'lat_hydro'
+        'lng_passage',
+        'lat_passage'
       ],
       [
-        'lng_coupure',
-        'lat_coupure'
+        'x_passage',
+        'y_passage'
       ],
     ];
-    for (final p in pairs) {
-      final lng = r.containsKey(p[0]) ? r[p[0]] : null;
-      final lat = r.containsKey(p[1]) ? r[p[1]] : null;
-      if (lng == null || lat == null) continue;
-      final lon = (lng is String) ? double.tryParse(lng.replaceAll(',', '.')) : (lng is num ? lng.toDouble() : null);
-      final la = (lat is String) ? double.tryParse(lat.replaceAll(',', '.')) : (lat is num ? lat.toDouble() : null);
-      if (la == null || lon == null) continue;
-      if (la >= -90 && la <= 90 && lon >= -180 && lon <= 180) return LatLng(la, lon);
-      // inversion si on se trompe
-      if (lon >= -90 && lon <= 90 && la >= -180 && la <= 180) return LatLng(lon, la);
+
+    for (final pair in variantPairs) {
+      final lat = _toD(r[pair[1]]); // lat candidate (2e)
+      final lon = _toD(r[pair[0]]); // lon candidate (1er)
+      if (lat == null || lon == null) continue;
+      final chosen = _bestLatLon(lat, lon);
+      if (chosen != null) {
+        if (_DBG_FOCUS_POINT) {
+          // ignore: avoid_print
+          print('✅ [FOCUS] pair ${pair} -> lat=${chosen.latitude}, lon=${chosen.longitude}');
+        }
+        return chosen;
+      }
     }
 
-    // 3) Heuristique finale : mappage regex d’une clé lat-like et lng-like dans CE row
-    String? latKey, lngKey;
+    // 3) Heuristique générique (regex) si rien trouvé
+    String? latKey, lonKey;
     for (final k in r.keys) {
       if (latKey == null && (k.contains('latitude') || RegExp(r'(^|_)(lat|y)(_|$)').hasMatch(k))) {
         latKey = k;
       }
-      if (lngKey == null && (k.contains('longitude') || k.contains('lon') || RegExp(r'(^|_)(lng|x|long)(_|$)').hasMatch(k))) {
-        lngKey = k;
+      if (lonKey == null && (k.contains('longitude') || k.contains('lon') || RegExp(r'(^|_)(lng|x|long)(_|$)').hasMatch(k))) {
+        lonKey = k;
       }
-      if (latKey != null && lngKey != null) break;
+      if (latKey != null && lonKey != null) break;
     }
-    if (latKey != null && lngKey != null) {
-      final lat = (r[latKey] is String) ? double.tryParse((r[latKey] as String).replaceAll(',', '.')) : (r[latKey] as num?)?.toDouble();
-      final lng = (r[lngKey] is String) ? double.tryParse((r[lngKey] as String).replaceAll(',', '.')) : (r[lngKey] as num?)?.toDouble();
-      if (lat != null && lng != null) {
-        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return LatLng(lat, lng);
-        if (lng >= -90 && lng <= 90 && lat >= -180 && lat <= 180) return LatLng(lng, lat);
+    if (latKey != null && lonKey != null) {
+      final lat = _toD(r[latKey]);
+      final lon = _toD(r[lonKey]);
+      final chosen = _bestLatLon(lat, lon);
+      if (chosen != null) {
+        if (_DBG_FOCUS_POINT) {
+          // ignore: avoid_print
+          print('✅ [FOCUS] regex ($latKey/$lonKey) -> lat=${chosen.latitude}, lon=${chosen.longitude}');
+        }
+        return chosen;
       }
     }
 
+    if (_DBG_FOCUS_POINT) {
+      // ignore: avoid_print
+      print('❌ [FOCUS] impossible d’extraire un point WGS84 sur cette ligne');
+    }
     return null;
   }
 
@@ -257,10 +416,9 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   }
 
   Future<void> _goToMapForItem(Map<String, dynamic> item) async {
-    // 1) Construire la cible
     MapFocusTarget? target;
 
-    // Types lignes: "Pistes" / "Chaussées" / (special: bacs/passages si tu les listes ici)
+    // 1) polyligne d'abord (ta fonction existante)
     final poly = _extractPolyline(item);
     if (poly != null && poly.isNotEmpty) {
       target = MapFocusTarget.polyline(
@@ -269,10 +427,10 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         id: item['id']?.toString(),
       );
     } else {
-      // 2) Tenter le POINT *dans CE row seulement* :
-      LatLng? pt = _extractPointFromRow(item);
+      // 2) point WGS84 (enregistré/sauvegardé)
+      LatLng? pt = _extractPointWgs84(item);
 
-      // 3) Si pas trouvé: RECHARGER CE ROW par id & table d’origine (si dispo)
+      // 3) fallback éventuel: recharger par id/table si fourni
       if (pt == null) {
         final id = item['id'] ?? item['ID'] ?? item['Id'];
         final table = item['table'] ?? item['source_table'] ?? item['original_table'];
@@ -285,41 +443,42 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
               ],
               limit: 1);
           if (res.isNotEmpty) {
-            pt = _extractPointFromRow(res.first);
+            pt = _extractPointWgs84(res.first);
           }
         }
       }
+
       if (pt != null) {
-        target = MapFocusTarget.point(
-          point: pt,
-          label: (item['nom'] ?? item['point_name'] ?? item['name'] ?? '').toString(),
-          id: item['id']?.toString(),
-        );
+        final label = (item['nom'] ?? item['point_name'] ?? item['name'] ?? '').toString();
+        // petit log pour vérifier
+        if (_DBG_FOCUS_POINT) {
+          // ignore: avoid_print
+          print('🎯 [FOCUS->MAP] lat=${pt.latitude}, lon=${pt.longitude}, id=${item['id']}');
+        }
+        target = MapFocusTarget.point(point: pt, label: label, id: item['id']?.toString());
       }
     }
 
     if (target == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Impossible de localiser cette donnée (pas de géométrie).")),
       );
       return;
     }
 
-    // 2) Récupérer le nom d’agent pour construire HomePage proprement
+    // ... ton code existant pour récupérer l'agent, pousser HomePage, etc.
     final email = await DatabaseHelper().getCurrentUserEmail();
     final fullName = await DatabaseHelper().getAgentFullName(email ?? '') ?? 'Utilisateur';
 
-    // 3) Aller sur la carte avec la cible
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => HomePage(
           agentName: fullName,
-          onLogout: () {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-          },
-          initialFocus: target, // ⬅️ important
+          onLogout: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+          initialFocus: target,
         ),
       ),
     );

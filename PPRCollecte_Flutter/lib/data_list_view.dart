@@ -176,30 +176,32 @@ class _DataListViewState extends State<DataListView> {
                     : const Text('Status: Non synchronisé ⏳', style: TextStyle(color: Colors.orange)),
           ],
         ),
-        trailing: widget.dataFilter == "unsynced"
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.onView != null)
-                    IconButton(
-                      tooltip: 'Voir sur la carte',
-                      icon: const Icon(Icons.remove_red_eye_outlined),
-                      onPressed: () {
-                        final itemCopy = Map<String, dynamic>.from(item);
-                        widget.onView?.call(itemCopy);
-                      }, // item = ta map courante
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => widget.onEdit(item),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _confirmDelete(item['id'], context),
-                  ),
-                ],
-              )
-            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (widget.onView != null)
+              IconButton(
+                tooltip: 'Voir sur la carte',
+                icon: const Icon(Icons.remove_red_eye_outlined),
+                onPressed: () {
+                  final itemCopy = Map<String, dynamic>.from(item);
+                  widget.onView?.call(itemCopy); // va caller _goToMapForItem(...) via DataCategoriesDisplay
+                },
+              ),
+
+            // Boutons d'édition/suppression seulement pour "Données Enregistrées" (unsynced)
+            if (widget.dataFilter == "unsynced") ...[
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                onPressed: () => widget.onEdit(item),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _confirmDelete(item['id'], context),
+              ),
+            ],
+          ],
+        ),
         onTap: () => _showDetails(item, context),
       ),
     );
