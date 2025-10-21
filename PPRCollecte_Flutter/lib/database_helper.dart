@@ -516,7 +516,6 @@ class DatabaseHelper {
       await _ensureAppSessionTable();
 
       final result = await db.query('app_session', limit: 1);
-
       if (result.isNotEmpty) {
         final row = result.first;
         final isLoggedRaw = row['is_logged_in'];
@@ -524,31 +523,10 @@ class DatabaseHelper {
 
         if (isLogged == 1) {
           final email = row['current_user_email'] as String?;
-          if (email != null && email.isNotEmpty) {
-            print('📧 Email utilisateur récupéré (session): $email');
-            return email;
-          }
+          if (email != null && email.isNotEmpty) return email; // ✅ uniquement si “remember”
         }
       }
-
-      // 🔁 Fallback: prendre le dernier user si session absente
-      final last = await db.query(
-        'users',
-        columns: [
-          'email'
-        ],
-        orderBy: 'date_creation DESC', // ou 'id DESC' si tu préfères
-        limit: 1,
-      );
-      if (last.isNotEmpty) {
-        final email = last.first['email'] as String?;
-        if (email != null && email.isNotEmpty) {
-          print('📧 Email utilisateur récupéré (fallback last user): $email');
-          return email;
-        }
-      }
-
-      print('ℹ️ Aucun utilisateur connecté');
+      // 🚫 PAS DE FALLBACK ICI
       return null;
     } catch (e) {
       print("❌ Erreur getCurrentUserEmail: $e");
@@ -570,39 +548,21 @@ class DatabaseHelper {
     try {
       final db = await database;
 
-      // 1) via session / fallback last user
+      // On lit d’abord l’email de session “remembered”
       final currentEmail = await getCurrentUserEmail();
-
-      if (currentEmail != null && currentEmail.isNotEmpty) {
-        final result = await db.query(
-          'users',
-          where: 'email = ?',
-          whereArgs: [
-            currentEmail
-          ],
-          limit: 1,
-        );
-        if (result.isNotEmpty) {
-          print('✅ Utilisateur courant récupéré: $currentEmail');
-          return result.first;
-        } else {
-          print('❌ Utilisateur non trouvé dans la base: $currentEmail');
-        }
+      if (currentEmail == null || currentEmail.isEmpty) {
+        return null; // 🚫 pas de fallback vers “dernier user”
       }
 
-      // 2) Vrai fallback : dernier user local
-      final rows2 = await db.query(
+      final result = await db.query(
         'users',
-        orderBy: 'date_creation DESC',
+        where: 'email = ?',
+        whereArgs: [
+          currentEmail
+        ],
         limit: 1,
       );
-      if (rows2.isNotEmpty) {
-        print('✅ Utilisateur (fallback last user): ${rows2.first['email']}');
-        return rows2.first;
-      }
-
-      print('ℹ️ Aucun utilisateur disponible en local');
-      return null;
+      return result.isNotEmpty ? result.first : null;
     } catch (e) {
       print("❌ Erreur getCurrentUser: $e");
       return null;

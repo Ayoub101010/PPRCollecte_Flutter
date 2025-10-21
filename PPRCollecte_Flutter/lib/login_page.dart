@@ -35,6 +35,34 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedUser();
+  }
+
+  Future<void> _loadRememberedUser() async {
+    final db = DatabaseHelper();
+    final email = await db.getCurrentUserEmail(); // ➜ retourne NULL si non “remembered”
+
+    if (email != null && email.isNotEmpty) {
+      final user = await db.getCurrentUser();
+      if (user != null) {
+        setState(() {
+          emailController.text = user['email'] ?? '';
+          passwordController.text = user['password'] ?? '';
+          rememberMe = true;
+        });
+      }
+    } else {
+      setState(() {
+        rememberMe = false;
+        emailController.clear();
+        passwordController.clear();
+      });
+    }
+  }
+
   Future<void> _loginOffline(String email, String password) async {
     final isValidLocal = await DatabaseHelper().validateUser(email, password);
     if (isValidLocal) {
@@ -81,8 +109,12 @@ class _LoginPageState extends State<LoginPage> {
       // (B) API dispo → tente /login avec timeout court
       final userData = await ApiService.login(email, password).timeout(_loginTimeout);
 
-      // (C) Seed / MAJ DB locale (pour futurs logins offline)
-      await DatabaseHelper().setCurrentUserEmail(email);
+      // (C) Gestion du "Se souvenir" et mise à jour de la session
+      if (rememberMe) {
+        await DatabaseHelper().setCurrentUserEmail(email); // is_logged_in = 1
+      } else {
+        await DatabaseHelper().clearSession(); // is_logged_in = 0
+      }
 
       final existingUser = await DatabaseHelper().userExists(email);
       final nom = userData['nom'] ?? '';
@@ -315,7 +347,15 @@ class _LoginPageState extends State<LoginPage> {
                                     width: 24,
                                     child: Checkbox(
                                       value: rememberMe,
-                                      onChanged: (val) => setState(() => rememberMe = val ?? false),
+                                      onChanged: (val) {
+                                        setState(() {
+                                          rememberMe = val ?? false;
+                                          if (!rememberMe) {
+                                            emailController.clear();
+                                            passwordController.clear();
+                                          }
+                                        });
+                                      },
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                     ),
                                   ),

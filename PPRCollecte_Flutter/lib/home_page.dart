@@ -2216,6 +2216,7 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             TopBarWidget(
+              agentName: widget.agentName ?? 'Agent',
               onLogout: _showLogoutConfirmation,
             ),
             Expanded(

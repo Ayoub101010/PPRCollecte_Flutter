@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
 class TopBarWidget extends StatelessWidget {
+  final String agentName;
   final VoidCallback onLogout;
 
-  const TopBarWidget({super.key, required this.onLogout});
+  const TopBarWidget({
+    super.key,
+    required this.agentName,
+    required this.onLogout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +29,9 @@ class TopBarWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
-                "Agent",
-                style: TextStyle(
+              Text(
+                agentName.isNotEmpty ? agentName : "Agent",
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -40,7 +45,7 @@ class TopBarWidget extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             ),
-            onPressed: onLogout, // Appel direct de la fonction passée
+            onPressed: onLogout,
             child: const Text(
               "Se déconnecter",
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
