@@ -7,6 +7,7 @@ class PointCritique {
   final String dateCreation;
   final String? dateModification;
   final String? codePiste;
+  final String? codeGps;
   final int? communeId;
 
   PointCritique({
@@ -18,6 +19,7 @@ class PointCritique {
     required this.dateCreation,
     this.dateModification,
     this.codePiste,
+    this.codeGps,
     this.communeId,
   });
 
@@ -31,6 +33,7 @@ class PointCritique {
       'date_creation': dateCreation,
       'date_modification': dateModification,
       'code_piste': codePiste,
+      'code_gps': codeGps,
       'commune_id': communeId,
     };
   }
@@ -45,6 +48,7 @@ class PointCritique {
       dateCreation: map['date_creation'],
       dateModification: map['date_modification'],
       codePiste: map['code_piste'],
+      codeGps: map['code_gps'],
       communeId: map['commune_id'],
     );
   }

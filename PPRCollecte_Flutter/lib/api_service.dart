@@ -187,6 +187,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -224,6 +225,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -261,6 +263,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -298,6 +301,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -335,6 +339,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -372,6 +377,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -409,6 +415,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -448,6 +455,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -533,6 +541,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -570,6 +579,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -618,6 +628,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -654,6 +665,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };
@@ -690,6 +702,7 @@ class ApiService {
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
+      'code_gps': localData['code_gps'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };

@@ -386,6 +386,7 @@ class SyncService {
         'travaux_realises': localData['travaux_realises'],
         'date_travaux': localData['date_travaux'],
         'entreprise': localData['entreprise'],
+        'code_gps': localData['code_gps'],
         'created_at': _formatDateTime(localData['created_at']) ?? _formatDateTime(DateTime.now()),
         'updated_at': _formatDateTime(localData['updated_at']),
         'login_id': _parseInt(localData['login_id']) ?? _parseInt(localData['login']),

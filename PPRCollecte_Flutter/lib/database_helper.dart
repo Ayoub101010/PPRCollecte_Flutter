@@ -118,6 +118,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -140,6 +141,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -162,6 +164,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -184,6 +187,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -206,6 +210,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -228,6 +233,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -250,6 +256,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -274,6 +281,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -299,6 +307,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -320,6 +329,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -342,6 +352,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -366,6 +377,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -387,6 +399,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -408,6 +421,7 @@ class DatabaseHelper {
       date_creation TEXT NOT NULL,
       date_modification TEXT,
       code_piste TEXT,
+      code_gps TEXT,
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -1264,6 +1278,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1321,6 +1336,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1377,6 +1393,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1433,6 +1450,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1488,6 +1506,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1543,6 +1562,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1598,6 +1618,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1655,6 +1676,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1714,6 +1736,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1768,6 +1791,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1823,6 +1847,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1881,6 +1906,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1935,6 +1961,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
@@ -1989,6 +2016,7 @@ class DatabaseHelper {
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+            'code_gps': properties['code_gps'] ?? 'Non spécifié',
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',

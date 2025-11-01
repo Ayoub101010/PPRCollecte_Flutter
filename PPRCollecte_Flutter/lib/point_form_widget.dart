@@ -77,7 +77,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       _formData['date_modification'] = widget.pointData!['date_modification'] ?? DateTime.now().toIso8601String();
       _formData['latitude'] = widget.pointData!['x_$coordinatePrefix'];
       _formData['longitude'] = widget.pointData!['y_$coordinatePrefix'];
-
+      _formData['code_gps'] = widget.pointData!['code_gps'];
       _addSpecificFormDataFromPointData(widget.pointData!, widget.type);
     } else {
       // ============ CRÉATION ============
@@ -207,6 +207,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'enqueteur': _formData['enqueteur'] ?? 'Anonyme',
         'code_piste': _formData['code_piste'],
         'login_id': ApiService.userId,
+        'code_gps': _formData['code_gps'],
       };
       entityData['x_$coordinatePrefix'] = _formData['latitude'] ?? 0.0;
       entityData['y_$coordinatePrefix'] = _formData['longitude'] ?? 0.0;
@@ -540,6 +541,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       _formData['type_bac'] = null;
       _formData['causes_coupures'] = null;
       _formData['type_point_critique'] = null;
+      _formData['code_gps'] = null;
 
       // Réinitialiser l'état de validation
       _typeValidated = true;
@@ -713,6 +715,12 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                       hint: 'Nom de ${widget.type.toLowerCase()}',
                       key: 'nom',
                       required: true,
+                    ),
+                    _buildTextField(
+                      label: 'Code GPS',
+                      hint: 'Code GPS optionnel',
+                      key: 'code_gps',
+                      required: false, // Non requis
                     ),
                     if (typeOptions.isNotEmpty)
                       _buildDropdownField(

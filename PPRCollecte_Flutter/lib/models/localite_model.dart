@@ -7,6 +7,7 @@ class Localite {
   final String enqueteur;
   final String dateCreation;
   final String? dateModification;
+  final String? codeGps;
   int? synced;
   final int? communeId;
 
@@ -20,6 +21,7 @@ class Localite {
     this.dateCreation = '',
     this.dateModification,
     this.synced = 0,
+    this.codeGps,
     this.communeId,
   });
 
@@ -36,6 +38,7 @@ class Localite {
       'date_modification': dateModification,
       'synced': synced,
       'commune_id': communeId,
+      'code_gps': codeGps,
     };
   }
 
@@ -52,6 +55,7 @@ class Localite {
       dateModification: map['date_modification'],
       synced: map['synced'] != null ? (map['synced'] as num).toInt() : 0,
       communeId: map['commune_id'],
+      codeGps: map['code_gps'],
     ); // valeur par défaut;
   }
 
