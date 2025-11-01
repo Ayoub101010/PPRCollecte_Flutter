@@ -192,7 +192,12 @@ class SyncService {
     } catch (e) {
       print('❌ Erreur décodage points JSON chaussée: $e');
     }
+    final communeId = localData['communes_rurales_id'] ?? localData['commune_rurales'] ?? ApiService.communeId ?? 1;
 
+    print('🔍 commune_id trouvé: $communeId');
+    print('   communes_rurales_id: ${localData['communes_rurales_id']}');
+    print('   commune_rurales: ${localData['commune_rurales']}');
+    print('   ApiService.communeId: ${ApiService.communeId}');
     // Convertir en format GeoJSON coordinates
     final coordinates = points.map((point) {
       return [
@@ -222,7 +227,8 @@ class SyncService {
         'code_gps': localData['code_gps'],
         'endroit': localData['endroit'],
         'code_piste': localData['code_piste'],
-        'login': localData['login_id'],
+        'login_id': localData['login_id'],
+        'communes_rurales_id': communeId,
       }
     };
   }
@@ -769,7 +775,7 @@ class SyncService {
       for (var chaussee in chaussees) {
         // Vérifier que la chaussée appartient à la bonne commune
         final properties = chaussee['properties'];
-        if (properties['commune_id'] == ApiService.communeId) {
+        if (properties['communes_rurales_id'] == ApiService.communeId) {
           final storageHelper = SimpleStorageHelper();
           await storageHelper.saveOrUpdateChausseeTest(chaussee);
           result.successCount++;

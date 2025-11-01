@@ -12,14 +12,14 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
 )
 from .serializers import (
     ServicesSantesSerializer, AutresInfrastructuresSerializer, BacsSerializer,
     BatimentsAdministratifsSerializer, BusesSerializer, DalotsSerializer,
     EcolesSerializer, InfrastructuresHydrauliquesSerializer, LocalitesSerializer,
     MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer, CommuneRuraleSerializer,
-      PrefectureSerializer, RegionSerializer,UserCreateSerializer, UserUpdateSerializer
+      PrefectureSerializer, RegionSerializer,UserCreateSerializer, UserUpdateSerializer, ChausseesTestSerializer
 )
 
 class RegionsListCreateAPIView(generics.ListCreateAPIView):
@@ -47,7 +47,22 @@ class CommunesRuralesListCreateAPIView(generics.ListCreateAPIView):
         return queryset.order_by('nom')
 
 # Modifiez toutes vos vues pour qu'elles ressemblent à ceci :
+class ChausseesTestListCreateAPIView(generics.ListCreateAPIView):
+    serializer_class = ChausseesTestSerializer
 
+    def get_queryset(self):
+        qs = ChausseesTest.objects.all()
+
+        # Filtres optionnels (cohérents avec tes autres vues)
+        commune_id = self.request.query_params.get('communes_rurales_id')
+        if commune_id:
+            qs = qs.filter(communes_rurales_id=commune_id)
+
+        code_piste = self.request.query_params.get('code_piste')
+        if code_piste:
+            qs = qs.filter(code_piste_id=code_piste)
+
+        return qs
 class ServicesSantesListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = ServicesSantesSerializer
     

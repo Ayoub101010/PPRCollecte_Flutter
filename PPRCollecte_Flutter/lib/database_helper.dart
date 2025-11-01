@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:io';
 import 'api_service.dart';
+import 'dart:convert';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -1704,10 +1705,17 @@ class DatabaseHelper {
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
 
+      // ⭐⭐ DEBUG: Vérifier la structure
+      print('🔍 DEBUG BAC STRUCTURE:');
+      print('   Geometry type: ${geometry['type']}');
+      print('   Coordinates: ${geometry['coordinates']}');
+      print('   Coordinates type: ${geometry['coordinates'].runtimeType}');
+
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'bacs',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1720,15 +1728,42 @@ class DatabaseHelper {
 
       if (existing.isEmpty) {
         final communeId = await _getCommuneId();
-        final coordinates = geometry['coordinates'][0];
+
+        // ⭐⭐ CORRECTION: Gérer les différents formats de coordonnées
+        double xDebut = 0.0, yDebut = 0.0, xFin = 0.0, yFin = 0.0;
+
+        if (geometry['type'] == 'LineString') {
+          final coordinates = geometry['coordinates'];
+          if (coordinates.length >= 2) {
+            // Format: [[lon1, lat1], [lon2, lat2]]
+            xDebut = coordinates[0][0].toDouble();
+            yDebut = coordinates[0][1].toDouble();
+            xFin = coordinates[1][0].toDouble();
+            yFin = coordinates[1][1].toDouble();
+          }
+        } else if (geometry['type'] == 'MultiLineString') {
+          final coordinates = geometry['coordinates'];
+          if (coordinates.isNotEmpty && coordinates[0].length >= 2) {
+            // Format: [[[lon1, lat1], [lon2, lat2]]]
+            xDebut = coordinates[0][0][0].toDouble();
+            yDebut = coordinates[0][0][1].toDouble();
+            xFin = coordinates[0][1][0].toDouble();
+            yFin = coordinates[0][1][1].toDouble();
+          }
+        } else {
+          print('⚠️ Format de géométrie non supporté: ${geometry['type']}');
+        }
+
+        print('📍 Coordonnées bac - Début: ($xDebut, $yDebut), Fin: ($xFin, $yFin)');
+
         await db.insert(
           'bacs',
           {
             'id': properties['sqlite_id'],
-            'x_debut_traversee_bac': coordinates[0][0], // longitude début
-            'y_debut_traversee_bac': coordinates[0][1], // latitude début
-            'x_fin_traversee_bac': coordinates[1][0], // longitude fin
-            'y_fin_traversee_bac': coordinates[1][1], // latitude fin
+            'x_debut_traversee_bac': xDebut,
+            'y_debut_traversee_bac': yDebut,
+            'x_fin_traversee_bac': xFin,
+            'y_fin_traversee_bac': yFin,
             'nom': properties['nom'] ?? 'Sans nom',
             'type_bac': properties['type_bac'] ?? 'Non spécifié',
             'nom_cours_eau': properties['nom_cours_eau'] ?? 'Non spécifié',
@@ -1737,8 +1772,8 @@ class DatabaseHelper {
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'code_gps': properties['code_gps'] ?? 'Non spécifié',
-            'synced': 0, // ← Donnée téléchargée, pas synchronisée
-            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'synced': 0,
+            'downloaded': 1,
             'login_id': dataUserId ?? 'Non spécifié',
             'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
@@ -1746,10 +1781,11 @@ class DatabaseHelper {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-        print('✅ bacs sauvegardée: ${properties['nom']}');
+        print('✅ Bac sauvegardé: ${properties['nom']}');
       }
     } catch (e) {
       print('❌ Erreur sauvegarde bacs: $e');
+      print('📋 Données problématiques: ${jsonEncode(geoJsonData)}');
       rethrow;
     }
   }
@@ -1875,10 +1911,17 @@ class DatabaseHelper {
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
 
+      // ⭐⭐ DEBUG: Vérifier la structure
+      print('🔍 DEBUG PASSAGE SUBMERSIBLE STRUCTURE:');
+      print('   Geometry type: ${geometry['type']}');
+      print('   Coordinates: ${geometry['coordinates']}');
+      print('   Coordinates type: ${geometry['coordinates'].runtimeType}');
+
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'passages_submersibles',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1891,15 +1934,42 @@ class DatabaseHelper {
 
       if (existing.isEmpty) {
         final communeId = await _getCommuneId();
-        final coordinates = geometry['coordinates'][0];
+
+        // ⭐⭐ CORRECTION: Gérer les différents formats de coordonnées
+        double xDebut = 0.0, yDebut = 0.0, xFin = 0.0, yFin = 0.0;
+
+        if (geometry['type'] == 'LineString') {
+          final coordinates = geometry['coordinates'];
+          if (coordinates.length >= 2) {
+            // Format: [[lon1, lat1], [lon2, lat2]]
+            xDebut = coordinates[0][0].toDouble();
+            yDebut = coordinates[0][1].toDouble();
+            xFin = coordinates[1][0].toDouble();
+            yFin = coordinates[1][1].toDouble();
+          }
+        } else if (geometry['type'] == 'MultiLineString') {
+          final coordinates = geometry['coordinates'];
+          if (coordinates.isNotEmpty && coordinates[0].length >= 2) {
+            // Format: [[[lon1, lat1], [lon2, lat2]]]
+            xDebut = coordinates[0][0][0].toDouble();
+            yDebut = coordinates[0][0][1].toDouble();
+            xFin = coordinates[0][1][0].toDouble();
+            yFin = coordinates[0][1][1].toDouble();
+          }
+        } else {
+          print('⚠️ Format de géométrie non supporté: ${geometry['type']}');
+        }
+
+        print('📍 Coordonnées passage - Début: ($xDebut, $yDebut), Fin: ($xFin, $yFin)');
+
         await db.insert(
           'passages_submersibles',
           {
             'id': properties['sqlite_id'],
-            'x_debut_passage_submersible': coordinates[0][0], // longitude début
-            'y_debut_passage_submersible': coordinates[0][1], // latitude début
-            'x_fin_passage_submersible': coordinates[1][0], // longitude fin
-            'y_fin_passage_submersible': coordinates[1][1], // latitude fin
+            'x_debut_passage_submersible': xDebut,
+            'y_debut_passage_submersible': yDebut,
+            'x_fin_passage_submersible': xFin,
+            'y_fin_passage_submersible': yFin,
             'nom': properties['nom'] ?? 'Sans nom',
             'type_materiau': properties['type_materiau'] ?? 'Non spécifié',
             'enqueteur': properties['enqueteur'] ?? 'Sync',
@@ -1907,8 +1977,8 @@ class DatabaseHelper {
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
             'code_gps': properties['code_gps'] ?? 'Non spécifié',
-            'synced': 0, // ← Donnée téléchargée, pas synchronisée
-            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+            'synced': 0,
+            'downloaded': 1,
             'login_id': dataUserId ?? 'Non spécifié',
             'saved_by_user_id': ApiService.userId,
             'commune_id': communeId,
@@ -1916,10 +1986,11 @@ class DatabaseHelper {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-        print('✅ passages_submersibles sauvegardée: ${properties['nom']}');
+        print('✅ Passage submersible sauvegardé: ${properties['nom']}');
       }
     } catch (e) {
       print('❌ Erreur sauvegarde passages_submersibles: $e');
+      print('📋 Données problématiques: ${jsonEncode(geoJsonData)}');
       rethrow;
     }
   }

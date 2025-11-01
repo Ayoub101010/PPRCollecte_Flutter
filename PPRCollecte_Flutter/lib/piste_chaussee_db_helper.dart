@@ -81,6 +81,7 @@ class SimpleStorageHelper {
             id INTEGER PRIMARY KEY ,
             code_piste TEXT NOT NULL,
             code_gps TEXT ,
+            communes_rurales_id INTEGER,
             user_login TEXT ,
             endroit TEXT NOT NULL,
             type_chaussee TEXT,
@@ -459,11 +460,37 @@ class SimpleStorageHelper {
     }
   }
 
+// Dans la classe SimpleStorageHelper (piste_chaussee_db_helper.dart)
+  Future<int?> _getCommuneId() async {
+    try {
+      // Priorité à l'API
+      if (ApiService.communeId != null) {
+        print('📍 commune_id depuis API: ${ApiService.communeId}');
+        return ApiService.communeId;
+      }
+
+      // Fallback: base locale
+      final currentUser = await DatabaseHelper().getCurrentUser();
+      if (currentUser != null && currentUser['communes_rurales'] != null) {
+        final communeId = currentUser['communes_rurales'] as int;
+        print('📍 commune_id depuis base locale: $communeId');
+        return communeId;
+      }
+
+      print('⚠️ commune_id non trouvé, utilisation valeur par défaut: 1');
+      return 1; // Valeur par défaut
+    } catch (e) {
+      print('❌ Erreur _getCommuneId: $e');
+      return 1; // Valeur par défaut en cas d'erreur
+    }
+  }
+
   /// Sauvegarder une chaussée depuis le formulaire
   /// Sauvegarder une chaussée depuis le formulaire
   Future<int?> saveChaussee(Map<String, dynamic> formData) async {
     try {
       final loginId = ApiService.userId;
+      final communeId = await _getCommuneId();
 
       // Vérifier si on est en mode édition
       final bool isEditing = formData['is_editing'] ?? false;
@@ -478,7 +505,7 @@ class SimpleStorageHelper {
         // MODE CRÉATION: Insertion
         final formDataWithLoginId = Map<String, dynamic>.from(formData);
         formDataWithLoginId['login_id'] = loginId;
-
+        formDataWithLoginId['communes_rurales_id'] = communeId;
         final chaussee = ChausseeModel.fromFormData(formDataWithLoginId);
         final db = await database;
         final id = await db.insert('chaussees', chaussee.toMap());
@@ -495,7 +522,7 @@ class SimpleStorageHelper {
   Future<void> updateChaussee(Map<String, dynamic> chausseeData) async {
     try {
       final db = await database;
-
+      final communeId = await _getCommuneId();
       // Préparer les données pour la mise à jour
       final updateData = {
         'code_piste': chausseeData['code_piste'],
@@ -513,6 +540,7 @@ class SimpleStorageHelper {
         'updated_at': DateTime.now().toIso8601String(), // ← FORCER l'heure actuelle
         'user_login': chausseeData['user_login'],
         'login_id': chausseeData['login_id'],
+        'communes_rurales_id': communeId,
       };
 
       await db.update(
@@ -714,7 +742,7 @@ class SimpleStorageHelper {
       final properties = pisteData['properties'];
       final geometry = pisteData['geometry'];
       final dataUserId = properties['login_id'];
-
+      final communeId = await _getCommuneId();
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
         return; // Ne pas sauvegarder ses propres données
@@ -959,7 +987,7 @@ class SimpleStorageHelper {
           'sync_status',
           'login_id',
           'synced',
-          'date_sync'
+          'date_sync', 'communes_rurales_id'
           // ⭐⭐ NE INCLUEZ PAS downloaded ⭐⭐
         ],
       );
@@ -1065,6 +1093,7 @@ class SimpleStorageHelper {
           'synced': 0,
           'date_sync': DateTime.now().toIso8601String(),
           'downloaded': 1, // ← MARQUÉ COMME TÉLÉCHARGÉ
+          'communes_rurales_id': properties['communes_rurales_id'],
         });
         print('✅ Chaussée ${properties['code_piste']} téléchargée (ID: ${chausseeData['id']})');
       } else {
@@ -1086,6 +1115,7 @@ class SimpleStorageHelper {
             'updated_at': properties['updated_at'],
             'sync_status': 'downloaded',
             'downloaded': 1,
+            'communes_rurales_id': properties['communes_rurales_id'],
           },
           where: 'id = ?',
           whereArgs: [

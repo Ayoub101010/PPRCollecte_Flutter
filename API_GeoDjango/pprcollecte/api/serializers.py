@@ -5,12 +5,12 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
 )
 from django.contrib.gis.geos import Point
 from rest_framework_gis.fields import GeometryField
 from django.contrib.gis.geos import GEOSGeometry
-
+from django.contrib.gis.geos import LineString, MultiLineString
 
 class RegionSerializer(GeoFeatureModelSerializer):
     class Meta:
@@ -303,7 +303,31 @@ class PisteWriteSerializer(GeoFeatureModelSerializer):
             data['geom'] = geom
         return super().to_internal_value(data)
 
+class ChausseesTestSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = ChausseesTest
+        geo_field = "geom"
+        fields = "__all__"
+        extra_kwargs = {
+            'fid': {'required': False},  # auto
+        }
 
+    def to_internal_value(self, data):
+        """
+        Si le client envoie les 4 coords (x_debut_ch, y_debut_ch, x_fin_ch, y_fin_chau),
+        on construit une MultiLineString 4326. Sinon, on prend 'geom' tel quel (GeoJSON).
+        """
+        if all(k in data for k in ("x_debut_ch", "y_debut_ch", "x_fin_ch", "y_fin_chau")) and not data.get("geom"):
+            x1 = float(data["x_debut_ch"])
+            y1 = float(data["y_debut_ch"])
+            x2 = float(data["x_fin_ch"])
+            y2 = float(data["y_fin_chau"])
+
+            ls = LineString((x1, y1), (x2, y2), srid=4326)
+            mls = MultiLineString(ls, srid=4326)
+            data["geom"] = mls
+
+        return super().to_internal_value(data)
 # LECTURE : expose l'annotation 'geom_4326' comme géométrie principale
 class PisteReadSerializer(GeoFeatureModelSerializer):
     geom_4326 = GeometryField(read_only=True)  # annotation fournie par la view

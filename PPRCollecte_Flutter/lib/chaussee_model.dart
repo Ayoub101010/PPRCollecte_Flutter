@@ -28,7 +28,7 @@ class ChausseeModel {
   final String createdAt;
   final String? updatedAt; // ← NOUVEAU
   final String userLogin; // ← NOUVEAU
-
+  final int? communesRuralesId;
   ChausseeModel({
     int? id,
     required this.codePiste,
@@ -45,7 +45,8 @@ class ChausseeModel {
     required this.nombrePoints,
     required this.createdAt,
     this.updatedAt, // ← NOUVEAU
-    required this.userLogin, // ← NOUVEAU
+    required this.userLogin,
+    this.communesRuralesId, // ← NOUVEAU
   }) : id = id ?? generateTimestampChaussId();
 
   factory ChausseeModel.fromFormData(Map<String, dynamic> formData) {
@@ -69,6 +70,7 @@ class ChausseeModel {
       createdAt: formData['created_at'] ?? DateTime.now().toIso8601String(),
       updatedAt: formData['updated_at'], // ← NOUVEAU
       userLogin: formData['user_login'] ?? '',
+      communesRuralesId: formData['communes_rurales_id'] ?? '',
     );
   }
 
@@ -91,6 +93,7 @@ class ChausseeModel {
       'updated_at': updatedAt, // ← NOUVEAU
       'user_login': userLogin,
       'login_id': ApiService.userId, // ← NOUVEAU
+      'communes_rurales_id': communesRuralesId,
     };
   }
 
@@ -111,6 +114,7 @@ class ChausseeModel {
       nombrePoints: map['nombre_points'] ?? 0,
       createdAt: map['created_at'] ?? DateTime.now().toIso8601String(),
       userLogin: map['user_login'] ?? '',
+      communesRuralesId: map['communes_rurales_id'] ?? '',
     );
   }
 
