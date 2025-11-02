@@ -69,12 +69,27 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   bool _isLon(double v) => v >= -180 && v <= 180;
 
   /// Choisit la meilleure orientation entre (lat,lon) et (lon,lat)
+  /// CORRECTION: Ne JAMAIS inverser les coordonnées automatiquement
   LatLng? _bestLatLon(double? a, double? b) {
     if (a == null || b == null) return null;
-    final cand1 = (_isLat(a) && _isLon(b)) ? LatLng(a, b) : null;
-    final cand2 = (_isLat(b) && _isLon(a)) ? LatLng(b, a) : null;
-    if (cand1 == null && cand2 == null) return null;
-    return cand1 ?? cand2; // cand1 prioritaire, sinon cand2
+
+    // ⭐⭐ SUPPRIMER LA LOGIQUE D'INVERSION - toujours considérer a=lat, b=lon
+    // ou selon la convention établie dans votre base de données
+    if (_isLat(a) && _isLon(b)) {
+      return LatLng(a, b);
+    }
+
+    // ⭐⭐ NE PAS inverser automatiquement - si les coordonnées ne sont pas valides, retourner null
+    return null;
+  }
+
+  /// Valide une paire SANS inversion automatique
+  LatLng? _validateAndFix(double? lat, double? lng) {
+    if (lat == null || lng == null) return null;
+    if (_isLat(lat) && _isLng(lng)) return LatLng(lat, lng);
+
+    // ⭐⭐ NE PAS inverser - si c'est invalide, c'est invalide
+    return null;
   }
 
 // Conversion UTM -> WGS84 (lon/lat), zone par défaut = 28N (SRID 32628)
@@ -146,12 +161,6 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   bool _isLng(double v) => v >= -180 && v <= 180;
 
   /// Valide une paire et corrige si inversion possible
-  LatLng? _validateAndFix(double? lat, double? lng) {
-    if (lat == null || lng == null) return null;
-    if (_isLat(lat) && _isLng(lng)) return LatLng(lat, lng);
-    if (_isLat(lng) && _isLng(lat)) return LatLng(lng, lat); // x/y inversés
-    return null;
-  }
 
   LatLng _centroidOf(List<LatLng> line) {
     if (line.isEmpty) return const LatLng(0, 0);
@@ -194,6 +203,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   }
 
   /// Helper unique: extrait un Point WGS84 (lat, lon) depuis un item
+  /// Helper unique: extrait un Point WGS84 (lat, lon) depuis un item
   LatLng? _extractPointWgs84(Map<String, dynamic> row) {
     // 0) normalise les clés -> lowercase
     final r = <String, dynamic>{};
@@ -201,11 +211,119 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
     if (_DBG_FOCUS_POINT) {
       final show = r.keys.where((k) => k.contains('lat') || k.contains('lon') || k.contains('lng') || k.startsWith('x') || k.startsWith('y') || k == 'geom' || k == 'geometry' || k.contains('geojson') || k.contains('point')).toList();
-      // ignore: avoid_print
       print('👁️ [FOCUS-ROW] keys=${show}');
     }
 
-    // 1) GeoJSON Point (coordinates = [lon, lat])
+    // ⭐⭐ STRATÉGIE 1: Chercher d'abord les paires EXPLICITES selon la convention de votre base
+    // Dans votre cas, x=longitude, y=latitude
+    final explicitPairs = [
+      // Format: [clé_longitude, clé_latitude] - x=longitude, y=latitude
+      [
+        'x_localite',
+        'y_localite'
+      ],
+      [
+        'x_ecole',
+        'y_ecole'
+      ],
+      [
+        'x_marche',
+        'y_marche'
+      ],
+      [
+        'x_sante',
+        'y_sante'
+      ],
+      [
+        'x_batiment_administratif',
+        'y_batiment_administratif'
+      ],
+      [
+        'x_infrastructure_hydraulique',
+        'y_infrastructure_hydraulique'
+      ],
+      [
+        'x_autre_infrastructure',
+        'y_autre_infrastructure'
+      ],
+      [
+        'x_pont',
+        'y_pont'
+      ],
+      [
+        'x_buse',
+        'y_buse'
+      ],
+      [
+        'x_dalot',
+        'y_dalot'
+      ],
+      [
+        'x_point_critique',
+        'y_point_critique'
+      ],
+      [
+        'x_point_coupure',
+        'y_point_coupure'
+      ],
+
+      // Pour les lignes spéciales - début
+      [
+        'x_debut_traversee_bac',
+        'y_debut_traversee_bac'
+      ],
+      [
+        'x_debut_passage_submersible',
+        'y_debut_passage_submersible'
+      ],
+
+      // Variantes avec lng/lat
+      [
+        'lng_localite',
+        'lat_localite'
+      ],
+      [
+        'lng_ecole',
+        'lat_ecole'
+      ],
+      [
+        'lng_marche',
+        'lat_marche'
+      ],
+      [
+        'lng_sante',
+        'lat_sante'
+      ],
+      [
+        'lng_pont',
+        'lat_pont'
+      ],
+      [
+        'lng_dalot',
+        'lat_dalot'
+      ],
+    ];
+
+    for (final pair in explicitPairs) {
+      final lng = _toD(r[pair[0]]); // Premier = longitude (x)
+      final lat = _toD(r[pair[1]]); // Second = latitude (y)
+
+      if (lat != null && lng != null) {
+        // ⭐⭐ VALIDATION SIMPLE - pas d'inversion automatique
+        if (_isLat(lat) && _isLng(lng)) {
+          if (_DBG_FOCUS_POINT) {
+            print('✅ [FOCUS] Paire explicite ${pair} -> lat=$lat, lon=$lng');
+          }
+          return LatLng(lat, lng);
+        } else {
+          if (_DBG_FOCUS_POINT) {
+            print('⚠️ [FOCUS] Paire ${pair} invalide: lat=$lat, lon=$lng');
+          }
+        }
+      }
+    }
+
+    // ⭐⭐ STRATÉGIE 2: GeoJSON (coordinates = [lon, lat])
     for (final k in [
       'geom',
       'geometry',
@@ -220,179 +338,50 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         if (obj is Map && (obj['type']?.toString().toLowerCase() == 'point')) {
           final c = obj['coordinates'];
           if (c is List && c.length >= 2) {
-            final lon = _toD(c[0]);
-            final lat = _toD(c[1]);
-            final chosen = _bestLatLon(lat, lon);
-            if (chosen != null) {
+            final lon = _toD(c[0]); // Premier = longitude
+            final lat = _toD(c[1]); // Second = latitude
+            if (lat != null && lon != null && _isLat(lat) && _isLng(lon)) {
               if (_DBG_FOCUS_POINT) {
-                // ignore: avoid_print
-                print('✅ [FOCUS] GeoJSON -> lat=${chosen.latitude}, lon=${chosen.longitude}');
+                print('✅ [FOCUS] GeoJSON -> lat=$lat, lon=$lon');
               }
-              return chosen;
+              return LatLng(lat, lon);
             }
           }
         }
       } catch (_) {}
     }
 
-    // 2) Paires explicites par types (WGS84) — x=lon, y=lat
-    //    Ajout des dalots: x_dalot / y_dalot
-    final variantPairs = <List<String>>[
-      // génériques
-      [
-        'longitude',
-        'latitude'
-      ],
-      [
-        'lng',
-        'lat'
-      ],
-      [
-        'lon',
-        'lat'
-      ],
-      [
-        'x',
-        'y'
-      ],
-      // début/fin
-      [
-        'lng_debut',
-        'lat_debut'
-      ],
-      [
-        'x_debut',
-        'y_debut'
-      ],
-      // localités / écoles
-      [
-        'lng_localite',
-        'lat_localite'
-      ],
-      [
-        'x_localite',
-        'y_localite'
-      ],
-      [
-        'lng_ecole',
-        'lat_ecole'
-      ],
-      [
-        'x_ecole',
-        'y_ecole'
-      ],
-      // marchés / santé / hydro / coupure / batiments
-      [
-        'lng_marche',
-        'lat_marche'
-      ],
-      [
-        'x_marche',
-        'y_marche'
-      ],
-      [
-        'lng_sante',
-        'lat_sante'
-      ],
-      [
-        'lng_hydro',
-        'lat_hydro'
-      ],
-      [
-        'lng_coupure',
-        'lat_coupure'
-      ],
-      [
-        'lng_bat',
-        'lat_bat'
-      ],
-      // ponts / points
-      [
-        'lng_pont',
-        'lat_pont'
-      ],
-      [
-        'x_pont',
-        'y_pont'
-      ],
-      [
-        'lng_point',
-        'lat_point'
-      ],
-      [
-        'x_point',
-        'y_point'
-      ],
-      // 🆕 dalots
-      [
-        'lng_dalot',
-        'lat_dalot'
-      ],
-      [
-        'x_dalot',
-        'y_dalot'
-      ],
-      // autres cas spéciaux si tu en as (bac, passage, etc.)
-      [
-        'lng_bac',
-        'lat_bac'
-      ],
-      [
-        'x_bac',
-        'y_bac'
-      ],
-      [
-        'lng_passage',
-        'lat_passage'
-      ],
-      [
-        'x_passage',
-        'y_passage'
-      ],
-    ];
+    // ⭐⭐ STRATÉGIE 3: Chercher latitude/longitude explicites
+    double? foundLat, foundLng;
 
-    for (final pair in variantPairs) {
-      final lat = _toD(r[pair[1]]); // lat candidate (2e)
-      final lon = _toD(r[pair[0]]); // lon candidate (1er)
-      if (lat == null || lon == null) continue;
-      final chosen = _bestLatLon(lat, lon);
-      if (chosen != null) {
-        if (_DBG_FOCUS_POINT) {
-          // ignore: avoid_print
-          print('✅ [FOCUS] pair ${pair} -> lat=${chosen.latitude}, lon=${chosen.longitude}');
-        }
-        return chosen;
-      }
-    }
-
-    // 3) Heuristique générique (regex) si rien trouvé
-    String? latKey, lonKey;
+    // Chercher latitude
     for (final k in r.keys) {
-      if (latKey == null && (k.contains('latitude') || RegExp(r'(^|_)(lat|y)(_|$)').hasMatch(k))) {
-        latKey = k;
+      if (foundLat == null && (k.contains('latitude') || k == 'lat' || k.contains('_lat'))) {
+        foundLat = _toD(r[k]);
       }
-      if (lonKey == null && (k.contains('longitude') || k.contains('lon') || RegExp(r'(^|_)(lng|x|long)(_|$)').hasMatch(k))) {
-        lonKey = k;
+      if (foundLng == null && (k.contains('longitude') || k == 'lng' || k == 'lon' || k.contains('_lng') || k.contains('_lon'))) {
+        foundLng = _toD(r[k]);
       }
-      if (latKey != null && lonKey != null) break;
+      if (foundLat != null && foundLng != null) break;
     }
-    if (latKey != null && lonKey != null) {
-      final lat = _toD(r[latKey]);
-      final lon = _toD(r[lonKey]);
-      final chosen = _bestLatLon(lat, lon);
-      if (chosen != null) {
-        if (_DBG_FOCUS_POINT) {
-          // ignore: avoid_print
-          print('✅ [FOCUS] regex ($latKey/$lonKey) -> lat=${chosen.latitude}, lon=${chosen.longitude}');
-        }
-        return chosen;
+
+    if (foundLat != null && foundLng != null && _isLat(foundLat) && _isLng(foundLng)) {
+      if (_DBG_FOCUS_POINT) {
+        print('✅ [FOCUS] Champs séparés -> lat=$foundLat, lon=$foundLng');
       }
+      return LatLng(foundLat, foundLng);
     }
 
     if (_DBG_FOCUS_POINT) {
-      // ignore: avoid_print
-      print('❌ [FOCUS] impossible d’extraire un point WGS84 sur cette ligne');
+      print('❌ [FOCUS] Impossible d\'extraire un point WGS84 valide');
+      print('   Données disponibles:');
+      r.forEach((key, value) {
+        if (key.contains('x_') || key.contains('y_') || key.contains('lat') || key.contains('lng') || key.contains('lon')) {
+          print('     $key: $value');
+        }
+      });
     }
+
     return null;
   }
 

@@ -209,19 +209,19 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'login_id': ApiService.userId,
         'code_gps': _formData['code_gps'],
       };
-      entityData['x_$coordinatePrefix'] = _formData['latitude'] ?? 0.0;
-      entityData['y_$coordinatePrefix'] = _formData['longitude'] ?? 0.0;
+      entityData['x_$coordinatePrefix'] = _formData['longitude'] ?? 0.0;
+      entityData['y_$coordinatePrefix'] = _formData['latitude'] ?? 0.0;
       if (widget.isSpecialLine) {
         if (widget.type == "Bac") {
-          entityData['x_debut_traversee_bac'] = _formData['latitude_debut'] ?? _formData['latitude'] ?? 0.0;
-          entityData['y_debut_traversee_bac'] = _formData['longitude_debut'] ?? _formData['longitude'] ?? 0.0;
-          entityData['x_fin_traversee_bac'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
-          entityData['y_fin_traversee_bac'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+          entityData['x_debut_traversee_bac'] = _formData['longitude_debut'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_debut_traversee_bac'] = _formData['latitude_debut'] ?? _formData['longitude'] ?? 0.0;
+          entityData['x_fin_traversee_bac'] = _formData['longitude_fin'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_fin_traversee_bac'] = _formData['latitude_fin'] ?? _formData['longitude'] ?? 0.0;
         } else if (widget.type == "Passage Submersible") {
-          entityData['x_debut_passage_submersible'] = _formData['latitude_debut'] ?? _formData['latitude'] ?? 0.0;
-          entityData['y_debut_passage_submersible'] = _formData['longitude_debut'] ?? _formData['longitude'] ?? 0.0;
-          entityData['x_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
-          entityData['y_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+          entityData['x_debut_passage_submersible'] = _formData['longitude_debut'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_debut_passage_submersible'] = _formData['latitude_debut'] ?? _formData['longitude'] ?? 0.0;
+          entityData['x_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['latitude'] ?? 0.0;
+          entityData['y_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['longitude'] ?? 0.0;
         }
       }
       // Si c'est une modification, ajouter l'ID
@@ -454,8 +454,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         entityData['type_bac'] = _formData['type_bac'] ?? 'Non spécifié';
         entityData['nom_cours_eau'] = _formData['nom_cours_eau'] ?? 'Non spécifié';
         // Les coordonnées de début sont déjà dans entityData via le préfixe
-        entityData['x_fin_traversee_bac'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
-        entityData['y_fin_traversee_bac'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+        entityData['x_fin_traversee_bac'] = _formData['longitude_fin'] ?? _formData['latitude'] ?? 0.0;
+        entityData['y_fin_traversee_bac'] = _formData['latitude_fin'] ?? _formData['longitude'] ?? 0.0;
         break;
 
       case 'Dalot':
@@ -465,8 +465,8 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       case 'Passage Submersible':
         entityData['type_materiau'] = _formData['type'] ?? 'Non spécifié';
         // Les coordonnées de début sont déjà dans entityData via le préfixe
-        entityData['x_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['latitude'] ?? 0.0;
-        entityData['y_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['longitude'] ?? 0.0;
+        entityData['x_fin_passage_submersible'] = _formData['longitude_fin'] ?? _formData['latitude'] ?? 0.0;
+        entityData['y_fin_passage_submersible'] = _formData['latitude_fin'] ?? _formData['longitude'] ?? 0.0;
         break;
 
       case 'Point Critique':

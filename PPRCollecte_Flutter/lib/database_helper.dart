@@ -1020,67 +1020,67 @@ class DatabaseHelper {
 
     final coordinateMappings = {
       'localites': {
-        'lat': 'x_localite',
-        'lng': 'y_localite'
+        'lng': 'x_localite',
+        'lat': 'y_localite'
       },
       'ecoles': {
-        'lat': 'x_ecole',
-        'lng': 'y_ecole'
+        'lng': 'x_ecole',
+        'lat': 'y_ecole'
       },
       'marches': {
-        'lat': 'x_marche',
-        'lng': 'y_marche'
+        'lng': 'x_marche',
+        'lat': 'y_marche'
       },
       'services_santes': {
-        'lat': 'x_sante',
-        'lng': 'y_sante'
+        'lng': 'x_sante',
+        'lat': 'y_sante'
       },
       'batiments_administratifs': {
-        'lat': 'x_batiment_administratif',
-        'lng': 'y_batiment_administratif'
+        'lng': 'x_batiment_administratif',
+        'lat': 'y_batiment_administratif'
       },
       'infrastructures_hydrauliques': {
-        'lat': 'x_infrastructure_hydraulique',
-        'lng': 'y_infrastructure_hydraulique'
+        'lng': 'x_infrastructure_hydraulique',
+        'lat': 'y_infrastructure_hydraulique'
       },
       'autres_infrastructures': {
-        'lat': 'x_autre_infrastructure',
-        'lng': 'y_autre_infrastructure'
+        'lng': 'x_autre_infrastructure',
+        'lat': 'y_autre_infrastructure'
       },
       'ponts': {
-        'lat': 'x_pont',
-        'lng': 'y_pont'
+        'lng': 'x_pont',
+        'lat': 'y_pont'
       },
       'buses': {
-        'lat': 'x_buse',
+        'lng': 'x_buse',
         'lng': 'y_buse'
       },
       'dalots': {
-        'lat': 'x_dalot',
-        'lng': 'y_dalot'
+        'lng': 'x_dalot',
+        'lat': 'y_dalot'
       },
       'points_critiques': {
-        'lat': 'x_point_critique',
-        'lng': 'y_point_critique'
+        'lng': 'x_point_critique',
+        'lat': 'y_point_critique'
       },
       'points_coupures': {
-        'lat': 'x_point_coupure',
-        'lng': 'y_point_coupure'
+        'lng': 'x_point_coupure',
+        'lat': 'y_point_coupure'
       },
     };
 
     final multiPointMappings = {
       'bacs': {
-        'lat': 'x_debut_traversee_bac',
-        'lng': 'y_debut_traversee_bac',
-        'lat_fin': 'x_fin_traversee_bac',
-        'lng_fin': 'y_fin_traversee_bac'
+        'lng': 'x_debut_traversee_bac',
+        'lat': 'y_debut_traversee_bac',
+        'lng_fin': 'x_fin_traversee_bac',
+        'lat_fin': 'y_fin_traversee_bac'
       },
       'passages_submersibles': {
-        'lat': 'x_debut_passage_submersible',
-        'lng': 'y_debut_passage_submersible',
-        'lat_fin': 'x_fin_passage_submersible',
-        'lng_fin': 'y_fin_passage_submersible'
+        'lng': 'x_debut_passage_submersible',
+        'lat': 'y_debut_passage_submersible',
+        'lng_fin': 'x_fin_passage_submersible',
+        'lat_fin': 'y_fin_passage_submersible'
       },
     };
 
