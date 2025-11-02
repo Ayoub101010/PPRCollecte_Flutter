@@ -100,6 +100,9 @@ class _HomePageState extends State<HomePage> {
   final DownloadedPistesService _downloadedPistesService = DownloadedPistesService();
   Set<Polyline> _downloadedPistesPolylines = {};
   bool _showDownloadedPistes = true; // comme pour les points
+  DownloadedChausseesService _downloadedChausseesService = DownloadedChausseesService();
+  Set<Polyline> _downloadedChausseesPolylines = {};
+  bool _showDownloadedChaussees = true;
   bool get _autoCenterSuspended => _suspendAutoCenterUntil != null && DateTime.now().isBefore(_suspendAutoCenterUntil!);
   @override
   void initState() {
@@ -112,6 +115,7 @@ class _HomePageState extends State<HomePage> {
     _loadDisplayedSpecialLines();
     _loadDownloadedPoints();
     _loadDownloadedPistes();
+    _loadDownloadedChaussees();
 
     homeController.addListener(
       () {
@@ -189,6 +193,22 @@ class _HomePageState extends State<HomePage> {
       southwest: LatLng(minLat, minLng),
       northeast: LatLng(maxLat, maxLng),
     );
+  }
+
+  Future<void> _loadDownloadedChaussees() async {
+    print('🔄 [_loadDownloadedChaussees] start');
+    try {
+      final lines = await _downloadedChausseesService.getDownloadedChausseesPolylines();
+      print('📏 [_loadDownloadedChaussees] ${lines.length} polylines reçues du service');
+      setState(() {
+        _downloadedChausseesPolylines = lines;
+      });
+      final total = collectedPolylines.length + _finishedPistes.length + _finishedChaussees.length + _downloadedPistesPolylines.length + _downloadedChausseesPolylines.length;
+      print('🗺️  [_loadDownloadedChaussees] total polylines (avant rendu): $total');
+    } catch (e) {
+      print('❌ [_loadDownloadedChaussees] $e');
+    }
+    print('✅ [_loadDownloadedChaussees] done');
   }
 
   Future<void> _focusOnTarget(MapFocusTarget target) async {
@@ -2120,7 +2140,10 @@ class _HomePageState extends State<HomePage> {
       allPolylines.addAll(_downloadedPistesPolylines);
       print('🧩 [MAP] add downloaded pistes: ${_downloadedPistesPolylines.length} polylines');
     }
-
+    if (_showDownloadedChaussees) {
+      allPolylines.addAll(_downloadedChausseesPolylines);
+      print('🧩 [MAP] add downloaded chaussees: ${_downloadedChausseesPolylines.length} polylines');
+    }
     print('🧮 [MAP] allPolylines size = ${allPolylines.length}');
 
     // Ajouter la ligne en cours si active (nouveau système)
@@ -2420,6 +2443,21 @@ class _HomePageState extends State<HomePage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(value ? 'Pistes téléchargées : AFFICHÉES' : 'Pistes téléchargées : MASQUÉES'),
+                          duration: const Duration(milliseconds: 900),
+                        ),
+                      );
+                    },
+                  ),
+                  // === NOUVEAU : même style que le bouton Pistes ===
+                  DownloadedChausseesToggle(
+                    isOn: _showDownloadedChaussees,
+                    count: _downloadedChausseesPolylines.length,
+                    onChanged: (value) {
+                      setState(() => _showDownloadedChaussees = value);
+                      print('🎚️ [_UI] _showDownloadedChaussees = $_showDownloadedChaussees (count=${_downloadedChausseesPolylines.length})');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(value ? 'Chaussées téléchargées : AFFICHÉES' : 'Chaussées téléchargées : MASQUÉES'),
                           duration: const Duration(milliseconds: 900),
                         ),
                       );
@@ -3047,5 +3085,133 @@ class DownloadedPistesService {
       print('❌ [DL-PISTES] Erreur chargement: $e');
       return {};
     }
+  }
+}
+
+class DownloadedChausseesService {
+  final SimpleStorageHelper _storageHelper = SimpleStorageHelper();
+
+  // Couleur par défaut pour les chaussées téléchargées (tu peux changer)
+  static const Color downloadedChausseeColor = Color(0xFF1A7F5A); // vert foncé
+
+  LatLng? _parsePoint(dynamic item) {
+    try {
+      // 1) [lon, lat]
+      if (item is List && item.length >= 2) {
+        final lon = (item[0] as num?)?.toDouble();
+        final lat = (item[1] as num?)?.toDouble();
+        if (lon != null && lat != null) return LatLng(lat, lon);
+      }
+      // 2) {longitude, latitude}
+      if (item is Map) {
+        final lon = (item['longitude'] ?? item['lng']) as num?;
+        final lat = (item['latitude'] ?? item['lat']) as num?;
+        if (lon != null && lat != null) return LatLng(lat.toDouble(), lon.toDouble());
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<LatLng> _parsePointsJson(dynamic raw) {
+    if (raw == null) return [];
+    try {
+      final decoded = (raw is String) ? jsonDecode(raw) : raw;
+      if (decoded is List) {
+        final pts = <LatLng>[];
+        for (final item in decoded) {
+          final p = _parsePoint(item);
+          if (p != null) pts.add(p);
+        }
+        return pts;
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Fallback GeoJSON { "type":"MultiLineString", "coordinates":[ [ [lon,lat], ... ] ] }
+  List<LatLng> _parseGeom(dynamic raw) {
+    try {
+      if (raw is String && raw.trim().startsWith('{')) {
+        final g = jsonDecode(raw);
+        if (g is Map && g['type'] == 'MultiLineString') {
+          final coords = g['coordinates'];
+          if (coords is List && coords.isNotEmpty && coords[0] is List) {
+            final firstLine = coords[0] as List;
+            final pts = <LatLng>[];
+            for (final item in firstLine) {
+              final p = _parsePoint(item);
+              if (p != null) pts.add(p);
+            }
+            return pts;
+          }
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  Future<Set<Polyline>> getDownloadedChausseesPolylines() async {
+    final polylines = <Polyline>{};
+    try {
+      final db = await _storageHelper.database;
+
+      // même filtre que pour les pistes téléchargées
+      final rows = await db.query(
+        'chaussees',
+        where: 'downloaded = ? AND saved_by_user_id = ?',
+        whereArgs: [
+          1,
+          ApiService.userId
+        ],
+      );
+
+      int added = 0, skipped = 0;
+
+      for (final r in rows) {
+        final id = r['id'];
+        final type = (r['type_chaussee'] ?? '').toString(); // ex: 'bitume', 'terre', 'latérite', 'sable', 'bouwal'
+        final endroit = (r['endroit'] ?? '').toString();
+        final codePiste = (r['code_piste'] ?? '').toString();
+
+        // points
+        List<LatLng> pts = _parsePointsJson(r['points_json']);
+        if (pts.isEmpty) {
+          // fallback éventuel (peu probable si points_json est rempli)
+          pts = _parseGeom(r['geom']);
+        }
+        // ignorer si vide
+        if (pts.length < 2) {
+          skipped++;
+          continue;
+        }
+
+        // Style : utilise tes helpers existants si tu veux des patterns/couleurs par type
+        final helper = SimpleStorageHelper();
+        final color = helper.getChausseeColor(type); // mapping déjà présent chez toi
+        final pattern = helper.getChausseePattern(type); // idem
+        final width = 6;
+
+        final pl = Polyline(
+          polylineId: PolylineId('dl_chs_$id'),
+          points: pts,
+          color: color ?? DownloadedChausseesService.downloadedChausseeColor,
+          width: width,
+          patterns: pattern,
+          zIndex: 9, // sous les highlights, au-dessus des fonds
+        );
+
+        polylines.add(pl);
+        added++;
+      }
+
+      print('🎯 [DL-CHAUSSEES] ajoutées: $added | ignorées: $skipped');
+    } catch (e) {
+      print('❌ [DL-CHAUSSEES] Erreur chargement: $e');
+    }
+    return polylines;
   }
 }
