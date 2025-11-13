@@ -4,6 +4,19 @@ import 'category_selector_widget.dart';
 import 'type_selector_widget.dart';
 import 'point_form_widget.dart';
 
+Color _categoryColor(String category) {
+  switch (category.toLowerCase()) {
+    case "infrastructures rurales":
+      return Colors.green;
+    case "ouvrages":
+      return Colors.orange;
+    case "points critiques":
+      return Colors.red;
+    default:
+      return Colors.blueGrey;
+  }
+}
+
 class PointFormScreen extends StatefulWidget {
   final Map<String, dynamic>? pointData;
   final String? agentName;
@@ -27,8 +40,9 @@ class _PointFormScreenState extends State<PointFormScreen> {
   String? selectedCategory;
   String? selectedType;
 
-  void _handleBack() {
+  _handleBack() {
     if (selectedType != null) {
+      // 👉 On est dans le formulaire (un type est sélectionné)
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -41,8 +55,12 @@ class _PointFormScreenState extends State<PointFormScreen> {
             ),
             TextButton(
               onPressed: () {
+                // Fermer la boîte de dialogue
                 Navigator.of(context).pop();
-                Navigator.of(context).pop();
+                // Revenir à la liste des types (et pas à HomePage)
+                setState(() {
+                  selectedType = null;
+                });
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text("Abandonner"),
@@ -50,7 +68,16 @@ class _PointFormScreenState extends State<PointFormScreen> {
           ],
         ),
       );
+    } else if (selectedCategory != null) {
+      // 👉 On est sur la page des TYPES (Infrastructures Rurales, Ouvrages...)
+      //    → Retour vers la page des 3 catégories
+      setState(() {
+        selectedCategory = null;
+        selectedType = null;
+      });
     } else {
+      // 👉 On est sur la page des 3 catégories
+      //    → Retour vers HomePage
       Navigator.of(context).pop();
     }
   }
@@ -87,9 +114,31 @@ class _PointFormScreenState extends State<PointFormScreen> {
   }
 
   void _onBackToTypes() {
-    setState(() {
-      selectedType = null;
-    });
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Abandonner la saisie ?"),
+        content: const Text("Les données non sauvegardées seront perdues."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: () {
+              // Fermer la boîte de dialogue
+              Navigator.of(context).pop();
+              // Revenir à la liste des types
+              setState(() {
+                selectedType = null;
+              });
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text("Abandonner"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -151,10 +200,31 @@ class _PointFormScreenState extends State<PointFormScreen> {
         onCategorySelected: _onCategorySelected,
       );
     } else if (selectedType == null) {
-      return TypeSelectorWidget(
-        category: selectedCategory!,
-        onTypeSelected: _onTypeSelected,
-        onBack: _onBackToCategories,
+      // Page des types d'infrastructures : on ajoute un sous-titre
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            alignment: Alignment.center,
+            child: Text(
+              selectedCategory!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: _categoryColor(selectedCategory!),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: TypeSelectorWidget(
+              category: selectedCategory!,
+              onTypeSelected: _onTypeSelected,
+              onBack: _onBackToCategories,
+            ),
+          ),
+        ],
       );
     } else {
       return PointFormWidget(
