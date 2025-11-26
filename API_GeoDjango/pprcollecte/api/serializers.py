@@ -5,7 +5,7 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest, PointsCoupures, PointsCritiques
 )
 from django.contrib.gis.geos import Point
 from rest_framework_gis.fields import GeometryField
@@ -43,6 +43,51 @@ class CommuneRuraleSerializer(GeoFeatureModelSerializer):
         region = obj.prefectures_id.regions_id.nom if obj.prefectures_id and obj.prefectures_id.regions_id else "N/A"
         return f"{obj.nom}, {prefecture}, {region}"
     
+class PointsCoupuresSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = PointsCoupures
+        geo_field = "geom"
+        fields = '__all__'
+        extra_kwargs = {
+            'fid': {'required': False},         # auto-généré
+            'sqlite_id': {'required': False, 'allow_null': True},
+        }
+
+    def to_internal_value(self, data):
+        """
+        Si le mobile envoie x_point_co / y_point_co,
+        on génère automatiquement la géométrie.
+        """
+        if 'x_point_co' in data and 'y_point_co' in data and not data.get('geom'):
+            x = float(data['x_point_co'])
+            y = float(data['y_point_co'])
+            data['geom'] = Point(x, y, srid=4326)
+        return super().to_internal_value(data)
+
+
+class PointsCritiquesSerializer(GeoFeatureModelSerializer):
+    class Meta:
+        model = PointsCritiques
+        geo_field = "geom"
+        fields = '__all__'
+        extra_kwargs = {
+            'fid': {'required': False},
+            'sqlite_id': {'required': False, 'allow_null': True},
+        }
+
+    def to_internal_value(self, data):
+        """
+        Si le mobile envoie x_point_cr / y_point_cr,
+        on génère automatiquement la géométrie.
+        """
+        if 'x_point_cr' in data and 'y_point_cr' in data and not data.get('geom'):
+            x = float(data['x_point_cr'])
+            y = float(data['y_point_cr'])
+            data['geom'] = Point(x, y, srid=4326)
+        return super().to_internal_value(data)
+
+
+
 class ServicesSantesSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = ServicesSantes

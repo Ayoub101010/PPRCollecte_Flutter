@@ -7,7 +7,7 @@ from .views import (
     EcolesListCreateAPIView, InfrastructuresHydrauliquesListCreateAPIView, LocalitesListCreateAPIView,
     MarchesListCreateAPIView, PassagesSubmersiblesListCreateAPIView, PontsListCreateAPIView,
     CommunesRuralesListCreateAPIView, PrefecturesListCreateAPIView, RegionsListCreateAPIView,
-    UserManagementAPIView,ChausseesTestListCreateAPIView
+    UserManagementAPIView,ChausseesTestListCreateAPIView,PointsCoupuresListCreateAPIView,PointsCritiquesListCreateAPIView
 )
 from .temporal_views import TemporalAnalysisAPIView
 from .geographic_api import GeographyHierarchyAPIView, ZoomToLocationAPIView
@@ -42,7 +42,8 @@ urlpatterns = [
     path('api/passages_submersibles/', PassagesSubmersiblesListCreateAPIView.as_view(), name='api-passages-submersibles'),
     path('api/ponts/', PontsListCreateAPIView.as_view(), name='api-ponts'),
     path('api/chaussees_test/', ChausseesTestListCreateAPIView.as_view(), name='api-chaussees-test'),
-
+    path('api/points_coupures/', PointsCoupuresListCreateAPIView.as_view(), name='api-points-coupures'),
+    path('api/points_critiques/', PointsCritiquesListCreateAPIView.as_view(), name='api-points-critiques'),
     #  APIs d'analyse
     path('api/temporal-analysis/', TemporalAnalysisAPIView.as_view(), name='api-temporal-analysis'),
     

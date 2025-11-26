@@ -12,14 +12,14 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest,PointsCritiques,PointsCoupures
 )
 from .serializers import (
     ServicesSantesSerializer, AutresInfrastructuresSerializer, BacsSerializer,
     BatimentsAdministratifsSerializer, BusesSerializer, DalotsSerializer,
     EcolesSerializer, InfrastructuresHydrauliquesSerializer, LocalitesSerializer,
     MarchesSerializer, PassagesSubmersiblesSerializer, PontsSerializer, CommuneRuraleSerializer,
-      PrefectureSerializer, RegionSerializer,UserCreateSerializer, UserUpdateSerializer, ChausseesTestSerializer
+      PrefectureSerializer, RegionSerializer,UserCreateSerializer, UserUpdateSerializer, ChausseesTestSerializer, PointsCoupuresSerializer,PointsCritiquesSerializer
 )
 
 class RegionsListCreateAPIView(generics.ListCreateAPIView):
@@ -63,6 +63,44 @@ class ChausseesTestListCreateAPIView(generics.ListCreateAPIView):
             qs = qs.filter(code_piste_id=code_piste)
 
         return qs
+
+class PointsCoupuresListCreateAPIView(generics.ListCreateAPIView):
+    serializer_class = PointsCoupuresSerializer
+
+    def get_queryset(self):
+        qs = PointsCoupures.objects.all()
+
+        # filtre par commune
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            qs = qs.filter(commune_id=commune_id)
+
+        # filtre par chaussée
+        chaussee_id = self.request.query_params.get('chaussee_id')
+        if chaussee_id:
+            qs = qs.filter(chaussee_id=chaussee_id)
+
+        return qs
+
+
+class PointsCritiquesListCreateAPIView(generics.ListCreateAPIView):
+    serializer_class = PointsCritiquesSerializer
+
+    def get_queryset(self):
+        qs = PointsCritiques.objects.all()
+
+        commune_id = self.request.query_params.get('commune_id')
+        if commune_id:
+            qs = qs.filter(commune_id=commune_id)
+
+        chaussee_id = self.request.query_params.get('chaussee_id')
+        if chaussee_id:
+            qs = qs.filter(chaussee_id=chaussee_id)
+
+        return qs
+
+
+
 class ServicesSantesListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = ServicesSantesSerializer
     

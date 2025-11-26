@@ -202,6 +202,77 @@ class ChausseesTest(models.Model):
     def __str__(self):
         return f"Chaussée {self.fid} ({self.code_piste_id})"
 
+from django.contrib.gis.db import models
+
+# ... (tes autres modèles)
+
+class PointsCoupures(models.Model):
+    fid = models.BigAutoField(primary_key=True, db_column='fid')
+    geom = models.PointField(srid=4326, null=True, blank=True)
+
+    # colonne "id" dans PostgreSQL
+    sqlite_id = models.BigIntegerField(null=True, blank=True, db_column='id')
+
+    cause_coup = models.CharField(max_length=50, null=True, blank=True)
+    x_point_co = models.FloatField(null=True, blank=True)
+    y_point_co = models.FloatField(null=True, blank=True)
+
+    chaussee_id = models.BigIntegerField(null=True, blank=True, db_column='chaussee_id')
+
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    commune_id = models.ForeignKey(
+        'CommuneRurale',
+        db_column='commune_id',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='points_coupures'
+    )
+
+    class Meta:
+        db_table = 'points_coupures'
+        managed = False  # table déjà créée dans PostGIS
+
+    def __str__(self):
+        return f"Point coupure {self.fid}"
+
+
+class PointsCritiques(models.Model):
+    fid = models.BigAutoField(primary_key=True, db_column='fid')
+    geom = models.PointField(srid=4326, null=True, blank=True)
+
+    sqlite_id = models.BigIntegerField(null=True, blank=True, db_column='id')
+
+    type_point = models.CharField(max_length=50, null=True, blank=True)
+    x_point_cr = models.FloatField(null=True, blank=True)
+    y_point_cr = models.FloatField(null=True, blank=True)
+
+    chaussee_id = models.BigIntegerField(null=True, blank=True, db_column='chaussee_id')
+
+    created_at = models.CharField(max_length=24, null=True, blank=True)
+    updated_at = models.CharField(max_length=24, null=True, blank=True)
+    code_gps = models.CharField(max_length=254, null=True, blank=True)
+
+    commune_id = models.ForeignKey(
+        'CommuneRurale',
+        db_column='commune_id',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='points_critiques'
+    )
+
+    class Meta:
+        db_table = 'points_critiques'
+        managed = False
+
+    def __str__(self):
+        return f"Point critique {self.fid}"
+
+
 class ServicesSantes(models.Model):
     fid = models.BigAutoField(primary_key=True)
     geom = models.PointField(srid=4326)
