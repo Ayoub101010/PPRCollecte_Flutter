@@ -5,7 +5,7 @@ from .models import Piste
 from .models import (
     ServicesSantes, AutresInfrastructures, Bacs, BatimentsAdministratifs,
     Buses, Dalots, Ecoles, InfrastructuresHydrauliques, Localites,
-    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, ChausseesTest, PointsCoupures, PointsCritiques
+    Marches, PassagesSubmersibles, Ponts, CommuneRurale, Prefecture, Region, Chaussees, PointsCoupures, PointsCritiques
 )
 from django.contrib.gis.geos import Point
 from rest_framework_gis.fields import GeometryField
@@ -348,13 +348,13 @@ class PisteWriteSerializer(GeoFeatureModelSerializer):
             data['geom'] = geom
         return super().to_internal_value(data)
 
-class ChausseesTestSerializer(GeoFeatureModelSerializer):
+class ChausseesSerializer(GeoFeatureModelSerializer):
     class Meta:
-        model = ChausseesTest
+        model = Chaussees
         geo_field = "geom"
         fields = "__all__"
         extra_kwargs = {
-            'fid': {'required': False},  # auto
+            'fid': {'required': False},
         }
 
     def to_internal_value(self, data):
@@ -373,6 +373,7 @@ class ChausseesTestSerializer(GeoFeatureModelSerializer):
             data["geom"] = mls
 
         return super().to_internal_value(data)
+
 # LECTURE : expose l'annotation 'geom_4326' comme géométrie principale
 class PisteReadSerializer(GeoFeatureModelSerializer):
     geom_4326 = GeometryField(read_only=True)  # annotation fournie par la view

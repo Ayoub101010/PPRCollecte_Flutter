@@ -153,13 +153,13 @@ class Piste(models.Model):
 
 
 
-class ChausseesTest(models.Model):
+class Chaussees(models.Model):
     fid = models.BigAutoField(primary_key=True, db_column='fid')
     geom = models.MultiLineStringField(srid=4326, null=True, blank=True)
     id = models.BigIntegerField(null=True, blank=True, db_column='id')
 
     x_debut_ch = models.FloatField(null=True, blank=True)
-    y_fin_chau = models.FloatField(null=True, blank=True)   # (nom exact de la colonne)
+    y_fin_chau = models.FloatField(null=True, blank=True)
     type_chaus = models.CharField(max_length=254, null=True, blank=True)
     etat_piste = models.CharField(max_length=254, null=True, blank=True)
     created_at = models.CharField(max_length=50, null=True, blank=True)
@@ -167,7 +167,7 @@ class ChausseesTest(models.Model):
     code_gps = models.CharField(max_length=254, null=True, blank=True)
     endroit = models.CharField(max_length=32, null=True, blank=True)
 
-    # FK vers pistes(code_piste)
+    
     code_piste = models.ForeignKey(
         'Piste',
         to_field='code_piste',
@@ -196,13 +196,12 @@ class ChausseesTest(models.Model):
     )
 
     class Meta:
-        db_table = 'chaussees_test'
-        managed = False  # table déjà créée en base
+        db_table = 'chaussees'   
+        managed = False          
 
     def __str__(self):
         return f"Chaussée {self.fid} ({self.code_piste_id})"
 
-from django.contrib.gis.db import models
 
 # ... (tes autres modèles)
 
