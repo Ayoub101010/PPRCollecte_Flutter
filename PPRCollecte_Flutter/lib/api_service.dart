@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:async'; // pour TimeoutException
+import 'dart:io'; // pour SocketException
 
 class ApiService {
   static const String baseUrl = 'http://10.0.2.2:8000';
@@ -62,17 +64,21 @@ class ApiService {
       final url = Uri.parse('$baseUrl/api/$endpoint/');
       print('🌐 Envoi à $endpoint:');
       print('   Données: ${jsonEncode(data)}');
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-        },
-        body: jsonEncode(data),
-      );
-// ⭐⭐ LOG de la réponse
+
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              if (authToken != null) 'Authorization': 'Bearer $authToken',
+            },
+            body: jsonEncode(data),
+          )
+          .timeout(const Duration(seconds: 5));
+
       print('🌐 Réponse de $endpoint: ${response.statusCode}');
       print('🌐 Body: ${response.body}');
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ Données envoyées avec succès à $endpoint');
         return true;
@@ -80,6 +86,12 @@ class ApiService {
         print('❌ Erreur API ($endpoint): ${response.statusCode} - ${response.body}');
         return false;
       }
+    } on TimeoutException catch (e) {
+      print('⏰ Timeout lors de l\'appel à $endpoint: $e');
+      return false;
+    } on SocketException catch (e) {
+      print('📡 Erreur réseau lors de l\'appel à $endpoint: $e');
+      return false;
     } catch (e) {
       print('❌ Exception lors de l\'envoi à $endpoint: $e');
       return false;

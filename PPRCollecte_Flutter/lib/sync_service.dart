@@ -671,6 +671,7 @@ class SyncService {
       if (onComplete != null) onComplete(successCount);
     } catch (e) {
       result.errors.add('$tableName: $e');
+      result.failedCount++;
       print('❌ Erreur synchronisation $tableName: $e');
       if (onComplete != null) onComplete(0);
     }

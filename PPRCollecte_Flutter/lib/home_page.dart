@@ -1385,69 +1385,68 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showSyncResult(
-    SyncResult result,
-  ) {
+  void _showSyncResult(SyncResult result) {
     showDialog(
       context: context,
-      builder: (
-        ctx,
-      ) =>
-          AlertDialog(
-        title: const Text(
-          'Synchronisation terminée',
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '✅ ${result.successCount} succès',
-            ),
-            Text(
-              '❌ ${result.failedCount} échecs',
-            ),
-            if (result.errors.isNotEmpty) ...[
-              const SizedBox(
-                height: 10,
-              ),
-              const Text(
-                'Détails des erreurs:',
-              ),
-              const SizedBox(
-                height: 5,
-              ),
-              SizedBox(
-                height: 100,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: result.errors.length,
-                  itemBuilder: (
-                    ctx,
-                    i,
-                  ) =>
-                      Text(
-                    '• ${result.errors[i]}',
-                    style: const TextStyle(
-                      fontSize: 12,
+      builder: (ctx) {
+        // On limite le nombre d'erreurs affichées
+        final errorsToShow = result.errors.take(10).toList();
+        final remaining = result.errors.length - errorsToShow.length;
+
+        return AlertDialog(
+          title: const Text('Synchronisation terminée'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('✅ ${result.successCount} succès'),
+                Text('❌ ${result.failedCount} échecs'),
+
+                // 💡 Message d'astuce en cas d'échec
+                if (result.failedCount > 0) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '💡 Astuce : Vérifiez votre connexion internet ou réessayez plus tard.',
+                  ),
+                ],
+
+                if (errorsToShow.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const Text('Détails des erreurs:'),
+                  const SizedBox(height: 5),
+
+                  // On affiche seulement les 10 premières erreurs
+                  ...errorsToShow.map(
+                    (e) => Text(
+                      '• $e',
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(
-              ctx,
-            ),
-            child: const Text(
-              'OK',
+
+                  // S’il reste encore des erreurs, on ajoute une ligne de résumé
+                  if (remaining > 0) ...[
+                    const SizedBox(height: 5),
+                    Text(
+                      '• ... et $remaining autres erreurs.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
             ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1732,65 +1731,51 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Méthode AVEC Future pour la logique async
-  // Remplacer la méthode _performSync() par :
+
   Future<void> _performSync() async {
-    setState(
-      () {
-        isSyncing = true;
-        _syncProgressValue = 0.0;
-        _syncProcessedItems = 0;
-        _syncTotalItems = 1;
-      },
-    );
+    setState(() {
+      isSyncing = true;
+      _syncProgressValue = 0.0;
+      _syncProcessedItems = 0;
+      _syncTotalItems = 1;
+    });
 
     try {
       final result = await SyncService().syncAllDataSequential(
-        onProgress: (
-          progress,
-          currentOperation,
-          processed,
-          total,
-        ) {
-          double safeProgress = progress.isNaN || progress.isInfinite
-              ? 0.0
-              : progress.clamp(
-                  0.0,
-                  1.0,
-                );
+        onProgress: (progress, currentOperation, processed, total) {
+          double safeProgress = progress.isNaN || progress.isInfinite ? 0.0 : progress.clamp(0.0, 1.0);
           int safeProcessed = processed.isNaN || processed.isInfinite ? 0 : processed;
           int safeTotal = total.isNaN || total.isInfinite ? 1 : total;
 
-          setState(
-            () {
-              _syncProgressValue = safeProgress;
-              _currentSyncOperation = currentOperation;
-              _syncProcessedItems = safeProcessed;
-              _syncTotalItems = safeTotal;
-            },
-          );
+          setState(() {
+            _syncProgressValue = safeProgress;
+            _currentSyncOperation = currentOperation;
+            _syncProcessedItems = safeProcessed;
+            _syncTotalItems = safeTotal;
+          });
         },
-      );
+      )
+          // ⏰ TIMEOUT GLOBAL SUR TOUTE LA SYNCHRO
+          .timeout(const Duration(seconds: 45));
 
-      setState(
-        () => lastSyncResult = result,
-      );
-      setState(
-        () => isSyncing = false,
-      );
-      _showSyncResult(
-        result,
+      setState(() => lastSyncResult = result);
+      setState(() => isSyncing = false);
+      _showSyncResult(result);
+    } on TimeoutException catch (_) {
+      // 🔴 La synchro a mis trop de temps / bloqué
+      setState(() => isSyncing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '⏰ La synchronisation a pris trop de temps. Vérifiez votre connexion et réessayez.',
+          ),
+        ),
       );
     } catch (e) {
-      setState(
-        () => isSyncing = false,
-      );
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      setState(() => isSyncing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Erreur: $e',
-          ),
+          content: Text('Erreur: $e'),
         ),
       );
     }
