@@ -85,7 +85,7 @@ class SyncService {
       processedItems += pisteCount;
     }
 
-    // ⭐⭐ SYNCHRONISATION DES CHAUSSÉES (NOUVEAU)
+    //  SYNCHRONISATION DES CHAUSSÉES
     if (chausseeCount > 0) {
       double safeProgress = safeTotalItems > 0 ? processedItems / safeTotalItems : 0.0;
       safeProgress = safeProgress.isNaN || safeProgress.isInfinite ? 0.0 : safeProgress.clamp(0.0, 1.0);
@@ -94,7 +94,7 @@ class SyncService {
         onProgress(safeProgress, "Synchronisation des chaussées...", processedItems, safeTotalItems);
       }
 
-      await _syncTable('chaussees', 'chaussees_test', result, onProgress: (processed, total) {
+      await _syncTable('chaussees', 'chaussees', result, onProgress: (processed, total) {
         if (onProgress != null) {
           double safeInnerProgress = safeTotalItems > 0 ? (processedItems + processed) / safeTotalItems : 0.0;
           safeInnerProgress = safeInnerProgress.isNaN || safeInnerProgress.isInfinite ? 0.0 : safeInnerProgress.clamp(0.0, 1.0);
@@ -173,7 +173,7 @@ class SyncService {
         print('   $key: $value (type: ${value?.runtimeType})');
       });
 
-      return await ApiService.postData('chaussees_test', apiData);
+      return await ApiService.postData('chaussees', apiData);
     } catch (e) {
       print('❌ Erreur synchronisation chaussée: $e');
       print('📋 Données problématiques: $data');
@@ -782,7 +782,8 @@ class SyncService {
           processedItems++;
           print('✅ Chaussée sauvegardée: ${properties['code_piste']}');
         } else {
-          print('⏭️ Chaussée ignorée - commune_id différent: ${properties['commune_id']} vs ${ApiService.communeId}');
+          print('⏭️ Chaussée ignorée - commune_id différent: '
+              '${properties['communes_rurales_id']} vs ${ApiService.communeId}');
         }
 
         if (onProgress != null) {

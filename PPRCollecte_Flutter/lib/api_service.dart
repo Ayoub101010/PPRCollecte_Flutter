@@ -95,7 +95,7 @@ class ApiService {
 
 // Dans ApiService.dart
   static Future<bool> syncChausseeTest(Map<String, dynamic> data) async {
-    return await postData('chaussees_test', data);
+    return await postData('chaussees', data);
   }
 
   static Future<bool> syncLocalite(Map<String, dynamic> data) async {
@@ -804,9 +804,10 @@ class ApiService {
 
   static Future<List<dynamic>> fetchChausseesTest() async {
     try {
-      final url = Uri.parse('$baseUrl/api/chaussees_test/?commune_id=$communeId');
+      // 🔁 ICI : on remplace chaussees_test par chaussees
+      final url = Uri.parse('$baseUrl/api/chaussees/?commune_id=$communeId');
 
-      print('🌐 Téléchargement chaussees_test pour commune_id: $communeId');
+      print('🌐 Téléchargement chaussées pour commune_id: $communeId');
       final response = await http.get(
         url,
         headers: {
@@ -820,11 +821,11 @@ class ApiService {
         print('✅ ${data['features']?.length ?? 0} chaussées récupérées pour commune_id: $communeId');
         return data['features']; // Extraire les features du GeoJSON
       } else {
-        print('❌ Erreur GET (chaussees_test): ${response.statusCode}');
+        print('❌ Erreur GET (chaussees): ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      print('❌ Exception lors de la récupération des chaussees_test: $e');
+      print('❌ Exception lors de la récupération des chaussees: $e');
       return [];
     }
   }
