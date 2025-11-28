@@ -724,27 +724,34 @@ class ApiService {
 
   /// Méthode générique pour récupérer des données
   static Future<List<dynamic>> fetchData(String endpoint) async {
+    final url = Uri.parse('$baseUrl/api/$endpoint/?commune_id=$communeId');
+    print('🌐 Téléchargement $endpoint pour commune_id: $communeId');
+
     try {
-      final url = Uri.parse('$baseUrl/api/$endpoint/?commune_id=$communeId');
-      print('🌐 Téléchargement $endpoint pour commune_id: $communeId');
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
-      );
+      ).timeout(const Duration(seconds: 8)); // ⏰ timeout GET
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return data['features']; // Extraire les features du GeoJSON
+        return data['features'];
       } else {
-        print('❌ Erreur GET ($endpoint): ${response.statusCode}');
-        return [];
+        print('❌ Erreur GET ($endpoint): ${response.statusCode} - ${response.body}');
+        throw Exception('Erreur GET ($endpoint): ${response.statusCode}');
       }
+    } on TimeoutException catch (e) {
+      print('⏰ Timeout lors du GET $endpoint: $e');
+      throw Exception('Timeout GET $endpoint');
+    } on SocketException catch (e) {
+      print('📡 Erreur réseau lors du GET $endpoint: $e');
+      throw Exception('Erreur réseau GET $endpoint');
     } catch (e) {
       print('❌ Exception lors de la récupération de $endpoint: $e');
-      return [];
+      throw Exception('Erreur inconnue GET $endpoint: $e');
     }
   }
 
@@ -815,58 +822,69 @@ class ApiService {
   }
 
   static Future<List<dynamic>> fetchChausseesTest() async {
-    try {
-      // 🔁 ICI : on remplace chaussees_test par chaussees
-      final url = Uri.parse('$baseUrl/api/chaussees/?commune_id=$communeId');
+    final url = Uri.parse('$baseUrl/api/chaussees/?commune_id=$communeId');
+    print('🌐 Téléchargement chaussées pour commune_id: $communeId');
 
-      print('🌐 Téléchargement chaussées pour commune_id: $communeId');
+    try {
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
-      );
+      ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('✅ ${data['features']?.length ?? 0} chaussées récupérées pour commune_id: $communeId');
-        return data['features']; // Extraire les features du GeoJSON
+        print('✅ ${data['features']?.length ?? 0} chaussées récupérées');
+        return data['features'];
       } else {
-        print('❌ Erreur GET (chaussees): ${response.statusCode}');
-        return [];
+        print('❌ Erreur GET (chaussees): ${response.statusCode} - ${response.body}');
+        throw Exception('Erreur GET (chaussees): ${response.statusCode}');
       }
+    } on TimeoutException catch (e) {
+      print('⏰ Timeout lors du GET chaussees: $e');
+      throw Exception('Timeout GET chaussees');
+    } on SocketException catch (e) {
+      print('📡 Erreur réseau lors du GET chaussees: $e');
+      throw Exception('Erreur réseau GET chaussees');
     } catch (e) {
       print('❌ Exception lors de la récupération des chaussees: $e');
-      return [];
+      throw Exception('Erreur inconnue GET chaussees: $e');
     }
   }
 
   // Dans ApiService, ajouter cette méthode
   static Future<List<dynamic>> fetchPistes() async {
-    try {
-      final url = Uri.parse('$baseUrl/api/pistes/?communes_rurales_id=$communeId');
+    final url = Uri.parse('$baseUrl/api/pistes/?communes_rurales_id=$communeId');
+    print('🌐 Téléchargement pistes pour communes_rurales_id: $communeId');
 
-      print('🌐 Téléchargement pistes pour communes_rurales_id: $communeId');
+    try {
       final response = await http.get(
         url,
         headers: {
           'Content-Type': 'application/json',
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
-      );
+      ).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('✅ ${data['features']?.length ?? 0} pistes récupérées pour communes_rurales_id: $communeId');
-        return data['features']; // Extraire les features du GeoJSON
+        print('✅ ${data['features']?.length ?? 0} pistes récupérées');
+        return data['features'];
       } else {
-        print('❌ Erreur GET (pistes): ${response.statusCode}');
-        return [];
+        print('❌ Erreur GET (pistes): ${response.statusCode} - ${response.body}');
+        throw Exception('Erreur GET (pistes): ${response.statusCode}');
       }
+    } on TimeoutException catch (e) {
+      print('⏰ Timeout lors du GET pistes: $e');
+      throw Exception('Timeout GET pistes');
+    } on SocketException catch (e) {
+      print('📡 Erreur réseau lors du GET pistes: $e');
+      throw Exception('Erreur réseau GET pistes');
     } catch (e) {
       print('❌ Exception lors de la récupération des pistes: $e');
-      return [];
+      throw Exception('Erreur inconnue GET pistes: $e');
     }
   }
 }

@@ -1407,7 +1407,7 @@ class _HomePageState extends State<HomePage> {
                 if (result.failedCount > 0) ...[
                   const SizedBox(height: 8),
                   const Text(
-                    '💡 Astuce : Vérifiez votre connexion internet ou réessayez plus tard.',
+                    '💡 Vérifiez votre connexion internet ou réessayez plus tard.',
                   ),
                 ],
 
@@ -1500,70 +1500,60 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showDownloadResult(
-    SyncResult result,
-  ) {
+  void _showDownloadResult(SyncResult result) {
     showDialog(
       context: context,
-      builder: (
-        ctx,
-      ) =>
-          AlertDialog(
-        title: const Text(
-          'Sauvegarde terminée',
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '📥 ${result.successCount} données sauvegardées',
-            ),
-            if (result.failedCount > 0)
-              Text(
-                '❌ ${result.failedCount} données non sauvegardées',
-              ),
-            if (result.errors.isNotEmpty) ...[
-              const SizedBox(
-                height: 10,
-              ),
-              const Text(
-                'Détails des erreurs:',
-              ),
-              const SizedBox(
-                height: 5,
-              ),
-              SizedBox(
-                height: 100,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: result.errors.length,
-                  itemBuilder: (
-                    ctx,
-                    i,
-                  ) =>
-                      Text(
-                    '• ${result.errors[i]}',
-                    style: const TextStyle(
-                      fontSize: 12,
+      builder: (ctx) {
+        final errorsToShow = result.errors.take(10).toList();
+        final remaining = result.errors.length - errorsToShow.length;
+
+        return AlertDialog(
+          title: const Text('Sauvegarde terminée'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('📥 ${result.successCount} données sauvegardées'),
+                if (result.failedCount > 0) Text('❌ ${result.failedCount} types de données n’ont pas pu être mis à jour'),
+                if (result.failedCount > 0) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '💡 : Vérifiez votre connexion internet ou réessayez plus tard.',
+                  ),
+                ],
+                if (errorsToShow.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const Text('Détails des erreurs:'),
+                  const SizedBox(height: 5),
+                  ...errorsToShow.map(
+                    (e) => Text(
+                      '• $e',
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(
-              ctx,
-            ),
-            child: const Text(
-              'OK',
+                  if (remaining > 0) ...[
+                    const SizedBox(height: 5),
+                    Text(
+                      '• ... et $remaining autres problèmes.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
             ),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 
