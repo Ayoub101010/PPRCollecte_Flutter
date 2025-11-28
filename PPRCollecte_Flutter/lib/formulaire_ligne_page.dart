@@ -624,7 +624,21 @@ class _FormulairePageState extends State<FormulaireLignePage> {
 
     try {
       await Future.delayed(const Duration(seconds: 1));
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
 
+      if (loginId == null) {
+        print('❌ [_savePiste] Impossible de déterminer login_id');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de déterminer l’utilisateur (login_id).'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
       int? communeRuralesId;
       if (ApiService.communeId != null) {
         // En ligne : utiliser l'API
@@ -678,7 +692,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         'is_editing': widget.isEditingMode,
 
         'sync_status': 'pending',
-        'login_id': ApiService.userId,
+        'login_id': loginId,
       };
       print('🔍 Données envoyées à savePiste:');
       print('   commune_rurale_id (nom): ${pisteData['commune_rurale_id']}');

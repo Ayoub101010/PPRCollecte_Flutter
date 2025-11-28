@@ -185,7 +185,21 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       if (tableName == null) {
         throw Exception('Table non configurée pour ${widget.type}');
       }
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
 
+      if (loginId == null) {
+        print('❌ [_handleSave] Impossible de déterminer login_id');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de déterminer l’utilisateur (login_id).'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
       final coordinatePrefix = _getCoordinatePrefix(tableName);
 // CORRECTION: Formater la date avec l'heure actuelle
       String formatDateWithCurrentTime(String? dateString) {
@@ -206,7 +220,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
         'nom': _formData['nom'] ?? 'Sans nom',
         'enqueteur': _formData['enqueteur'] ?? 'Anonyme',
         'code_piste': _formData['code_piste'],
-        'login_id': ApiService.userId,
+        'login_id': loginId,
         'code_gps': _formData['code_gps'],
       };
       entityData['x_$coordinatePrefix'] = _formData['longitude'] ?? 0.0;
@@ -259,7 +273,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
       _addSpecificFields(entityData, widget.type, config);
 
       // Insertion ou mise à jour dans la base
-      final dbHelper = DatabaseHelper();
+
       int id;
 
       if (widget.pointData != null && widget.pointData!['id'] != null) {

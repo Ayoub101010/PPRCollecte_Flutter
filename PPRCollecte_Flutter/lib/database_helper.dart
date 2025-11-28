@@ -1250,6 +1250,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1260,7 +1261,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1283,7 +1284,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1308,7 +1309,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
-
+      final viewerId = await DatabaseHelper().resolveLoginId();
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
         return; // Ne pas sauvegarder ses propres données
@@ -1318,7 +1319,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1341,7 +1342,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1365,6 +1366,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1375,7 +1377,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1398,7 +1400,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1422,6 +1424,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1432,7 +1435,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1455,7 +1458,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1478,6 +1481,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1488,7 +1492,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1511,7 +1515,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1534,6 +1538,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1544,7 +1549,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1567,7 +1572,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1590,6 +1595,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1600,7 +1606,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1623,7 +1629,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1646,6 +1652,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1656,7 +1663,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1681,7 +1688,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1704,6 +1711,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       // ⭐⭐ DEBUG: Vérifier la structure
       print('🔍 DEBUG BAC STRUCTURE:');
@@ -1721,7 +1729,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1775,7 +1783,7 @@ class DatabaseHelper {
             'synced': 0,
             'downloaded': 1,
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1799,6 +1807,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1809,7 +1818,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1831,7 +1840,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1854,6 +1863,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -1864,7 +1874,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1887,7 +1897,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -1910,6 +1920,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       // ⭐⭐ DEBUG: Vérifier la structure
       print('🔍 DEBUG PASSAGE SUBMERSIBLE STRUCTURE:');
@@ -1927,7 +1938,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -1980,7 +1991,7 @@ class DatabaseHelper {
             'synced': 0,
             'downloaded': 1,
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -2004,6 +2015,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -2014,7 +2026,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -2036,7 +2048,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -2059,6 +2071,7 @@ class DatabaseHelper {
       final geometry = geoJsonData['geometry'];
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
+      final viewerId = await DatabaseHelper().resolveLoginId();
 
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
@@ -2069,7 +2082,7 @@ class DatabaseHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
-          ApiService.userId
+          viewerId
         ],
         limit: 1,
       );
@@ -2091,7 +2104,7 @@ class DatabaseHelper {
             'synced': 0, // ← Donnée téléchargée, pas synchronisée
             'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
             'login_id': dataUserId ?? 'Non spécifié',
-            'saved_by_user_id': ApiService.userId,
+            'saved_by_user_id': viewerId,
             'commune_id': communeId,
             'date_sync': DateTime.now().toIso8601String(),
           },
@@ -2159,6 +2172,8 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> loadDisplayedSpecialLines() async {
     final db = await database;
+    final loginId = await _resolveLoginId();
+
     final tableExists = await _tableExists(db, 'displayed_special_lines');
     if (!tableExists) return [];
 
@@ -2166,7 +2181,7 @@ class DatabaseHelper {
       'displayed_special_lines',
       where: 'login_id = ?',
       whereArgs: [
-        ApiService.userId
+        loginId
       ],
     );
   }
@@ -2233,6 +2248,8 @@ class DatabaseHelper {
     print('✅ Point sauvegardé pour affichage: $name (ID: $id)');
   }
 
+//  Méthode publique pour les autres fichiers
+  Future<int?> resolveLoginId() => _resolveLoginId();
 // Helper minimal pour résoudre login_id : API > users > null
   Future<int?> _resolveLoginId() async {
     // 1) Priorité à l'API

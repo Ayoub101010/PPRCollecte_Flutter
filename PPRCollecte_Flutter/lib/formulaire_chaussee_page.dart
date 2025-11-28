@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 import 'piste_chaussee_db_helper.dart';
 import 'api_service.dart';
+import 'database_helper.dart';
 
 class FormulaireChausseePage extends StatefulWidget {
   final List<LatLng> chausseePoints;
@@ -148,6 +149,21 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
 
     try {
       await Future.delayed(const Duration(seconds: 1));
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
+
+      if (loginId == null) {
+        print('❌ [_saveChaussee] Impossible de déterminer login_id');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Impossible de déterminer l’utilisateur (login_id).'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
       String codePiste;
       if (widget.isEditingMode && widget.initialData != null) {
         codePiste = widget.initialData!['code_piste'] ?? _codePisteController.text;
@@ -187,7 +203,7 @@ class _FormulaireChausseePageState extends State<FormulaireChausseePage> {
         'is_editing': widget.isEditingMode,
 
         'sync_status': 'pending',
-        'login_id': ApiService.userId,
+        'login_id': loginId,
       };
       if (widget.isEditingMode && widget.initialData != null) {
         chausseeData['id'] = widget.initialData!['id'];

@@ -625,6 +625,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDisplayedChaussees() async {
     try {
       final storageHelper = SimpleStorageHelper();
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       final displayedChaussees = await storageHelper.loadDisplayedChaussees();
 
       setState(
@@ -634,7 +636,7 @@ class _HomePageState extends State<HomePage> {
       );
 
       print(
-        '✅ ${displayedChaussees.length} chaussées rechargées pour user: ${ApiService.userId}',
+        '✅ ${displayedChaussees.length} chaussées rechargées pour user: $loginId',
       );
     } catch (e) {
       print(
@@ -1074,7 +1076,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDisplayedPistes() async {
     try {
       final storageHelper = SimpleStorageHelper();
-
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       // ⭐⭐ SUPPRIMER CETTE LIGNE INUTILE ⭐⭐
       // final db = await storageHelper.database;
 
@@ -1085,7 +1088,7 @@ class _HomePageState extends State<HomePage> {
             (
               piste,
             ) =>
-                piste['login_id'] == ApiService.userId,
+                piste['login_id'] == loginId,
           )
           .toList();
 
@@ -2689,7 +2692,11 @@ class DownloadedPointsService {
       ];
 
       final Set<Marker> markers = {};
-
+      final loginId = await DatabaseHelper().resolveLoginId();
+      if (loginId == null) {
+        print('❌ [DL-POINTS] Impossible de déterminer login_id (viewer)');
+        return {};
+      }
       for (var tableName in pointTables) {
         try {
           final db = await _dbHelper.database;
@@ -2700,7 +2707,7 @@ class DownloadedPointsService {
             where: 'downloaded = ? AND saved_by_user_id = ?',
             whereArgs: [
               1,
-              ApiService.userId,
+              loginId
             ],
           );
 
@@ -2952,14 +2959,18 @@ class DownloadedPistesService {
   Future<Set<Polyline>> getDownloadedPistesPolylines() async {
     try {
       final db = await _storageHelper.database;
-
+      final loginId = await DatabaseHelper().resolveLoginId();
+      if (loginId == null) {
+        print('❌ [DL-PISTES] Impossible de déterminer login_id (viewer)');
+        return {};
+      }
       print('🔎 [DL-PISTES] Chargement (downloaded=1, saved_by_user_id=${ApiService.userId})');
       final pistes = await db.query(
         'pistes',
         where: 'downloaded = ? AND saved_by_user_id = ?',
         whereArgs: [
           1,
-          ApiService.userId
+          loginId
         ],
       );
       print('📦 [DL-PISTES] ${pistes.length} ligne(s) trouvée(s) en SQLite (table pistes)');
@@ -3133,14 +3144,18 @@ class DownloadedChausseesService {
     final polylines = <Polyline>{};
     try {
       final db = await _storageHelper.database;
-
+      final loginId = await DatabaseHelper().resolveLoginId();
+      if (loginId == null) {
+        print('❌ [DL-CHAUSSEES] Impossible de déterminer login_id (viewer)');
+        return {};
+      }
       // même filtre que pour les pistes téléchargées
       final rows = await db.query(
         'chaussees',
         where: 'downloaded = ? AND saved_by_user_id = ?',
         whereArgs: [
           1,
-          ApiService.userId
+          loginId
         ],
       );
 

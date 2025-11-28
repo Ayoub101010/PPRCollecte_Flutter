@@ -145,6 +145,8 @@ class SimpleStorageHelper {
   ) async {
     try {
       final db = await database;
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       final pointsJson = jsonEncode(points
           .map((p) => {
                 'lat': p.latitude,
@@ -156,7 +158,7 @@ class SimpleStorageHelper {
         'displayed_chaussees',
         where: 'login_id = ? AND code_piste = ?',
         whereArgs: [
-          ApiService.userId,
+          loginId,
           codePiste
         ],
       );
@@ -174,7 +176,7 @@ class SimpleStorageHelper {
           where: 'id = ? AND login_id = ?',
           whereArgs: [
             existing.first['id'],
-            ApiService.userId
+            loginId
           ],
         );
       } else {
@@ -182,7 +184,7 @@ class SimpleStorageHelper {
           'points_json': pointsJson,
           'type_chaussee': typeChaussee, // ✅ enregistré
           'width': width.toInt(),
-          'login_id': ApiService.userId,
+          'login_id': loginId,
           'code_piste': codePiste,
           'endroit': endroit,
           'created_at': DateTime.now().toIso8601String(),
@@ -238,6 +240,13 @@ class SimpleStorageHelper {
   Future<void> saveDisplayedPiste(List<LatLng> points, Color color, double width) async {
     try {
       final db = await database;
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
+
+      if (loginId == null) {
+        print('❌ [saveDisplayedPiste] Impossible de déterminer login_id');
+        return;
+      }
       final pointsJson = jsonEncode(points
           .map((p) => {
                 'lat': p.latitude,
@@ -253,7 +262,7 @@ class SimpleStorageHelper {
         'displayed_pistes',
         where: 'login_id = ?',
         whereArgs: [
-          ApiService.userId
+          loginId
         ],
       );
 
@@ -270,7 +279,7 @@ class SimpleStorageHelper {
           where: 'id = ? AND login_id = ?',
           whereArgs: [
             existing.first['id'],
-            ApiService.userId
+            loginId,
           ],
         );
       } else {
@@ -280,11 +289,11 @@ class SimpleStorageHelper {
           'color': color.value,
           'width': width.toInt(),
           'created_at': DateTime.now().toIso8601String(),
-          'login_id': ApiService.userId,
+          'login_id': loginId,
         });
       }
 
-      print('✅ Piste sauvegardée pour user: ${ApiService.userId}');
+      print('✅ Piste sauvegardée pour user: $loginId');
     } catch (e) {
       print('❌ Erreur sauvegarde piste: $e');
     }
@@ -293,13 +302,14 @@ class SimpleStorageHelper {
   Future<List<Polyline>> loadDisplayedChaussees() async {
     try {
       final db = await database;
-
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       // ⭐⭐ FILTRER PAR UTILISATEUR ⭐⭐
       final List<Map<String, dynamic>> maps = await db.query(
         'displayed_chaussees',
         where: 'login_id = ?',
         whereArgs: [
-          ApiService.userId
+          loginId
         ],
       );
 
@@ -328,7 +338,7 @@ class SimpleStorageHelper {
         }
       }
 
-      print('✅ ${polylines.length} chaussées affichées chargées pour user: ${ApiService.userId}');
+      print('✅ ${polylines.length} chaussées affichées chargées pour user: $loginId');
       return polylines;
     } catch (e) {
       print('❌ Erreur chargement chaussées affichées: $e');
@@ -340,13 +350,19 @@ class SimpleStorageHelper {
   Future<List<Polyline>> loadDisplayedPistes() async {
     try {
       final db = await database;
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
 
-      // ⭐⭐ FILTRER PAR UTILISATEUR ⭐⭐
+      if (loginId == null) {
+        print('❌ [loadDisplayedPistes] loginId null → aucune piste chargée');
+        return [];
+      }
+      //  FILTRER PAR UTILISATEUR
       final List<Map<String, dynamic>> maps = await db.query(
         'displayed_pistes',
         where: 'login_id = ?', // ← FILTRE IMPORTANT
         whereArgs: [
-          ApiService.userId
+          loginId
         ], // ← ID de l'utilisateur connecté
       );
 
@@ -374,7 +390,7 @@ class SimpleStorageHelper {
         }
       }
 
-      print('✅ ${polylines.length} pistes chargées pour user: ${ApiService.userId}');
+      print('✅ ${polylines.length} pistes chargées pour user: $loginId');
       return polylines;
     } catch (e) {
       print('❌ Erreur chargement pistes: $e');
@@ -385,7 +401,8 @@ class SimpleStorageHelper {
   /// Sauvegarder une piste depuis le formulaire
   Future<int?> savePiste(Map<String, dynamic> formData) async {
     try {
-      final loginId = ApiService.userId;
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       print('🔄 Début sauvegarde piste...');
       print('📋 commune_rurales reçu: ${formData['commune_rurales']}');
       // Ajouter le login_id aux données du formulaire
@@ -404,7 +421,7 @@ class SimpleStorageHelper {
       final db = await database;
       final id = await db.insert('pistes', piste.toMap());
 
-      print('✅ Piste "${piste.codePiste}" sauvegardée avec ID: $id');
+      print('✅ Piste "${piste.codePiste}" sauvegardée avec ID: $id pour login_id = $loginId');
 
       // AFFICHER TOUS LES CHAMPS DE LA PISTE
       print('📊 Détails de la piste enregistrée:');
@@ -489,7 +506,8 @@ class SimpleStorageHelper {
   /// Sauvegarder une chaussée depuis le formulaire
   Future<int?> saveChaussee(Map<String, dynamic> formData) async {
     try {
-      final loginId = ApiService.userId;
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       final communeId = await _getCommuneId();
 
       // Vérifier si on est en mode édition
@@ -743,6 +761,7 @@ class SimpleStorageHelper {
       final geometry = pisteData['geometry'];
       final dataUserId = properties['login_id'];
       final communeId = await _getCommuneId();
+      final viewerId = await DatabaseHelper().resolveLoginId();
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
         return; // Ne pas sauvegarder ses propres données
@@ -768,7 +787,7 @@ class SimpleStorageHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           pisteData['id'],
-          ApiService.userId
+          viewerId
         ], // ID PostgreSQL
       );
 
@@ -804,7 +823,7 @@ class SimpleStorageHelper {
           'created_at': formatDate(properties['created_at']),
           'updated_at': formatDate(properties['updated_at']),
           'login_id': dataUserId ?? 'Non spécifié',
-          'saved_by_user_id': ApiService.userId,
+          'saved_by_user_id': viewerId,
           'sync_status': 'downloaded',
           'synced': 0,
           'date_sync': DateTime.now().toIso8601String(),
@@ -1044,7 +1063,7 @@ class SimpleStorageHelper {
       final properties = chausseeData['properties'];
       final geometry = chausseeData['geometry'];
       final dataUserId = properties['login_id'];
-
+      final viewerId = await DatabaseHelper().resolveLoginId();
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
         return; // Ne pas sauvegarder ses propres données
@@ -1064,7 +1083,7 @@ class SimpleStorageHelper {
         where: 'id = ? AND saved_by_user_id = ?',
         whereArgs: [
           chausseeData['id'],
-          ApiService.userId
+          viewerId
         ], // ID PostgreSQL
       );
 
@@ -1089,7 +1108,7 @@ class SimpleStorageHelper {
           'updated_at': properties['updated_at'],
           'sync_status': 'downloaded',
           'login_id': dataUserId ?? 'Non spécifié',
-          'saved_by_user_id': ApiService.userId,
+          'saved_by_user_id': viewerId,
           'synced': 0,
           'date_sync': DateTime.now().toIso8601String(),
           'downloaded': 1, // ← MARQUÉ COMME TÉLÉCHARGÉ
@@ -1150,12 +1169,19 @@ class SimpleStorageHelper {
         print('📍 Utilisation piste active: $activePisteCode');
         return activePisteCode;
       }
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
+
+      if (loginId == null) {
+        print('❌ Impossible de déterminer le login_id (API + local)');
+        return null;
+      }
       // Récupérer toutes les pistes de l'utilisateur
       final List<Map<String, dynamic>> pistes = await db.query(
         'pistes',
         where: 'login_id = ?',
         whereArgs: [
-          ApiService.userId
+          loginId
         ],
       );
 
@@ -1219,6 +1245,8 @@ class SimpleStorageHelper {
   Future<void> deleteDisplayedPiste(int pisteId) async {
     try {
       final db = await database;
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
 
       // ⭐⭐ 1. TROUVER LA PISTE POUR AVOIR SON CODE_PISTE ⭐⭐
       final piste = await db.query('pistes',
@@ -1237,7 +1265,7 @@ class SimpleStorageHelper {
             'displayed_pistes',
             where: 'login_id = ?', // On supprime tout pour l'utilisateur
             whereArgs: [
-              ApiService.userId
+              loginId
             ],
           );
           print('✅ Toutes les pistes affichées supprimées pour rechargement propre');
@@ -1252,7 +1280,8 @@ class SimpleStorageHelper {
   Future<void> deleteDisplayedChaussee(int chausseeId) async {
     try {
       final db = await database;
-
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       // 1. Trouver le code_piste de la chaussée à supprimer
       final chaussee = await db.query('chaussees',
           where: 'id = ?',
@@ -1271,7 +1300,7 @@ class SimpleStorageHelper {
             where: 'code_piste = ? AND login_id = ?',
             whereArgs: [
               codePiste,
-              ApiService.userId
+              loginId
             ],
           );
           print('✅ Chaussée affichée supprimée: $codePiste');
