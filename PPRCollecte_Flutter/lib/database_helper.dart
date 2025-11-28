@@ -408,7 +408,7 @@ class DatabaseHelper {
       date_sync TEXT,
       login_id INTEGER,            
       saved_by_user_id INTEGER,
-      commune_id INTEGER
+      commune_id INTEGER  
     )
   ''');
     print('✅ Table points_critiques créée');
@@ -2021,13 +2021,30 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      // Ne pas sauvegarder ses propres données
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
+        return; // Ne pas sauvegarder ses propres données
+      }
+
+      // 🔹 Récupérer les coordonnées : d'abord depuis geometry, sinon depuis les properties
+      double? x;
+      double? y;
+
+      if (geometry != null && geometry['coordinates'] != null) {
+        final coords = geometry['coordinates'];
+        x = (coords[0] as num).toDouble();
+        y = (coords[1] as num).toDouble();
+      } else {
+        // anciens enregistrements sans geom, on tente de récupérer depuis les champs attributaires
+        x = (properties['x_point_cr'] as num?)?.toDouble();
+        y = (properties['y_point_cr'] as num?)?.toDouble();
+      }
+
+      if (x == null || y == null) {
+        print('🚫 Point critique ignoré (pas de géométrie exploitable) sqlite_id=$sqliteId');
         return;
       }
 
-      // Vérifier si ce point existe déjà pour cet utilisateur
       final existing = await db.query(
         'points_critiques',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -2044,29 +2061,22 @@ class DatabaseHelper {
         await db.insert(
           'points_critiques',
           {
-            'id': properties['sqlite_id'],
+            'id': sqliteId,
+            'x_point_critique': x,
+            'y_point_critique': y,
 
-            // ⚠️ on garde le même principe, mais on prend les bonnes coordonnées
-            // soit depuis geometry (comme avant), soit tu peux garder comme ceci :
-            'x_point_critique': geometry['coordinates'][0],
-            'y_point_critique': geometry['coordinates'][1],
-
-            // ⚠️ backend renvoie "type_point" maintenant
+            // 🔹 le backend renvoie maintenant "type_point"
             'type_point_critique': properties['type_point'] ?? 'Non spécifié',
 
-            // Ces champs n’existent pas dans la réponse → valeurs par défaut
+            // Les champs suivants n'existent pas forcément dans la réponse → valeurs par défaut
             'enqueteur': properties['enqueteur'] ?? 'Sync',
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
-
             'code_gps': properties['code_gps'] ?? 'Non spécifié',
 
-            // 🔹 champs manquants qu’on ajoute maintenant
-            'chaussee_id': properties['chaussee_id'], // peut être null
-
-            'synced': 0, // donnée téléchargée, pas encore "resync"
-            'downloaded': 1, // marquée comme téléchargée
+            'synced': 0, // donnée téléchargée, pas synchronisée par ce device
+            'downloaded': 1, // marquer comme téléchargée
             'login_id': dataUserId ?? 'Non spécifié',
             'saved_by_user_id': viewerId,
             'commune_id': communeId,
@@ -2074,7 +2084,7 @@ class DatabaseHelper {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-        print('✅ points_critiques sauvegardée (id: $sqliteId)');
+        print('✅ points_critiques sauvegardée: sqlite_id=$sqliteId');
       }
     } catch (e) {
       print('❌ Erreur sauvegarde points_critiques: $e');

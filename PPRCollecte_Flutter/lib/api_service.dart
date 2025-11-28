@@ -74,7 +74,7 @@ class ApiService {
             },
             body: jsonEncode(data),
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 30));
 
       print('🌐 Réponse de $endpoint: ${response.statusCode}');
       print('🌐 Body: ${response.body}');
