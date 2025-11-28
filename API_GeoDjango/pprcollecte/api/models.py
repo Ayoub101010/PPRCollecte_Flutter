@@ -203,13 +203,11 @@ class Chaussees(models.Model):
         return f"Chaussée {self.fid} ({self.code_piste_id})"
 
 
-# ... (tes autres modèles)
+
 
 class PointsCoupures(models.Model):
     fid = models.BigAutoField(primary_key=True, db_column='fid')
     geom = models.PointField(srid=4326, null=True, blank=True)
-
-    # colonne "id" dans PostgreSQL
     sqlite_id = models.BigIntegerField(null=True, blank=True, db_column='id')
 
     cause_coup = models.CharField(max_length=50, null=True, blank=True)
@@ -231,18 +229,28 @@ class PointsCoupures(models.Model):
         related_name='points_coupures'
     )
 
+    
+    login_id = models.ForeignKey(
+        'Login',
+        db_column='login_id',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='points_coupures'
+    )
+
     class Meta:
         db_table = 'points_coupures'
-        managed = False  # table déjà créée dans PostGIS
+        managed = False
 
     def __str__(self):
         return f"Point coupure {self.fid}"
 
 
+
 class PointsCritiques(models.Model):
     fid = models.BigAutoField(primary_key=True, db_column='fid')
     geom = models.PointField(srid=4326, null=True, blank=True)
-
     sqlite_id = models.BigIntegerField(null=True, blank=True, db_column='id')
 
     type_point = models.CharField(max_length=50, null=True, blank=True)
@@ -264,12 +272,23 @@ class PointsCritiques(models.Model):
         related_name='points_critiques'
     )
 
+    
+    login_id = models.ForeignKey(
+        'Login',
+        db_column='login_id',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='points_critiques'
+    )
+
     class Meta:
         db_table = 'points_critiques'
         managed = False
 
     def __str__(self):
         return f"Point critique {self.fid}"
+
 
 
 class ServicesSantes(models.Model):

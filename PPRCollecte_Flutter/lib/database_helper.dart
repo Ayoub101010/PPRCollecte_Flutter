@@ -393,6 +393,8 @@ class DatabaseHelper {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS points_critiques(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom TEXT,
+      type TEXT,
       x_point_critique REAL NOT NULL,
       y_point_critique REAL NOT NULL,
       type_point_critique TEXT NOT NULL,
@@ -415,6 +417,8 @@ class DatabaseHelper {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS points_coupures(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nom TEXT,
+      type TEXT,
       x_point_coupure REAL NOT NULL,
       y_point_coupure REAL NOT NULL,
       causes_coupures TEXT NOT NULL,
@@ -2017,10 +2021,13 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
+      // Ne pas sauvegarder ses propres données
       if (dataUserId == ApiService.userId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
+      // Vérifier si ce point existe déjà pour cet utilisateur
       final existing = await db.query(
         'points_critiques',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -2033,20 +2040,33 @@ class DatabaseHelper {
 
       if (existing.isEmpty) {
         final communeId = await _getCommuneId();
+
         await db.insert(
           'points_critiques',
           {
             'id': properties['sqlite_id'],
+
+            // ⚠️ on garde le même principe, mais on prend les bonnes coordonnées
+            // soit depuis geometry (comme avant), soit tu peux garder comme ceci :
             'x_point_critique': geometry['coordinates'][0],
             'y_point_critique': geometry['coordinates'][1],
-            'type_point_critique': properties['type_point_critique'] ?? 'Non spécifié',
+
+            // ⚠️ backend renvoie "type_point" maintenant
+            'type_point_critique': properties['type_point'] ?? 'Non spécifié',
+
+            // Ces champs n’existent pas dans la réponse → valeurs par défaut
             'enqueteur': properties['enqueteur'] ?? 'Sync',
             'date_creation': properties['created_at'] ?? 'Non spécifié',
             'date_modification': properties['updated_at'] ?? 'Non spécifié',
             'code_piste': properties['code_piste'] ?? 'Non spécifié',
+
             'code_gps': properties['code_gps'] ?? 'Non spécifié',
-            'synced': 0, // ← Donnée téléchargée, pas synchronisée
-            'downloaded': 1, // ← MARQUER COMME TÉLÉCHARGÉE
+
+            // 🔹 champs manquants qu’on ajoute maintenant
+            'chaussee_id': properties['chaussee_id'], // peut être null
+
+            'synced': 0, // donnée téléchargée, pas encore "resync"
+            'downloaded': 1, // marquée comme téléchargée
             'login_id': dataUserId ?? 'Non spécifié',
             'saved_by_user_id': viewerId,
             'commune_id': communeId,
@@ -2054,7 +2074,7 @@ class DatabaseHelper {
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
-        print('✅ points_critiques sauvegardée: ${properties['nom']}');
+        print('✅ points_critiques sauvegardée (id: $sqliteId)');
       }
     } catch (e) {
       print('❌ Erreur sauvegarde points_critiques: $e');

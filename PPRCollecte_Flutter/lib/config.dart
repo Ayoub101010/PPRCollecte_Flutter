@@ -259,6 +259,7 @@ class InfrastructureConfig {
       "color": 0xFFF44336,
       "entities": {
         "Point Critique": {
+          "tableName": "points_critiques",
           "parentTable": "chaussees",
           "fields": [
             "code_piste",
@@ -276,6 +277,7 @@ class InfrastructureConfig {
           ]
         },
         "Point de Coupure": {
+          "tableName": "points_coupures",
           "parentTable": "chaussees",
           "fields": [
             "code_piste",

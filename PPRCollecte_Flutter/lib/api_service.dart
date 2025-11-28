@@ -649,7 +649,7 @@ class ApiService {
   static Map<String, dynamic> _mapPointCritiqueToApi(Map<String, dynamic> localData) {
     // Convertir la date au format PostgreSQL
     String formatDateForPostgres(String? dateString) {
-      if (dateString == null) return '';
+      if (dateString == null || dateString.isEmpty) return '';
       try {
         final date = DateTime.parse(dateString);
 
@@ -664,29 +664,40 @@ class ApiService {
               '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
         }
       } catch (e) {
-        return dateString;
+        return dateString ?? '';
       }
     }
 
+    // On choisit le type :
+    // - si type_point_critique est "Non spécifié", on prend le champ générique "type"
+    final String? typeSpecifique = localData['type_point_critique'];
+    final String? typeGenerique = localData['type'];
+    final String? typePoint = (typeSpecifique == null || typeSpecifique == 'Non spécifié') ? typeGenerique : typeSpecifique;
+
     return {
+      // id SQLite local
       'sqlite_id': localData['id'],
-      'x_point_critique': localData['x_point_critique'],
-      'y_point_critique': localData['y_point_critique'],
-      'type_point_critique': localData['type_point_critique'],
-      'enqueteur': localData['enqueteur'],
+
+      'x_point_cr': localData['x_point_critique'],
+      'y_point_cr': localData['y_point_critique'],
+      'type_point': typePoint,
+
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
-      'code_piste': localData['code_piste'],
+
       'code_gps': localData['code_gps'],
-      'login_id': userId,
       'commune_id': localData['commune_id'],
+
+      'chaussee_id': localData['chaussee_id'] ?? null,
+
+      'login_id': userId,
     };
   }
 
   static Map<String, dynamic> _mapPointCoupureToApi(Map<String, dynamic> localData) {
     // Convertir la date au format PostgreSQL
     String formatDateForPostgres(String? dateString) {
-      if (dateString == null) return '';
+      if (dateString == null || dateString.isEmpty) return '';
       try {
         final date = DateTime.parse(dateString);
 
@@ -701,22 +712,27 @@ class ApiService {
               '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}:${date.second.toString().padLeft(2, '0')}';
         }
       } catch (e) {
-        return dateString;
+        return dateString ?? '';
       }
     }
 
     return {
-      'sqlite_id': localData['local_id'],
-      'x_point_coupure': localData['x_point_coupure'],
-      'y_point_coupure': localData['y_point_coupure'],
-      'causes_coupures': localData['causes_coupures'],
-      'enqueteur': localData['enqueteur'],
+      // id SQLite local
+      'sqlite_id': localData['id'], //  "local_id", c'est bien "id" dans tes logs
+
+      // Noms attendus par le backend
+      'x_point_co': localData['x_point_coupure'],
+      'y_point_co': localData['y_point_coupure'],
+      'cause_coup': localData['causes_coupures'],
+
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
-      'code_piste': localData['code_piste'],
+
       'code_gps': localData['code_gps'],
-      'login_id': userId,
       'commune_id': localData['commune_id'],
+      'chaussee_id': localData['chaussee_id'] ?? null,
+
+      'login_id': userId,
     };
   }
 
@@ -734,7 +750,7 @@ class ApiService {
           'Content-Type': 'application/json',
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
-      ).timeout(const Duration(seconds: 8)); // ⏰ timeout GET
+      ).timeout(const Duration(seconds: 30)); // ⏰ timeout GET
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -832,7 +848,7 @@ class ApiService {
           'Content-Type': 'application/json',
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 40));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -866,7 +882,7 @@ class ApiService {
           'Content-Type': 'application/json',
           if (authToken != null) 'Authorization': 'Bearer $authToken',
         },
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
