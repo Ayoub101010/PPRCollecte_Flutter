@@ -66,7 +66,15 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _loginOffline(String email, String password) async {
     final isValidLocal = await DatabaseHelper().validateUser(email, password);
     if (isValidLocal) {
+      // ✅ Gérer la case "Se souvenir" même hors-ligne
+      if (rememberMe) {
+        await DatabaseHelper().setCurrentUserEmail(email);
+      } else {
+        await DatabaseHelper().clearSession();
+      }
+
       final fullName = await DatabaseHelper().getAgentFullName(email) ?? 'Utilisateur Local';
+
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -85,7 +93,11 @@ class _LoginPageState extends State<LoginPage> {
     } else {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Mode hors-ligne : identifiants introuvables localement.")),
+        const SnackBar(
+          content: Text(
+            "Mode hors-ligne : identifiants introuvables localement.",
+          ),
+        ),
       );
     }
   }

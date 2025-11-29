@@ -683,13 +683,14 @@ class SimpleStorageHelper {
   Future<List<Map<String, dynamic>>> getUnsyncedPistes() async {
     try {
       final db = await database;
+      final loginId = await DatabaseHelper().resolveLoginId();
       final List<Map<String, dynamic>> maps = await db.query(
         'pistes',
         where: 'synced = ? AND downloaded = ? AND login_id = ?',
         whereArgs: [
           0,
           0,
-          ApiService.userId
+          loginId
         ],
         columns: [
           // ⭐⭐ SPÉCIFIEZ EXPLICITEMENT TOUTES LES COLONNES
@@ -743,8 +744,9 @@ class SimpleStorageHelper {
   Future<int> getUnsyncedPistesCount() async {
     try {
       final db = await database;
+      final loginId = await DatabaseHelper().resolveLoginId();
       final count = Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM pistes WHERE synced = 0 AND downloaded = 0 AND login_id = ?', [
-        ApiService.userId
+        loginId
       ]));
       return count ?? 0;
     } catch (e) {

@@ -860,7 +860,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'app_database.db');
     final userData = {
       ...data,
-      'login_id': ApiService.userId, // ← Utiliser l'ID de l'API
+      'login_id': await resolveLoginId(),
       'commune_id': await _getCommuneId(),
     };
     print('🗂️ Insertion dans: $path');

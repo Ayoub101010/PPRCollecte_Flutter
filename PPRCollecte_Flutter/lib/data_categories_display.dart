@@ -531,6 +531,8 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     List<Map<String, dynamic>> filteredData = [];
 
     try {
+      final dbHelper = DatabaseHelper();
+      final loginId = await dbHelper.resolveLoginId();
       // CAS SPÉCIAL PISTES/CHAUSSÉES
       if (selectedCategory == "Pistes" || selectedCategory == "Chaussées") {
         final storageHelper = SimpleStorageHelper();
@@ -540,11 +542,11 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
           // FILTRAGE PISTES
           if (widget.dataFilter == "unsynced") {
-            filteredData = allPistes.where((piste) => (piste['synced'] == 0 || piste['synced'] == null) && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == ApiService.userId).toList();
+            filteredData = allPistes.where((piste) => (piste['synced'] == 0 || piste['synced'] == null) && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == loginId).toList();
           } else if (widget.dataFilter == "synced") {
-            filteredData = allPistes.where((piste) => piste['synced'] == 1 && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == ApiService.userId).toList();
+            filteredData = allPistes.where((piste) => piste['synced'] == 1 && (piste['downloaded'] == 0 || piste['downloaded'] == null) && piste['login_id'] == loginId).toList();
           } else if (widget.dataFilter == "saved") {
-            filteredData = allPistes.where((piste) => piste['downloaded'] == 1 && piste['saved_by_user_id'] == ApiService.userId).toList();
+            filteredData = allPistes.where((piste) => piste['downloaded'] == 1 && piste['saved_by_user_id'] == loginId).toList();
           } else {
             filteredData = allPistes;
           }
@@ -555,11 +557,11 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
           // FILTRAGE CHAUSSÉES
           if (widget.dataFilter == "unsynced") {
-            filteredData = allChaussees.where((ch) => (ch['synced'] == 0 || ch['synced'] == null) && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == ApiService.userId).toList();
+            filteredData = allChaussees.where((ch) => (ch['synced'] == 0 || ch['synced'] == null) && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == loginId).toList();
           } else if (widget.dataFilter == "synced") {
-            filteredData = allChaussees.where((ch) => ch['synced'] == 1 && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == ApiService.userId).toList();
+            filteredData = allChaussees.where((ch) => ch['synced'] == 1 && (ch['downloaded'] == 0 || ch['downloaded'] == null) && ch['login_id'] == loginId).toList();
           } else if (widget.dataFilter == "saved") {
-            filteredData = allChaussees.where((ch) => ch['downloaded'] == 1 && ch['saved_by_user_id'] == ApiService.userId).toList();
+            filteredData = allChaussees.where((ch) => ch['downloaded'] == 1 && ch['saved_by_user_id'] == loginId).toList();
           } else {
             filteredData = allChaussees;
           }
@@ -582,11 +584,11 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
         // FILTRAGE STANDARD POUR POINTS
         if (widget.dataFilter == "unsynced") {
-          filteredData = allData.where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == ApiService.userId).toList();
+          filteredData = allData.where((item) => (item['synced'] == 0 || item['synced'] == null) && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == loginId).toList();
         } else if (widget.dataFilter == "synced") {
-          filteredData = allData.where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == ApiService.userId).toList();
+          filteredData = allData.where((item) => item['synced'] == 1 && (item['downloaded'] == 0 || item['downloaded'] == null) && item['login_id'] == loginId).toList();
         } else if (widget.dataFilter == "saved") {
-          filteredData = allData.where((item) => item['downloaded'] == 1 && item['saved_by_user_id'] == ApiService.userId).toList();
+          filteredData = allData.where((item) => item['downloaded'] == 1 && item['saved_by_user_id'] == loginId).toList();
         } else {
           filteredData = allData;
         }
