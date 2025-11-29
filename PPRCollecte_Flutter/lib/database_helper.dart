@@ -309,6 +309,7 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       code_gps TEXT,
+      
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,
@@ -379,6 +380,7 @@ class DatabaseHelper {
       date_modification TEXT,
       code_piste TEXT,
       code_gps TEXT,
+      
       synced INTEGER DEFAULT 0,
     downloaded INTEGER DEFAULT 0,
       date_sync TEXT,

@@ -343,8 +343,8 @@ class ApiService {
 
     return {
       'sqlite_id': localData['id'],
-      'x_batiment_administratif': localData['x_batiment_administratif'],
-      'y_batiment_administratif': localData['y_batiment_administratif'],
+      'x_batiment': localData['x_batiment_administratif'],
+      'y_batiment': localData['y_batiment_administratif'],
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
@@ -381,8 +381,8 @@ class ApiService {
 
     return {
       'sqlite_id': localData['id'],
-      'x_infrastructure_hydraulique': localData['x_infrastructure_hydraulique'],
-      'y_infrastructure_hydraulique': localData['y_infrastructure_hydraulique'],
+      'x_infrastr': localData['x_infrastructure_hydraulique'],
+      'y_infrastr': localData['y_infrastructure_hydraulique'],
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
@@ -419,8 +419,8 @@ class ApiService {
 
     return {
       'sqlite_id': localData['id'],
-      'x_autre_infrastructure': localData['x_autre_infrastructure'],
-      'y_autre_infrastructure': localData['y_autre_infrastructure'],
+      'x_autre_in': localData['x_autre_infrastructure'],
+      'y_autre_in': localData['y_autre_infrastructure'],
       'nom': localData['nom'],
       'type': localData['type'],
       'enqueteur': localData['enqueteur'],
@@ -460,9 +460,9 @@ class ApiService {
       'x_pont': localData['x_pont'],
       'y_pont': localData['y_pont'],
       'nom': localData['nom'],
-      'situation_pont': localData['situation_pont'],
+      'situation': localData['situation_pont'],
       'type_pont': localData['type_pont'],
-      'nom_cours_eau': localData['nom_cours_eau'],
+      'nom_cours': localData['nom_cours_eau'],
       'enqueteur': localData['enqueteur'],
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
@@ -517,6 +517,8 @@ class ApiService {
       "created_at": formatDateForPostgres(localData["date_creation"]),
       "updated_at": formatDateForPostgres(localData["date_modification"]),
       "code_piste": localData["code_piste"],
+      "code_gps": localData["code_gps"],
+      "endroit": localData["endroit"],
       "login_id": userId,
       "commune_id": localData["commune_id"],
     };
@@ -586,7 +588,7 @@ class ApiService {
       'x_dalot': localData['x_dalot'],
       'y_dalot': localData['y_dalot'],
       'nom': localData['nom'],
-      'situation_dalot': localData['situation_dalot'],
+      'situation': localData['situation_dalot'],
       'enqueteur': localData['enqueteur'],
       'created_at': formatDateForPostgres(localData['date_creation']),
       'updated_at': formatDateForPostgres(localData['date_modification']),
@@ -641,6 +643,7 @@ class ApiService {
       'updated_at': formatDateForPostgres(localData['date_modification']),
       'code_piste': localData['code_piste'],
       'code_gps': localData['code_gps'],
+      'endroit': localData['endroit'],
       'login_id': userId,
       'commune_id': localData['commune_id'],
     };

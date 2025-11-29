@@ -117,9 +117,9 @@ class AutresInfrastructuresSerializer(GeoFeatureModelSerializer):
         }
     
     def to_internal_value(self, data):
-        if 'x_autre_infrastructure' in data and 'y_autre_infrastructure' in data:
-            x = float(data['x_autre_infrastructure'])
-            y = float(data['y_autre_infrastructure'])
+        if 'x_autre_in' in data and 'y_autre_in' in data:
+            x = float(data['x_autre_in'])
+            y = float(data['y_autre_in'])
             data['geom'] = Point(x, y, srid=4326)
         return super().to_internal_value(data)
 
@@ -160,9 +160,9 @@ class BatimentsAdministratifsSerializer(GeoFeatureModelSerializer):
         }
     
     def to_internal_value(self, data):
-        if 'x_batiment_administratif' in data and 'y_batiment_administratif' in data:
-            x = float(data['x_batiment_administratif'])
-            y = float(data['y_batiment_administratif'])
+        if 'x_batiment' in data and 'y_batiment' in data:
+            x = float(data['x_batiment'])
+            y = float(data['y_batiment'])
             data['geom'] = Point(x, y, srid=4326)
         return super().to_internal_value(data)
 
@@ -228,9 +228,9 @@ class InfrastructuresHydrauliquesSerializer(GeoFeatureModelSerializer):
         }
     
     def to_internal_value(self, data):
-        if 'x_infrastructure_hydraulique' in data and 'y_infrastructure_hydraulique' in data:
-            x = float(data['x_infrastructure_hydraulique'])
-            y = float(data['y_infrastructure_hydraulique'])
+        if 'x_infrastr' in data and 'y_infrastr' in data:
+            x = float(data['x_infrastr'])
+            y = float(data['y_infrastr'])
             data['geom'] = Point(x, y, srid=4326)
         return super().to_internal_value(data)
 
