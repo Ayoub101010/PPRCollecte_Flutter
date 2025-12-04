@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
@@ -107,6 +108,8 @@ class _HomePageState extends State<HomePage> {
   bool _showDownloadedChaussees = true;
   bool get _autoCenterSuspended => _suspendAutoCenterUntil != null && DateTime.now().isBefore(_suspendAutoCenterUntil!);
   String? _lastSyncTimeText;
+  late bool _isOnlineDynamic;
+  Timer? _onlineWatchTimer;
 
   @override
   void initState() {
@@ -120,7 +123,9 @@ class _HomePageState extends State<HomePage> {
     _loadDownloadedPoints();
     _loadDownloadedPistes();
     _loadDownloadedChaussees();
+    _isOnlineDynamic = widget.isOnline;
     _loadLastSyncTime();
+    _startOnlineWatcher();
 
     homeController.addListener(
       () {
@@ -164,6 +169,50 @@ class _HomePageState extends State<HomePage> {
     _suspendAutoCenterUntil = DateTime.now().add(d);
     // Debug
     // print('⏸️ auto-center suspendu jusqu\'à $_suspendAutoCenterUntil');
+  }
+
+  void _startOnlineWatcher() {
+    // On annule un éventuel ancien timer
+    _onlineWatchTimer?.cancel();
+
+    // Premier check immédiat
+    _checkOnlineStatus();
+
+    // Puis check toutes les 10 secondes (ajuste si tu veux)
+    _onlineWatchTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _checkOnlineStatus(),
+    );
+  }
+
+  Future<void> _checkOnlineStatus() async {
+    final reachable = await _isApiReachableForStatus();
+
+    if (!mounted) return;
+
+    if (reachable != _isOnlineDynamic) {
+      setState(() {
+        _isOnlineDynamic = reachable;
+      });
+    }
+  }
+
+  Future<bool> _isApiReachableForStatus() async {
+    try {
+      final uri = Uri.parse(ApiService.baseUrl);
+      final host = uri.host;
+      final port = uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 80);
+
+      final socket = await Socket.connect(
+        host,
+        port,
+        timeout: const Duration(seconds: 1),
+      );
+      socket.destroy();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _loadLastSyncTime() async {
@@ -1663,7 +1712,7 @@ class _HomePageState extends State<HomePage> {
           context,
         ) =>
             DataCategoriesPage(
-          isOnline: widget.isOnline,
+          isOnline: _isOnlineDynamic,
         ),
       ),
     ).then(
@@ -1835,6 +1884,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     homeController.dispose();
+    _onlineWatchTimer?.cancel();
     super.dispose();
   }
 
@@ -2552,7 +2602,7 @@ class _HomePageState extends State<HomePage> {
             ),
             BottomStatusBarWidget(
               gpsEnabled: gpsEnabled,
-              isOnline: widget.isOnline,
+              isOnline: _isOnlineDynamic,
               lastSyncTime: _lastSyncTimeText,
             ),
             BottomButtonsWidget(
