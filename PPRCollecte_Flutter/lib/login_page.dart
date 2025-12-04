@@ -81,6 +81,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(
           builder: (_) => HomePage(
             agentName: fullName,
+            isOnline: false,
             onLogout: () {
               Navigator.pushReplacement(
                 context,
@@ -175,6 +176,7 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(
           builder: (_) => HomePage(
             agentName: fullName,
+            isOnline: true,
             onLogout: () {
               Navigator.pushReplacement(
                 context,

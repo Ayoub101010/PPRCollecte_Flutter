@@ -4,7 +4,7 @@ import 'dart:async'; // pour TimeoutException
 import 'dart:io'; // pour SocketException
 
 class ApiService {
-  static const String baseUrl = "http://192.168.0.131:8082";
+  static const String baseUrl = 'http://10.0.2.2:8000';
 
   static String? authToken;
   static int? userId;

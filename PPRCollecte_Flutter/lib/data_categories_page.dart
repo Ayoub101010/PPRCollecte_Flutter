@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'data_subcategories_page.dart';
 
 class DataCategoriesPage extends StatelessWidget {
-  const DataCategoriesPage({super.key});
+  final bool isOnline;
+  const DataCategoriesPage({
+    super.key,
+    required this.isOnline, // 🔵 obligatoire
+  });
 
   String _getDataFilterType(String categoryTitle) {
     switch (categoryTitle) {
@@ -112,6 +116,7 @@ class DataCategoriesPage extends StatelessWidget {
             builder: (context) => DataSubcategoriesPage(
               categoryType: title,
               dataFilter: _getDataFilterType(title),
+              isOnline: isOnline,
             ),
           ),
         );

@@ -47,11 +47,13 @@ class MapFocusTarget {
 class HomePage extends StatefulWidget {
   final Function onLogout;
   final String agentName;
+  final bool isOnline;
   final MapFocusTarget? initialFocus;
   const HomePage({
     super.key,
     required this.onLogout,
     required this.agentName,
+    required this.isOnline,
     this.initialFocus,
   });
 
@@ -1643,7 +1645,9 @@ class _HomePageState extends State<HomePage> {
         builder: (
           context,
         ) =>
-            const DataCategoriesPage(),
+            DataCategoriesPage(
+          isOnline: widget.isOnline,
+        ),
       ),
     ).then(
       (
@@ -2525,6 +2529,7 @@ class _HomePageState extends State<HomePage> {
             ),
             BottomStatusBarWidget(
               gpsEnabled: gpsEnabled,
+              isOnline: widget.isOnline,
             ),
             BottomButtonsWidget(
               onSave: isDownloading ? () {} : _showSaveConfirmationDialog,

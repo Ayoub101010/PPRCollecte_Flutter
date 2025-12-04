@@ -24,10 +24,12 @@ extension on double {
 class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
   final String dataFilter; // "unsynced", "synced", "saved"
+  final bool isOnline;
   const DataCategoriesDisplay({
     super.key,
     required this.mainCategory,
     required this.dataFilter,
+    required this.isOnline,
   });
 
   @override
@@ -468,6 +470,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
           agentName: fullName,
           onLogout: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage())),
           initialFocus: target,
+          isOnline: widget.isOnline,
         ),
       ),
     );

@@ -4,10 +4,12 @@ import 'data_categories_display.dart';
 class DataSubcategoriesPage extends StatelessWidget {
   final String categoryType;
   final String dataFilter; // "unsynced", "synced", "saved"
+  final bool isOnline;
   const DataSubcategoriesPage({
     super.key,
     required this.categoryType,
     required this.dataFilter,
+    required this.isOnline,
   });
 
   @override
@@ -63,6 +65,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                           builder: (context) => DataCategoriesDisplay(
                             mainCategory: "Pistes",
                             dataFilter: dataFilter,
+                            isOnline: isOnline,
                           ),
                         ),
                       );
@@ -81,6 +84,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                           builder: (context) => DataCategoriesDisplay(
                             mainCategory: "Chaussées",
                             dataFilter: dataFilter,
+                            isOnline: isOnline,
                           ),
                         ),
                       );
@@ -101,6 +105,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                           builder: (context) => DataCategoriesDisplay(
                             mainCategory: "Infrastructures Rurales",
                             dataFilter: dataFilter,
+                            isOnline: isOnline,
                           ),
                         ),
                       );
@@ -120,6 +125,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                           builder: (context) => DataCategoriesDisplay(
                             mainCategory: "Ouvrages",
                             dataFilter: dataFilter,
+                            isOnline: isOnline,
                           ),
                         ),
                       );
@@ -139,6 +145,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                           builder: (context) => DataCategoriesDisplay(
                             mainCategory: "Points Critiques",
                             dataFilter: dataFilter,
+                            isOnline: isOnline,
                           ),
                         ),
                       );

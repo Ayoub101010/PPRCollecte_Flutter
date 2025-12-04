@@ -2,18 +2,42 @@ import 'package:flutter/material.dart';
 
 class BottomStatusBarWidget extends StatelessWidget {
   final bool gpsEnabled;
+  final bool isOnline;
 
-  const BottomStatusBarWidget({super.key, required this.gpsEnabled});
+  const BottomStatusBarWidget({
+    super.key,
+    required this.gpsEnabled,
+    required this.isOnline,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final String onlineText = isOnline ? 'En ligne' : 'Hors ligne';
+    final Color onlineColor = isOnline ? Colors.green.shade700 : Colors.red.shade700;
+
     return Container(
       color: const Color(0xFFE3F2FD),
       alignment: Alignment.center,
       padding: const EdgeInsets.all(6),
-      child: Text(
-        "📡 GPS: ${gpsEnabled ? 'Activé' : 'Désactivé'} | 🔄 Sync: 11h30 | 🌐 En ligne",
-        style: const TextStyle(fontSize: 14),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black87,
+          ),
+          children: [
+            TextSpan(
+              text: "📡 GPS: ${gpsEnabled ? 'Activé' : 'Désactivé'} | 🔄 Sync: 11h30 | ",
+            ),
+            TextSpan(
+              text: "🌐 $onlineText",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: onlineColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
