@@ -444,6 +444,48 @@ class DatabaseHelper {
     print('✅ Table test créée');
 
     print("🎉 Toutes les tables ont été créées avec succès !");
+// ============ TABLE POUR STOCKER LA DATE DE LA SYNCHRONISATION ============
+    await db.execute('''
+  CREATE TABLE IF NOT EXISTS app_metadata (
+    key TEXT PRIMARY KEY,
+    value TEXT
+  )
+''');
+  }
+
+  Future<void> saveLastSyncTime(DateTime dt) async {
+    final db = await database;
+    final iso = dt.toIso8601String();
+    await db.insert(
+      'app_metadata',
+      {
+        'key': 'last_sync_time',
+        'value': iso
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<DateTime?> getLastSyncTime() async {
+    final db = await database;
+    final res = await db.query(
+      'app_metadata',
+      where: 'key = ?',
+      whereArgs: [
+        'last_sync_time'
+      ],
+      limit: 1,
+    );
+    if (res.isEmpty) return null;
+
+    final raw = res.first['value'] as String?;
+    if (raw == null) return null;
+
+    try {
+      return DateTime.parse(raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _createSessionTable(Database db) async {

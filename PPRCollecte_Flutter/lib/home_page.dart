@@ -106,6 +106,8 @@ class _HomePageState extends State<HomePage> {
   Set<Polyline> _downloadedChausseesPolylines = {};
   bool _showDownloadedChaussees = true;
   bool get _autoCenterSuspended => _suspendAutoCenterUntil != null && DateTime.now().isBefore(_suspendAutoCenterUntil!);
+  String? _lastSyncTimeText;
+
   @override
   void initState() {
     super.initState();
@@ -118,6 +120,7 @@ class _HomePageState extends State<HomePage> {
     _loadDownloadedPoints();
     _loadDownloadedPistes();
     _loadDownloadedChaussees();
+    _loadLastSyncTime();
 
     homeController.addListener(
       () {
@@ -161,6 +164,20 @@ class _HomePageState extends State<HomePage> {
     _suspendAutoCenterUntil = DateTime.now().add(d);
     // Debug
     // print('⏸️ auto-center suspendu jusqu\'à $_suspendAutoCenterUntil');
+  }
+
+  Future<void> _loadLastSyncTime() async {
+    final dt = await DatabaseHelper().getLastSyncTime();
+    if (!mounted) return;
+    setState(() {
+      _lastSyncTimeText = dt != null ? _formatTimeHHmm(dt) : null;
+    });
+  }
+
+  String _formatTimeHHmm(DateTime dt) {
+    final h = dt.hour.toString().padLeft(2, '0');
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$h:$m'; // "HH:MM"
   }
 
   Future<void> _loadDownloadedPistes() async {
@@ -1754,7 +1771,13 @@ class _HomePageState extends State<HomePage> {
       )
           // ⏰ TIMEOUT GLOBAL SUR TOUTE LA SYNCHRO
           .timeout(const Duration(seconds: 45));
-
+      final now = DateTime.now();
+      await DatabaseHelper().saveLastSyncTime(now);
+      if (mounted) {
+        setState(() {
+          _lastSyncTimeText = _formatTimeHHmm(now); // ex: "14:32"
+        });
+      }
       setState(() => lastSyncResult = result);
       setState(() => isSyncing = false);
       _showSyncResult(result);
@@ -2530,6 +2553,7 @@ class _HomePageState extends State<HomePage> {
             BottomStatusBarWidget(
               gpsEnabled: gpsEnabled,
               isOnline: widget.isOnline,
+              lastSyncTime: _lastSyncTimeText,
             ),
             BottomButtonsWidget(
               onSave: isDownloading ? () {} : _showSaveConfirmationDialog,
