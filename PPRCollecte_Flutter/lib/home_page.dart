@@ -2396,7 +2396,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // === AJOUTEZ ICI === //
-                  Positioned(
+                  /* Positioned(
                     bottom: 200,
                     right: 16,
                     child: Visibility(
@@ -2428,8 +2428,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  // Ajouter dans la section des boutons de debug
-                  Positioned(
+                 */ // Ajouter dans la section des boutons de debug
+                  /*  Positioned(
                     bottom: 120,
                     right: 16,
                     child: Visibility(
@@ -2460,7 +2460,7 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'simulate_special_button',
                       ),
                     ),
-                  ),
+                  ),*/
                   // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(
