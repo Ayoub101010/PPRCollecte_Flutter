@@ -113,7 +113,7 @@ class Piste(models.Model):
         db_column='communes_rurales_id'
     )
     code_piste = models.CharField(max_length=50, unique=True, null=True, blank=True)  # texte
-    geom = models.MultiLineStringField(srid=32628, null=True, blank=True)  # alignÃ© avec PostGIS
+    geom = models.MultiLineStringField(srid=4326, null=True, blank=True)  # alignÃ© avec PostGIS
     heure_debut = models.TimeField(null=True, blank=True)  # time dans PostgreSQL
     heure_fin = models.TimeField(null=True, blank=True)
     nom_origine_piste = models.TextField(null=True, blank=True)

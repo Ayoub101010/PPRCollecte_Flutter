@@ -2396,7 +2396,7 @@ class _HomePageState extends State<HomePage> {
                   ),
 
                   // === AJOUTEZ ICI === //
-                  /* Positioned(
+                  /*Positioned(
                     bottom: 200,
                     right: 16,
                     child: Visibility(
@@ -2427,9 +2427,9 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'dev_button',
                       ),
                     ),
-                  ),
-                 */ // Ajouter dans la section des boutons de debug
-                  /*  Positioned(
+                  ),*/
+                  // Ajouter dans la section des boutons de debug
+                  /*Positioned(
                     bottom: 120,
                     right: 16,
                     child: Visibility(

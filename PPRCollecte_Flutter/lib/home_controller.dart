@@ -192,7 +192,7 @@ class HomeController extends ChangeNotifier {
   }*/
 
 //  Une methode pour tester les  pistes dans l'emulateur à supprimer après
-  /* void addRealisticPisteSimulation() async {
+  /*void addRealisticPisteSimulation() async {
     if (!hasActiveCollection) return;
 
     final random = Random();

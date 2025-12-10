@@ -334,7 +334,7 @@ class LoginSerializer(serializers.ModelSerializer):
 
 
 
-# Écriture inchangée : on stocke en 32628
+
 class PisteWriteSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = Piste
@@ -344,7 +344,7 @@ class PisteWriteSerializer(GeoFeatureModelSerializer):
     def to_internal_value(self, data):
         if 'geom' in data and data['geom'] is not None:
             geom = GEOSGeometry(str(data['geom']))
-            geom.srid = 32628  # UTM
+            geom.srid = 4326  
             data['geom'] = geom
         return super().to_internal_value(data)
 
@@ -376,13 +376,11 @@ class ChausseesSerializer(GeoFeatureModelSerializer):
 
 # LECTURE : expose l'annotation 'geom_4326' comme géométrie principale
 class PisteReadSerializer(GeoFeatureModelSerializer):
-    geom_4326 = GeometryField(read_only=True)  # annotation fournie par la view
-
     class Meta:
         model = Piste
-        geo_field = "geom_4326"  # <- devient la géométrie du Feature
-        # ⚠️ on EXCLUT le champ 'geom' pour ne pas l'avoir dans properties
-        exclude = ("geom",)
+        geo_field = "geom"      # on expose directement geom (4326)
+        fields = "__all__"      # pas besoin d'exclure geom
+
 
         
 class UserCreateSerializer(serializers.ModelSerializer):
