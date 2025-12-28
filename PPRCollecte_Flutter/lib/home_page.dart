@@ -22,6 +22,7 @@ import 'database_helper.dart';
 import 'api_service.dart';
 import 'dart:convert'; // ⭐⭐ AJOUTEZ CET IMPORT ⭐⭐
 import 'special_line_form_page.dart'; // ← AJOUTEZ CET IMPORT
+import 'custom_marker_icons.dart';
 
 class MapFocusTarget {
   final String kind; // 'point' | 'polyline'
@@ -2627,12 +2628,48 @@ class DisplayedPointsService {
       final points = await _dbHelper.loadDisplayedPoints();
       final Set<Marker> markers = {};
 
+      // Batch pour générer les icônes une seule fois par type
+      final Map<String, Future<BitmapDescriptor>> iconFutures = {};
+
       for (var point in points) {
         final pointType = point['point_type'] as String?;
         if (pointType == "Bac" || pointType == "Passage Submersible") {
-          continue; // Ne pas créer de marqueur pour ces types
+          continue;
         }
+
         final table = (point['original_table'] ?? '').toString();
+
+        // Préparer la future icône si pas déjà en cours
+        if (!iconFutures.containsKey(table)) {
+          iconFutures[table] = CustomMarkerIcons.getIconForTable(table);
+        }
+      }
+
+      // Attendre toutes les icônes
+      final Map<String, BitmapDescriptor> icons = {};
+      await Future.wait(
+        iconFutures.entries.map((entry) async {
+          icons[entry.key] = await entry.value;
+        }),
+      );
+
+      // Créer les marqueurs avec les icônes
+      for (var point in points) {
+        final pointType = point['point_type'] as String?;
+        if (pointType == "Bac" || pointType == "Passage Submersible") {
+          continue;
+        }
+
+        final table = (point['original_table'] ?? '').toString();
+        final pointName = point['point_name'] as String? ?? 'Sans nom';
+        final codePiste = point['code_piste'] as String? ?? 'N/A';
+
+        // Utiliser l'icône du cache
+        final icon = icons[table] ??
+            BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueRed,
+            );
+
         markers.add(
           Marker(
             markerId: MarkerId(
@@ -2643,24 +2680,18 @@ class DisplayedPointsService {
               (point['longitude'] as num).toDouble(),
             ),
             infoWindow: InfoWindow(
-              title: '${point['point_type']}: ${point['point_name']}',
-              snippet: 'Code Piste: ${point['code_piste'] ?? 'N/A'}',
+              title: '${point['point_type']}: $pointName',
+              snippet: 'Code Piste: $codePiste',
             ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueRed,
-            ),
+            icon: icon,
           ),
         );
       }
 
-      print(
-        '📍 ${markers.length} points affichés chargés',
-      );
+      print('📍 ${markers.length} points affichés chargés (cache: ${CustomMarkerIcons.getCacheSize()} icônes)');
       return markers;
     } catch (e) {
-      print(
-        '❌ Erreur dans getDisplayedPointsMarkers: $e',
-      );
+      print('❌ Erreur dans getDisplayedPointsMarkers: $e');
       return {};
     }
   }
@@ -2754,7 +2785,6 @@ class DownloadedPointsService {
 
   Future<Set<Marker>> getDownloadedPointsMarkers() async {
     try {
-      // Récupérer tous les points avec downloaded = 1 (téléchargés depuis le serveur)
       final List<String> pointTables = [
         'localites',
         'ecoles',
@@ -2772,15 +2802,30 @@ class DownloadedPointsService {
 
       final Set<Marker> markers = {};
       final loginId = await DatabaseHelper().resolveLoginId();
+
       if (loginId == null) {
         print('❌ [DL-POINTS] Impossible de déterminer login_id (viewer)');
         return {};
       }
+
+      // Pré-générer toutes les icônes nécessaires
+      final Map<String, Future<BitmapDescriptor>> iconFutures = {};
+      for (var tableName in pointTables) {
+        iconFutures[tableName] = CustomMarkerIcons.getIconForTable(tableName);
+      }
+
+      // Récupérer toutes les icônes en parallèle
+      final Map<String, BitmapDescriptor> icons = {};
+      await Future.wait(
+        iconFutures.entries.map((entry) async {
+          icons[entry.key] = await entry.value;
+        }),
+      );
+
+      // Traiter chaque table
       for (var tableName in pointTables) {
         try {
           final db = await _dbHelper.database;
-
-          // ⭐⭐ FILTRE CRITIQUE : downloaded = 1 (données téléchargées) ⭐⭐
           final points = await db.query(
             tableName,
             where: 'downloaded = ? AND saved_by_user_id = ?',
@@ -2791,11 +2836,17 @@ class DownloadedPointsService {
           );
 
           for (var point in points) {
-            final coordinates = _getCoordinatesFromPoint(
-              point,
-              tableName,
-            );
+            final coordinates = _getCoordinatesFromPoint(point, tableName);
+
             if (coordinates['lat'] != null && coordinates['lng'] != null) {
+              final pointName = point['nom'] ?? 'Sans nom';
+              final codePiste = point['code_piste'] ?? 'N/A';
+              final enqueteur = point['enqueteur'] ?? 'Autre utilisateur';
+              final creatorId = point['login_id'] ?? 'Unknown';
+
+              // Utiliser l'icône du cache
+              final icon = icons[tableName] ?? await CustomMarkerIcons.getIconForTable(tableName);
+
               markers.add(
                 Marker(
                   markerId: MarkerId(
@@ -2806,33 +2857,25 @@ class DownloadedPointsService {
                     (coordinates['lng'] as num).toDouble(),
                   ),
                   infoWindow: InfoWindow(
-                    title: '${_getEntityTypeFromTable(tableName)}: ${point['nom'] ?? 'Sans nom'}',
-                    snippet: 'Code Piste: ${point['code_piste'] ?? 'N/A'}\n'
-                        'Enquêteur: ${point['enqueteur'] ?? 'Autre utilisateur'}\n'
-                        'Créé par: User ${point['login_id']}',
+                    title: '${_getEntityTypeFromTable(tableName)}: $pointName',
+                    snippet: 'Code Piste: $codePiste\n'
+                        'Enquêteur: $enqueteur\n'
+                        'Créé par: User $creatorId',
                   ),
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueGreen,
-                  ), // ⭐⭐ VERT ⭐⭐
+                  icon: icon,
                 ),
               );
             }
           }
         } catch (e) {
-          print(
-            '❌ Erreur table $tableName: $e',
-          );
+          print('❌ Erreur table $tableName: $e');
         }
       }
 
-      print(
-        '📍 ${markers.length} points téléchargés (verts) chargés',
-      );
+      print('📍 ${markers.length} points téléchargés chargés (cache: ${CustomMarkerIcons.getCacheSize()} icônes)');
       return markers;
     } catch (e) {
-      print(
-        '❌ Erreur dans getDownloadedPointsMarkers: $e',
-      );
+      print('❌ Erreur dans getDownloadedPointsMarkers: $e');
       return {};
     }
   }
