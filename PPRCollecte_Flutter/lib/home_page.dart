@@ -23,6 +23,7 @@ import 'api_service.dart';
 import 'dart:convert'; // ⭐⭐ AJOUTEZ CET IMPORT ⭐⭐
 import 'special_line_form_page.dart'; // ← AJOUTEZ CET IMPORT
 import 'custom_marker_icons.dart';
+import 'legend_widget.dart';
 
 class MapFocusTarget {
   final String kind; // 'point' | 'polyline'
@@ -111,7 +112,18 @@ class _HomePageState extends State<HomePage> {
   String? _lastSyncTimeText;
   late bool _isOnlineDynamic;
   Timer? _onlineWatchTimer;
-
+// Dans _HomePageState
+  Map<String, bool> _legendVisibility = {
+    'points': true,
+    'pistes': true,
+    'chaussee_bitume': true,
+    'chaussee_terre': true,
+    'chaussee_latérite': true,
+    'chaussee_bouwal': true,
+    'chaussee_autre': true, // Pas de 'chaussee_sable'
+    'bac': true,
+    'passage_submersible': true,
+  };
   @override
   void initState() {
     super.initState();
@@ -184,6 +196,150 @@ class _HomePageState extends State<HomePage> {
       const Duration(seconds: 10),
       (_) => _checkOnlineStatus(),
     );
+  }
+// === AJOUTEZ CES MÉTHODES ===
+
+// Méthode utilitaire pour déterminer le type de chaussée depuis sa couleur
+  String _getChausseeTypeFromColor(Color color) {
+    if (color == Colors.black) return 'bitume';
+    if (color == Colors.brown) return 'terre';
+    if (color.value == Colors.red.shade700.value) return 'latérite';
+    if (color.value == Colors.yellow.shade700.value) return 'bouwal';
+    if (color == Colors.blueGrey) return 'autre';
+    return 'inconnu';
+  }
+
+// Méthode pour filtrer les polylines selon la légende
+  Set<Polyline> _getFilteredPolylines() {
+    final Set<Polyline> filtered = Set<Polyline>.from(collectedPolylines);
+    if (_legendVisibility['pistes'] == true) {
+      filtered.addAll(_finishedPistes);
+    }
+
+    // 2. Pistes téléchargées - selon légende
+    if (_legendVisibility['pistes'] == true && _showDownloadedPistes) {
+      filtered.addAll(_downloadedPistesPolylines);
+    }
+
+    // 3. Chaussées finies (selon type)
+    for (final chaussee in _finishedChaussees) {
+      final type = _getChausseeTypeFromColor(chaussee.color);
+      if (_legendVisibility['chaussee_$type'] == true) {
+        filtered.add(chaussee);
+      }
+    }
+
+    // 4. Chaussées téléchargées (selon type)
+    if (_showDownloadedChaussees) {
+      for (final chaussee in _downloadedChausseesPolylines) {
+        final type = _getChausseeTypeFromColor(chaussee.color);
+        if (_legendVisibility['chaussee_$type'] == true) {
+          filtered.add(chaussee);
+        }
+      }
+    }
+
+    // 5. Lignes spéciales affichées
+    filtered.addAll(_displayedSpecialLines);
+
+    // 6. Lignes en cours (TOUJOURS visibles)
+    // Ligne en cours
+    if (homeController.ligneCollection != null) {
+      final lignePoints = homeController.ligneCollection!.points;
+      if (lignePoints.length > 1) {
+        filtered.add(
+          Polyline(
+            polylineId: const PolylineId('currentLigne'),
+            points: lignePoints,
+            color: homeController.ligneCollection!.isPaused ? Colors.orange : Colors.green,
+            width: 4,
+            patterns: homeController.ligneCollection!.isPaused
+                ? <PatternItem>[
+                    PatternItem.dash(10),
+                    PatternItem.gap(5)
+                  ]
+                : <PatternItem>[],
+          ),
+        );
+      }
+    }
+
+    // Chaussée en cours
+    if (homeController.chausseeCollection != null) {
+      final chausseePoints = homeController.chausseeCollection!.points;
+      if (chausseePoints.length > 1) {
+        filtered.add(
+          Polyline(
+            polylineId: const PolylineId('currentChaussee'),
+            points: chausseePoints,
+            color: homeController.chausseeCollection!.isPaused ? Colors.deepOrange : const Color(0xFFFF9800),
+            width: 5,
+            patterns: homeController.chausseeCollection!.isPaused
+                ? <PatternItem>[
+                    PatternItem.dash(15),
+                    PatternItem.gap(5)
+                  ]
+                : <PatternItem>[],
+          ),
+        );
+      }
+    }
+
+    // Ligne spéciale en cours
+    if (homeController.specialCollection != null) {
+      final specialPoints = homeController.specialCollection!.points;
+      if (specialPoints.length > 1) {
+        final specialColor = _specialCollectionType == "Bac" ? Colors.purple : Colors.deepPurple;
+
+        filtered.add(
+          Polyline(
+            polylineId: const PolylineId('currentSpecial'),
+            points: specialPoints,
+            color: specialColor,
+            width: 5,
+            patterns: homeController.specialCollection!.isPaused
+                ? <PatternItem>[
+                    PatternItem.dash(10),
+                    PatternItem.gap(5)
+                  ]
+                : <PatternItem>[],
+          ),
+        );
+      }
+    }
+
+    return filtered;
+  }
+
+// Méthode pour filtrer les markers selon la légende
+  Set<Marker> _getFilteredMarkers() {
+    final Set<Marker> filtered = Set<Marker>.from(_displayedPointsMarkers);
+
+    // Points téléchargés
+    if (_showDownloadedPoints && _legendVisibility['points'] == true) {
+      filtered.addAll(_downloadedPointsMarkers);
+    }
+
+    return filtered;
+  }
+
+// Méthode pour mettre à jour la visibilité depuis la légende
+  void _updateVisibilityFromLegend(Map<String, bool> visibility) {
+    setState(() {
+      _legendVisibility = visibility;
+      _showDownloadedPoints = visibility['points'] ?? true;
+      _showDownloadedPistes = visibility['pistes'] ?? true;
+
+      // Pour les chaussées, si aucun type n'est visible, masquer tout
+      final hasVisibleChaussee = [
+        'bitume',
+        'terre',
+        'latérite',
+        'bouwal',
+        'autre'
+      ].any((type) => visibility['chaussee_$type'] == true);
+      _showDownloadedChaussees = hasVisibleChaussee;
+    });
   }
 
   Future<void> _checkOnlineStatus() async {
@@ -2170,37 +2326,16 @@ class _HomePageState extends State<HomePage> {
   Widget build(
     BuildContext context,
   ) {
-    // Préparer les markers
-    final Set<Marker> markersSet = Set<Marker>.from(
-      _displayedPointsMarkers,
-    );
-    if (_showDownloadedPoints) {
-      markersSet.addAll(
-        _downloadedPointsMarkers,
-      ); // Verts (téléchargés)
-    }
-    // Préparer les polylines
-    final allPolylines = Set<Polyline>.from(
-      collectedPolylines,
-    );
-    allPolylines.addAll(
-      _finishedPistes,
-    );
-    allPolylines.addAll(
-      _finishedChaussees,
-    ); // ← CORRECTION SIMPLE
-    allPolylines.addAll(
-      _displayedSpecialLines,
-    );
-    if (_showDownloadedPistes) {
-      allPolylines.addAll(_downloadedPistesPolylines);
-      print('🧩 [MAP] add downloaded pistes: ${_downloadedPistesPolylines.length} polylines');
-    }
-    if (_showDownloadedChaussees) {
-      allPolylines.addAll(_downloadedChausseesPolylines);
-      print('🧩 [MAP] add downloaded chaussees: ${_downloadedChausseesPolylines.length} polylines');
-    }
-    print('🧮 [MAP] allPolylines size = ${allPolylines.length}');
+    final Set<Marker> filteredMarkers = _getFilteredMarkers();
+
+    // 2. Filtrer les polylines selon la légende
+    final Set<Polyline> filteredPolylines = _getFilteredPolylines();
+
+    // === LOGS POUR DEBUG ===
+    print('📍 [MAP] filteredMarkers size = ${filteredMarkers.length}');
+    print('🧮 [MAP] filteredPolylines size = ${filteredPolylines.length}');
+
+    // === AJOUTER LES ÉLÉMENTS EN COURS (toujours visibles) ===
 
     // Ajouter la ligne en cours si active (nouveau système)
     if (homeController.specialCollection != null) {
@@ -2208,47 +2343,37 @@ class _HomePageState extends State<HomePage> {
       if (specialPoints.length > 1) {
         final specialColor = _specialCollectionType == "Bac" ? Colors.purple : Colors.deepPurple;
 
-        allPolylines.add(
+        filteredPolylines.add(
           Polyline(
-            polylineId: const PolylineId(
-              'currentSpecial',
-            ),
+            polylineId: const PolylineId('currentSpecial'),
             points: specialPoints,
             color: specialColor,
             width: 5,
             patterns: homeController.specialCollection!.isPaused
                 ? <PatternItem>[
-                    PatternItem.dash(
-                      10,
-                    ),
-                    PatternItem.gap(
-                      5,
-                    ),
+                    PatternItem.dash(10),
+                    PatternItem.gap(5),
                   ]
                 : <PatternItem>[],
           ),
         );
       }
     }
+
+    // Ajouter la piste en cours si active
     if (homeController.ligneCollection != null) {
       final lignePoints = homeController.ligneCollection!.points;
       if (lignePoints.length > 1) {
-        allPolylines.add(
+        filteredPolylines.add(
           Polyline(
-            polylineId: const PolylineId(
-              'currentLigne',
-            ),
+            polylineId: const PolylineId('currentLigne'),
             points: lignePoints,
             color: homeController.ligneCollection!.isPaused ? Colors.orange : Colors.green,
             width: 4,
             patterns: homeController.ligneCollection!.isPaused
                 ? <PatternItem>[
-                    PatternItem.dash(
-                      10,
-                    ),
-                    PatternItem.gap(
-                      5,
-                    ),
+                    PatternItem.dash(10),
+                    PatternItem.gap(5),
                   ]
                 : <PatternItem>[],
           ),
@@ -2260,26 +2385,16 @@ class _HomePageState extends State<HomePage> {
     if (homeController.chausseeCollection != null) {
       final chausseePoints = homeController.chausseeCollection!.points;
       if (chausseePoints.length > 1) {
-        allPolylines.add(
+        filteredPolylines.add(
           Polyline(
-            polylineId: const PolylineId(
-              'currentChaussee',
-            ),
+            polylineId: const PolylineId('currentChaussee'),
             points: chausseePoints,
-            color: homeController.chausseeCollection!.isPaused
-                ? Colors.deepOrange
-                : const Color(
-                    0xFFFF9800,
-                  ),
+            color: homeController.chausseeCollection!.isPaused ? Colors.deepOrange : const Color(0xFFFF9800),
             width: 5,
             patterns: homeController.chausseeCollection!.isPaused
                 ? <PatternItem>[
-                    PatternItem.dash(
-                      15,
-                    ),
-                    PatternItem.gap(
-                      5,
-                    ),
+                    PatternItem.dash(15),
+                    PatternItem.gap(5),
                   ]
                 : <PatternItem>[],
           ),
@@ -2304,11 +2419,18 @@ class _HomePageState extends State<HomePage> {
                   MapWidget(
                     userPosition: userPosition,
                     gpsEnabled: gpsEnabled,
-                    markers: markersSet,
-                    polylines: allPolylines,
+                    markers: filteredMarkers,
+                    polylines: filteredPolylines,
                     onMapCreated: _onMapCreated,
                     formMarkers: formMarkers,
                     mapType: _currentMapType,
+                  ),
+                  // === WIDGET DE LÉGENDE ===
+                  LegendWidget(
+                    initialVisibility: _legendVisibility,
+                    onVisibilityChanged: _updateVisibilityFromLegend,
+                    allPolylines: filteredPolylines,
+                    allMarkers: filteredMarkers,
                   ),
                   if (isSyncing)
                     BackdropFilter(
@@ -2335,8 +2457,9 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
+
                   // Dans le Stack de la méthode build() - Positionnez où vous voulez
-                  Positioned(
+                  /*Positioned(
                     top: 60, // Ajustez la position selon vos besoins
                     right: 10,
                     child: Container(
@@ -2394,10 +2517,10 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                  ),
+                  ),*/
 
                   // === AJOUTEZ ICI === //
-                  /*Positioned(
+                  Positioned(
                     bottom: 200,
                     right: 16,
                     child: Visibility(
@@ -2428,9 +2551,9 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'dev_button',
                       ),
                     ),
-                  ),*/
+                  ),
                   // Ajouter dans la section des boutons de debug
-                  /*Positioned(
+                  Positioned(
                     bottom: 120,
                     right: 16,
                     child: Visibility(
@@ -2461,7 +2584,7 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'simulate_special_button',
                       ),
                     ),
-                  ),*/
+                  ),
                   // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(
@@ -2489,7 +2612,7 @@ class _HomePageState extends State<HomePage> {
                       );
                     },
                   ),
-                  DownloadedPistesToggle(
+                  /* DownloadedPistesToggle(
                     isOn: _showDownloadedPistes,
                     count: _downloadedPistesPolylines.length, // optionnel
                     onChanged: (value) {
@@ -2518,7 +2641,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     },
-                  ),
+                  ), */
 
                   // === WIDGETS DE STATUT (NOUVEAU SYSTÈME UNIQUEMENT) ===
 

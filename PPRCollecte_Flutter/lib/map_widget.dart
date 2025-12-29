@@ -56,7 +56,7 @@ class MapTypeToggle extends StatelessWidget {
     final bool isSatellite = currentMapType == MapType.satellite;
 
     return Positioned(
-      top: 110, // Ajustez selon la position de vos autres contrôles
+      top: 55, // Ajustez selon la position de vos autres contrôles
       right: 10,
       child: Container(
         decoration: BoxDecoration(
@@ -124,7 +124,7 @@ class DownloadedPistesToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     // même placement que "Satellite", juste en dessous (ajuste top si besoin)
     return Positioned(
-      top: 160, // 👈 sous le bouton Satellite (qui est à 110 chez toi)
+      top: 100, // 👈 sous le bouton Satellite (qui est à 110 chez toi)
       right: 10,
       child: Container(
         decoration: BoxDecoration(
