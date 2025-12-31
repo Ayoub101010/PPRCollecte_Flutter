@@ -313,10 +313,18 @@ class _HomePageState extends State<HomePage> {
 
 // Méthode pour filtrer les markers selon la légende
   Set<Marker> _getFilteredMarkers() {
-    final Set<Marker> filtered = Set<Marker>.from(_displayedPointsMarkers);
+    // Si "Points" est décoché => cacher TOUS les markers (local + downloaded)
+    if (_legendVisibility['points'] != true) {
+      return <Marker>{};
+    }
+
+    final Set<Marker> filtered = <Marker>{};
+
+    // Points créés/affichés (local: synced=0/downloaded=0, etc.)
+    filtered.addAll(_displayedPointsMarkers);
 
     // Points téléchargés
-    if (_showDownloadedPoints && _legendVisibility['points'] == true) {
+    if (_showDownloadedPoints) {
       filtered.addAll(_downloadedPointsMarkers);
     }
 

@@ -53,7 +53,11 @@ class _LegendWidgetState extends State<LegendWidget> {
     if (type == 'point') {
       return widget.allMarkers.length;
     } else if (type == 'piste') {
-      return widget.allPolylines.where((p) => p.color == Colors.brown || p.color.value == 0xFFB86E1D).length;
+      return widget.allPolylines.where((p) {
+        final id = p.polylineId.value;
+        // ✅ IDs de pistes (local + rechargées + téléchargées)
+        return id.startsWith('piste_') || id.startsWith('displayed_piste_') || id.startsWith('dl_piste_');
+      }).length;
     } else if (type.startsWith('chaussee_')) {
       final chausseeType = type.replaceFirst('chaussee_', '');
       return widget.allPolylines.where((p) => _getChausseeTypeFromColor(p.color) == chausseeType).length;
@@ -269,7 +273,7 @@ class _LegendWidgetState extends State<LegendWidget> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: legendItems.map((item) {
-                      final count = _countItemsByType(item.type);
+                      final count = (item.isVisible) ? _countItemsByType(item.type) : 0;
 
                       return Padding(
                         padding: EdgeInsets.symmetric(vertical: 6),
