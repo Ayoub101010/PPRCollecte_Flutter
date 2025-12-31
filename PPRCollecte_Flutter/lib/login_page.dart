@@ -290,19 +290,13 @@ class _LoginPageState extends State<LoginPage> {
                                     ],
                                   ),
                                 ),
-                                child: const Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    FaIcon(FontAwesomeIcons.mapMarkerAlt, color: Color(0xFF2563EB), size: 30),
-                                    Positioned(top: 6, right: 6, child: Text("🛰", style: TextStyle(fontSize: 16))),
-                                  ],
-                                ),
+                                child: const GuineeLoginEmblem(),
                               ),
                               const SizedBox(height: 10),
-                              const Text("PPRCollecte", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A))),
+                              const Text("GeoNDGR-Collecte", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A))),
                               const SizedBox(height: 14),
                               const Text(
-                                "Connexion à PPRCollecte",
+                                "Connexion à GeoNDGR-Collecte",
                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                               ),
                               const SizedBox(height: 20),
@@ -418,6 +412,89 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class GuineeLoginEmblem extends StatelessWidget {
+  const GuineeLoginEmblem({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        // Halo clair derrière (meilleure lisibilité)
+        Container(
+          width: 96,
+          height: 96,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.75),
+          ),
+        ),
+
+        // Cercle principal
+        Container(
+          width: 56,
+          height: 56,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 12,
+                offset: Offset(0, 4),
+                color: Colors.black26,
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Image.asset(
+              "lib/NDGR_Logoo.png",
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+
+        // Satellite (plus grand & plus visible)
+        const Positioned(
+          top: 6,
+          right: 6,
+          child: FaIcon(
+            FontAwesomeIcons.satellite,
+            size: 18,
+            color: Color(0xFF2563EB),
+          ),
+        ),
+
+        // Carte de la Guinée (image, pas icône)
+        Positioned(
+          bottom: -6,
+          child: Container(
+            width: 38,
+            height: 26,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: const [
+                BoxShadow(
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
+                  color: Colors.black26,
+                ),
+              ],
+            ),
+            child: Image.asset(
+              "lib/carte_guinee.png",
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
