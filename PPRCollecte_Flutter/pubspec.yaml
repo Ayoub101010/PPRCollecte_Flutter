@@ -59,9 +59,9 @@ flutter_launcher_icons:
   android: true
   ios: false
 
-  image_path: "lib/GeoNDGR_Collecte_Logo_NOSAT.png"
+  image_path: "lib/GeoNDGR_Collecte_Logo_ICON_V2.png"
 
-  adaptive_icon_foreground: "lib/GeoNDGR_Collecte_Logo_FINAL.png"
+  adaptive_icon_foreground: "lib/GeoNDGR_Collecte_Logo_ICON_V2.png"
   adaptive_icon_background: "#FFFFFF"
 
   min_sdk_android: 21
