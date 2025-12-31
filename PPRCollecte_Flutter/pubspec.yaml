@@ -58,8 +58,12 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "lib/PPRCollectLogo.png"
-  adaptive_icon_background: "#A7F3D0" # couleur proche de ton dégradé
+
+  image_path: "lib/GeoNDGR_Collecte_Logo_NOSAT.png"
+
+  adaptive_icon_foreground: "lib/GeoNDGR_Collecte_Logo_FINAL.png"
+  adaptive_icon_background: "#FFFFFF"
+
   min_sdk_android: 21
 
 # The following section is specific to Flutter packages.
