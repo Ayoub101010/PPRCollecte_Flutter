@@ -35,7 +35,8 @@ class ApiService {
     if (response.statusCode == 200) {
       print('Réponse API brute: ${response.body}');
       // L'API renvoie les données de l'utilisateur
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+
       authToken = data['token'];
       userId = data['id'];
       communeId = data['communes_rurales'];
@@ -53,7 +54,7 @@ class ApiService {
       }
     } else {
       // En cas d’erreur, on décode le message envoyé par le serveur
-      final error = jsonDecode(response.body);
+      final error = jsonDecode(utf8.decode(response.bodyBytes));
       throw Exception(error['error'] ?? 'Erreur inconnue');
     }
   }
@@ -756,7 +757,7 @@ class ApiService {
       ).timeout(const Duration(seconds: 30)); // ⏰ timeout GET
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         return data['features'];
       } else {
         print('❌ Erreur GET ($endpoint): ${response.statusCode} - ${response.body}');
@@ -854,7 +855,7 @@ class ApiService {
       ).timeout(const Duration(seconds: 40));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         print('✅ ${data['features']?.length ?? 0} chaussées récupérées');
         return data['features'];
       } else {
@@ -888,7 +889,7 @@ class ApiService {
       ).timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         print('✅ ${data['features']?.length ?? 0} pistes récupérées');
         return data['features'];
       } else {
