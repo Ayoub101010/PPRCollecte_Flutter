@@ -24,6 +24,8 @@ import 'dart:convert'; // ⭐⭐ AJOUTEZ CET IMPORT ⭐⭐
 import 'special_line_form_page.dart'; // ← AJOUTEZ CET IMPORT
 import 'custom_marker_icons.dart';
 import 'legend_widget.dart';
+import 'dart:convert';
+import 'dart:math' as Math;
 
 class MapFocusTarget {
   final String kind; // 'point' | 'polyline'
@@ -70,6 +72,10 @@ class _HomePageState extends State<HomePage> {
     -6.841650,
   );
   bool gpsEnabled = true;
+  String _regionNom = '----';
+  String _prefectureNom = '----';
+  String _communeNom = '----';
+
   DateTime? _suspendAutoCenterUntil;
   List<Marker> collectedMarkers = [];
   List<Polyline> collectedPolylines = [];
@@ -101,7 +107,12 @@ class _HomePageState extends State<HomePage> {
   Set<Marker> _downloadedPointsMarkers = {};
   bool _showDownloadedPoints = true;
   MapType _currentMapType = MapType.normal;
+  final DownloadedSpecialLinesService _downloadedSpecialLinesService = DownloadedSpecialLinesService();
+  Set<Polyline> _downloadedSpecialLinesPolylines = {};
+  bool _showDownloadedSpecialLines = true;
+
   // Téléchargés : Pistes
+
   final DownloadedPistesService _downloadedPistesService = DownloadedPistesService();
   Set<Polyline> _downloadedPistesPolylines = {};
   bool _showDownloadedPistes = true; // comme pour les points
@@ -139,6 +150,8 @@ class _HomePageState extends State<HomePage> {
     _isOnlineDynamic = widget.isOnline;
     _loadLastSyncTime();
     _startOnlineWatcher();
+    _loadAdminNamesOffline();
+    _loadDownloadedSpecialLines();
 
     homeController.addListener(
       () {
@@ -176,6 +189,406 @@ class _HomePageState extends State<HomePage> {
       color: Colors.blue,
       width: 3,
     ));*/
+  }
+
+  Future<void> _loadDownloadedSpecialLines() async {
+    print('🔄 [_loadDownloadedSpecialLines] start');
+
+    try {
+      final lines = await _downloadedSpecialLinesService.getDownloadedSpecialLinesPolylines(
+        onTapDetails: (data) {
+          final start = LatLng(
+            (data['start_lat'] as num).toDouble(),
+            (data['start_lng'] as num).toDouble(),
+          );
+          final end = LatLng(
+            (data['end_lat'] as num).toDouble(),
+            (data['end_lng'] as num).toDouble(),
+          );
+
+          final distanceKm = polylineDistanceKm([
+            start,
+            end
+          ]);
+
+          _showSpecialLineDetailsSheet(
+            context: context,
+            specialType: (data['special_type'] ?? '----').toString(),
+            statut: 'Sauvegardée (downloaded)',
+            region: _regionNom,
+            prefecture: _prefectureNom,
+            commune: _communeNom,
+            distanceKm: distanceKm,
+            startLat: start.latitude,
+            startLng: start.longitude,
+            endLat: end.latitude,
+            endLng: end.longitude,
+          );
+        },
+      );
+
+      setState(() {
+        _downloadedSpecialLinesPolylines = lines;
+      });
+
+      print('✅ [_loadDownloadedSpecialLines] ${lines.length} lignes téléchargées');
+    } catch (e) {
+      print('❌ [_loadDownloadedSpecialLines] $e');
+    }
+
+    print('✅ [_loadDownloadedSpecialLines] done');
+  }
+
+  void _showChausseeDetailsSheet({
+    required BuildContext context,
+    required String statut,
+    required String typeChaussee,
+    required String endroit,
+    required String codePiste,
+    required String region,
+    required String prefecture,
+    required String commune,
+    required int nbPoints,
+    required double distanceKm,
+    required double startLat,
+    required double startLng,
+    required double endLat,
+    required double endLng,
+  }) {
+    String safe(dynamic s) {
+      final v = (s ?? '').toString().trim();
+      if (v.isEmpty) return '----';
+      // évite "null"
+      if (v.toLowerCase() == 'null') return '----';
+      return v;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Chaussée — ${safe(typeChaussee)}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              _detailRow('Statut', safe(statut)),
+              _detailRow('Région', safe(region)),
+              _detailRow('Préfecture', safe(prefecture)),
+              _detailRow('Commune', safe(commune)),
+              _detailRow('Type', safe(typeChaussee)),
+              _detailRow('Endroit', safe(endroit)),
+              _detailRow('Code piste', safe(codePiste)),
+              _detailRow('Nb points', nbPoints.toString()),
+              _detailRow('Début', 'X=${startLng.toStringAsFixed(6)} • Y=${startLat.toStringAsFixed(6)}'),
+              _detailRow('Fin', 'X=${endLng.toStringAsFixed(6)} • Y=${endLat.toStringAsFixed(6)}'),
+              _detailRow('Distance', '${distanceKm.toStringAsFixed(2)} km'),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Fermer'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSpecialLineDetailsSheet({
+    required BuildContext context,
+    required String specialType, // "Bac" / "Passage Submersible"
+    required String statut, // "Enregistrée localement"
+    required String region,
+    required String prefecture,
+    required String commune,
+    required double distanceKm,
+    required double startLat,
+    required double startLng,
+    required double endLat,
+    required double endLng,
+  }) {
+    String safe(dynamic s) {
+      final v = (s ?? '').toString().trim();
+      if (v.isEmpty || v.toLowerCase() == 'null') return '----';
+      return v;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '${safe(specialType)}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              _detailRow('Statut', safe(statut)),
+              _detailRow('Région', safe(region)),
+              _detailRow('Préfecture', safe(prefecture)),
+              _detailRow('Commune', safe(commune)),
+              _detailRow('Début', 'X=${startLng.toStringAsFixed(6)} • Y=${startLat.toStringAsFixed(6)}'),
+              _detailRow('Fin', 'X=${endLng.toStringAsFixed(6)} • Y=${endLat.toStringAsFixed(6)}'),
+              _detailRow('Distance', '${distanceKm.toStringAsFixed(2)} km'),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Fermer'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPisteDetailsSheet({
+    required BuildContext context,
+    required String codePiste,
+    required String region,
+    required String prefecture,
+    required String commune,
+    required String statut, // "Enregistrée" / "Sauvegardée"
+    required int nbPoints,
+    required double startLat,
+    required double startLng,
+    required double endLat,
+    required double endLng,
+    required double distanceKm,
+  }) {
+    String safe(String s) => s.trim().isEmpty ? '----' : s.trim();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Piste — ${safe(codePiste)}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              _detailRow('Statut', safe(statut)),
+              _detailRow('Région', safe(region)),
+              _detailRow('Préfecture', safe(prefecture)),
+              _detailRow('Commune', safe(commune)),
+              _detailRow('Nb points', nbPoints.toString()),
+              _detailRow('Début', 'X=${startLng.toStringAsFixed(6)} • Y=${startLat.toStringAsFixed(6)}'),
+              _detailRow('Fin', 'X=${endLng.toStringAsFixed(6)} • Y=${endLat.toStringAsFixed(6)}'),
+              _detailRow('Distance', '${distanceKm.toStringAsFixed(2)} km'),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Fermer'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPointDetailsSheet({
+    required BuildContext context,
+    required String type,
+    required String name,
+    required String region,
+    required String prefecture,
+    required String commune,
+    required String enqueteur,
+    required String codePiste,
+    required double lat,
+    required double lng,
+  }) {
+    String safe(String s) => s.trim().isEmpty ? '----' : s.trim();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 14,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '$type — ${safe(name)}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              _detailRow('Région', safe(region)),
+              _detailRow('Préfecture', safe(prefecture)),
+              _detailRow('Commune', safe(commune)),
+              _detailRow('Enquêteur', _sanitizeEnqueteur(enqueteur)),
+              _detailRow('Code piste', safe(codePiste)),
+              _detailRow('Coordonnées', 'X=${lng.toStringAsFixed(6)}  •  Y=${lat.toStringAsFixed(6)}'),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Fermer'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _sanitizeEnqueteur(String? v) {
+    if (v == null) return '----';
+
+    final s = v.trim();
+    if (s.isEmpty) return '----';
+
+    final lower = s.toLowerCase();
+
+    // valeurs techniques à masquer
+    if (lower == '0' || lower == '1') return '----';
+    if (lower.contains('sync')) return '----'; // sync, synced, date_sync...
+    if (lower.contains('download')) return '----'; // downloaded...
+
+    return s;
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(label, style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 6,
+            child: Text(value, textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadAdminNamesOffline() async {
+    try {
+      // 1) SQLite (offline)
+      final user = await DatabaseHelper().getCurrentUser();
+      final r = (user?['region_nom'] ?? '').toString().trim();
+      final p = (user?['prefecture_nom'] ?? '').toString().trim();
+      final c = (user?['commune_nom'] ?? '').toString().trim();
+
+      // 2) fallback ApiService si sqlite vide
+      final rr = r.isNotEmpty ? r : (ApiService.regionNom ?? '').toString().trim();
+      final pp = p.isNotEmpty ? p : (ApiService.prefectureNom ?? '').toString().trim();
+      final cc = c.isNotEmpty ? c : (ApiService.communeNom ?? '').toString().trim();
+
+      if (!mounted) return;
+      setState(() {
+        _regionNom = rr.isEmpty ? '----' : rr;
+        _prefectureNom = pp.isEmpty ? '----' : pp;
+        _communeNom = cc.isEmpty ? '----' : cc;
+      });
+    } catch (_) {
+      // on laisse ----
+    }
   }
 
   void _suspendAutoCenterFor(Duration d) {
@@ -239,8 +652,38 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    // 5. Lignes spéciales affichées
-    filtered.addAll(_displayedSpecialLines);
+    for (final l in _displayedSpecialLines) {
+      final id = l.polylineId.value.toLowerCase();
+
+      final isBac = id.contains('bac'); // ex: "special_line_bac_12"
+      final isPassage = id.contains('passage'); // ex: "special_line_passage_12"
+
+      if (isBac && (_legendVisibility['bac'] == true)) {
+        filtered.add(l);
+      } else if (isPassage && (_legendVisibility['passage_submersible'] == true)) {
+        filtered.add(l);
+      } else if (!isBac && !isPassage) {
+        // fallback si jamais
+        filtered.add(l);
+      }
+    }
+
+    if (_showDownloadedSpecialLines) {
+      for (final l in _downloadedSpecialLinesPolylines) {
+        final id = l.polylineId.value.toLowerCase();
+
+        final isBac = id.contains('_bac_');
+        final isPassage = id.contains('_passage_submersible_');
+
+        if (isBac && (_legendVisibility['bac'] == true)) {
+          filtered.add(l);
+        } else if (isPassage && (_legendVisibility['passage_submersible'] == true)) {
+          filtered.add(l);
+        } else if (!isBac && !isPassage) {
+          filtered.add(l);
+        }
+      }
+    }
 
     // 6. Lignes en cours (TOUJOURS visibles)
     // Ligne en cours
@@ -337,6 +780,10 @@ class _HomePageState extends State<HomePage> {
       _legendVisibility = visibility;
       _showDownloadedPoints = visibility['points'] ?? true;
       _showDownloadedPistes = visibility['pistes'] ?? true;
+// Bac + Passage submersible (special lines)
+      final showBac = visibility['bac'] ?? true;
+      final showPassage = visibility['passage_submersible'] ?? true;
+      _showDownloadedSpecialLines = showBac || showPassage;
 
       // Pour les chaussées, si aucun type n'est visible, masquer tout
       final hasVisibleChaussee = [
@@ -397,15 +844,32 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDownloadedPistes() async {
     print('🔄 [_loadDownloadedPistes] start');
     try {
-      final lines = await _downloadedPistesService.getDownloadedPistesPolylines();
-      print('📏 [_loadDownloadedPistes] ${lines.length} polylines reçues du service');
+      final polylines = await _downloadedPistesService.getDownloadedPistesPolylines(
+        onTapDetails: (data) {
+          _showPisteDetailsSheet(
+            context: context,
+            codePiste: (data['code_piste'] ?? '----').toString(),
+            statut: 'Sauvegardée (downloaded)',
+            region: _regionNom,
+            prefecture: _prefectureNom,
+            commune: _communeNom,
+            nbPoints: (data['nb_points'] as int?) ?? 0,
+            distanceKm: (data['distance_km'] as num?)?.toDouble() ?? 0.0,
+            startLat: (data['start_lat'] as num).toDouble(),
+            startLng: (data['start_lng'] as num).toDouble(),
+            endLat: (data['end_lat'] as num).toDouble(),
+            endLng: (data['end_lng'] as num).toDouble(),
+          );
+        },
+      );
 
       setState(() {
-        _downloadedPistesPolylines = lines;
+        _downloadedPistesPolylines = polylines;
       });
 
-      // Sanity: affiche le nombre total de polylines envoyées à la map
       final total = collectedPolylines.length + _finishedPistes.length + _finishedChaussees.length + _downloadedPistesPolylines.length;
+
+      print('📏 [_loadDownloadedPistes] ${polylines.length} polylines reçues du service');
       print('🗺️  [_loadDownloadedPistes] total polylines (avant rendu): $total');
     } catch (e) {
       print('❌ [_loadDownloadedPistes] $e');
@@ -428,10 +892,56 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  double _deg2rad(double deg) => deg * (Math.pi / 180.0);
+
+  double _haversineMeters(LatLng a, LatLng b) {
+    const R = 6371000.0;
+    final dLat = _deg2rad(b.latitude - a.latitude);
+    final dLng = _deg2rad(b.longitude - a.longitude);
+
+    final lat1 = _deg2rad(a.latitude);
+    final lat2 = _deg2rad(b.latitude);
+
+    final sinDLat = Math.sin(dLat / 2);
+    final sinDLng = Math.sin(dLng / 2);
+
+    final h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+    final c = 2 * Math.asin(Math.min(1.0, Math.sqrt(h)));
+    return R * c;
+  }
+
+  double polylineDistanceKm(List<LatLng> pts) {
+    if (pts.length < 2) return 0.0;
+    double sum = 0.0;
+    for (int i = 0; i < pts.length - 1; i++) {
+      sum += _haversineMeters(pts[i], pts[i + 1]);
+    }
+    return sum / 1000.0;
+  }
+
   Future<void> _loadDownloadedChaussees() async {
     print('🔄 [_loadDownloadedChaussees] start');
     try {
-      final lines = await _downloadedChausseesService.getDownloadedChausseesPolylines();
+      final lines = await _downloadedChausseesService.getDownloadedChausseesPolylines(
+        onTapDetails: (data) {
+          _showChausseeDetailsSheet(
+            context: context,
+            statut: 'Sauvegardée (downloaded)',
+            typeChaussee: (data['type_chaussee'] ?? '----').toString(),
+            endroit: (data['endroit'] ?? '----').toString(),
+            codePiste: (data['code_piste'] ?? '----').toString(),
+            region: _regionNom,
+            prefecture: _prefectureNom,
+            commune: _communeNom,
+            nbPoints: (data['nb_points'] as int?) ?? 0,
+            distanceKm: (data['distance_km'] as num?)?.toDouble() ?? 0.0,
+            startLat: (data['start_lat'] as num).toDouble(),
+            startLng: (data['start_lng'] as num).toDouble(),
+            endLat: (data['end_lat'] as num).toDouble(),
+            endLng: (data['end_lng'] as num).toDouble(),
+          );
+        },
+      );
       print('📏 [_loadDownloadedChaussees] ${lines.length} polylines reçues du service');
       setState(() {
         _downloadedChausseesPolylines = lines;
@@ -566,7 +1076,22 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadDownloadedPoints() async {
     try {
-      final markers = await _downloadedPointsService.getDownloadedPointsMarkers();
+      final markers = await _downloadedPointsService.getDownloadedPointsMarkers(
+        onTapDetails: (data) {
+          _showPointDetailsSheet(
+            context: context,
+            type: (data['type'] ?? 'Point').toString(),
+            name: (data['name'] ?? 'Sans nom').toString(),
+            region: _regionNom,
+            prefecture: _prefectureNom,
+            commune: _communeNom,
+            enqueteur: (data['enqueteur'] ?? '').toString(),
+            codePiste: (data['code_piste'] ?? '').toString(),
+            lat: (data['lat'] as num).toDouble(),
+            lng: (data['lng'] as num).toDouble(),
+          );
+        },
+      );
       setState(
         () {
           _downloadedPointsMarkers = markers;
@@ -594,37 +1119,45 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadDisplayedSpecialLines() async {
     try {
-      await DatabaseHelper().debugDisplayedSpecialLines();
-      print(
-        '🟣 Début chargement lignes spéciales...',
-      );
-      final specialLines = await _specialLinesService.getDisplayedSpecialLines();
-      await Future.delayed(
-        const Duration(
-          milliseconds: 100,
-        ),
-      );
-      print(
-        '🟣 Lignes récupérées: ${specialLines.length}',
-      );
-      for (var line in specialLines) {
-        print(
-          '  - ${line.polylineId.value} : ${line.points.length} points',
-        );
-      }
+      final lines = await _specialLinesService.getDisplayedSpecialLines(
+        onTapDetails: (data) {
+          final start = LatLng(
+            (data['start_lat'] as num).toDouble(),
+            (data['start_lng'] as num).toDouble(),
+          );
+          final end = LatLng(
+            (data['end_lat'] as num).toDouble(),
+            (data['end_lng'] as num).toDouble(),
+          );
 
-      setState(
-        () {
-          _displayedSpecialLines = specialLines;
+          final distanceKm = polylineDistanceKm([
+            start,
+            end
+          ]);
+
+          _showSpecialLineDetailsSheet(
+            context: context,
+            specialType: (data['special_type'] ?? '----').toString(),
+            statut: 'Enregistrée localement',
+            region: _regionNom,
+            prefecture: _prefectureNom,
+            commune: _communeNom,
+            distanceKm: distanceKm,
+            startLat: start.latitude,
+            startLng: start.longitude,
+            endLat: end.latitude,
+            endLng: end.longitude,
+          );
         },
       );
-      print(
-        '✅ ${specialLines.length} lignes spéciales chargées',
-      );
+
+      setState(() {
+        _displayedSpecialLines = lines;
+      });
+
+      print('✅ ${lines.length} lignes spéciales affichées');
     } catch (e) {
-      print(
-        '❌ Erreur chargement lignes spéciales: $e',
-      );
+      print('❌ Erreur chargement lignes spéciales: $e');
     }
   }
 
@@ -860,21 +1393,53 @@ class _HomePageState extends State<HomePage> {
       final storageHelper = SimpleStorageHelper();
       final dbHelper = DatabaseHelper();
       final loginId = await dbHelper.resolveLoginId();
-      final displayedChaussees = await storageHelper.loadDisplayedChaussees();
 
-      setState(
-        () {
-          _finishedChaussees = displayedChaussees;
-        },
-      );
+      final displayedChausseesRaw = await storageHelper.loadDisplayedChaussees();
 
-      print(
-        '✅ ${displayedChaussees.length} chaussées rechargées pour user: $loginId',
-      );
+      final displayedChaussees = displayedChausseesRaw.map((p) {
+        final pts = p.points;
+
+        return Polyline(
+          polylineId: p.polylineId ?? PolylineId('chs_${DateTime.now().millisecondsSinceEpoch}'),
+          points: pts,
+          color: p.color,
+          width: p.width,
+          patterns: p.patterns,
+          zIndex: p.zIndex,
+          consumeTapEvents: true,
+          onTap: () {
+            if (pts.length < 2) return;
+
+            final distanceKm = polylineDistanceKm(pts);
+
+            // ⚠️ si tu n'as pas ces champs dans la chaussée locale, on met '----'
+            _showChausseeDetailsSheet(
+              context: context,
+              statut: 'Enregistrée localement',
+              typeChaussee: '----',
+              endroit: '----',
+              codePiste: '----',
+              region: _regionNom,
+              prefecture: _prefectureNom,
+              commune: _communeNom,
+              nbPoints: pts.length,
+              distanceKm: distanceKm,
+              startLat: pts.first.latitude,
+              startLng: pts.first.longitude,
+              endLat: pts.last.latitude,
+              endLng: pts.last.longitude,
+            );
+          },
+        );
+      }).toList();
+
+      setState(() {
+        _finishedChaussees = displayedChaussees;
+      });
+
+      print('✅ ${displayedChaussees.length} chaussées rechargées pour user: $loginId');
     } catch (e) {
-      print(
-        '❌ Erreur rechargement chaussées: $e',
-      );
+      print('❌ Erreur rechargement chaussées: $e');
     }
   }
 
@@ -963,7 +1528,22 @@ class _HomePageState extends State<HomePage> {
     );
 
     try {
-      final markers = await _pointsService.getDisplayedPointsMarkers();
+      final markers = await _pointsService.getDisplayedPointsMarkers(
+        onTapDetails: (data) {
+          _showPointDetailsSheet(
+            context: context,
+            type: (data['type'] ?? 'Point').toString(),
+            name: (data['name'] ?? 'Sans nom').toString(),
+            region: _regionNom,
+            prefecture: _prefectureNom,
+            commune: _communeNom,
+            enqueteur: (data['enqueteur'] ?? '').toString(),
+            codePiste: (data['code_piste'] ?? '').toString(),
+            lat: (data['lat'] as num).toDouble(),
+            lng: (data['lng'] as num).toDouble(),
+          );
+        },
+      );
       // ⭐⭐ FILTRER SEULEMENT LES MARQUEURS VALIDES ⭐⭐
       final dbHelper = DatabaseHelper();
       final existingPoints = await dbHelper.loadDisplayedPoints();
@@ -983,7 +1563,7 @@ class _HomePageState extends State<HomePage> {
       }).toSet();
 
       setState(() {
-        _displayedPointsMarkers = markers;
+        _displayedPointsMarkers = validMarkers;
       });
 
       print(
@@ -1303,6 +1883,58 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<String> _resolveLocalPisteCodeFromPolyline(List<LatLng> polyPts) async {
+    try {
+      if (polyPts.length < 2) return '----';
+
+      final storageHelper = SimpleStorageHelper();
+      final db = await storageHelper.database;
+
+      // On prend le 1er point comme "signature"
+      final start = polyPts.first;
+      const tol = 0.00005; // ~5m (ajuste si besoin)
+
+      // IMPORTANT: dans tes pistes locales points_json tu as {lat,lng}
+      final rows = await db.query(
+        'pistes',
+        columns: [
+          'code_piste',
+          'points_json'
+        ],
+        where: 'synced = ? AND downloaded = ?',
+        whereArgs: [
+          0,
+          0
+        ],
+      );
+
+      for (final r in rows) {
+        final pj = r['points_json'];
+        if (pj is! String || pj.trim().isEmpty) continue;
+
+        final decoded = jsonDecode(pj);
+        if (decoded is! List || decoded.isEmpty) continue;
+
+        final first = decoded.first;
+        if (first is! Map) continue;
+
+        final lat = (first['latitude'] ?? first['lat']);
+        final lng = (first['longitude'] ?? first['lng']);
+        if (lat is! num || lng is! num) continue;
+
+        final dLat = (lat.toDouble() - start.latitude).abs();
+        final dLng = (lng.toDouble() - start.longitude).abs();
+
+        if (dLat <= tol && dLng <= tol) {
+          return (r['code_piste'] ?? '----').toString();
+        }
+      }
+    } catch (e) {
+      print('❌ _resolveLocalPisteCodeFromPolyline: $e');
+    }
+    return '----';
+  }
+
   // Pour charger au démarrage
   // Dans la classe _HomePageState
   // Remplacer l'ancienne méthode par la nouvelle
@@ -1367,19 +1999,37 @@ class _HomePageState extends State<HomePage> {
           p,
         ) {
           return Polyline(
-            polylineId: p.polylineId ??
-                PolylineId(
-                  'piste_${DateTime.now().millisecondsSinceEpoch}',
-                ),
+            polylineId: p.polylineId ?? PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
             points: p.points,
-            color: p.color ?? Colors.brown, // force marron si null
+            color: p.color ?? Colors.brown,
             width: p.width ?? 3,
             patterns: [
               PatternItem.dot,
-              PatternItem.gap(
-                10,
-              ),
-            ], // pointillé
+              PatternItem.gap(10),
+            ],
+            consumeTapEvents: true,
+            onTap: () async {
+              final pts = p.points;
+              if (pts.length < 2) return;
+
+              final code = await _resolveLocalPisteCodeFromPolyline(pts);
+              final distanceKm = polylineDistanceKm(pts);
+
+              _showPisteDetailsSheet(
+                context: context,
+                codePiste: code,
+                statut: 'Enregistrée localement',
+                region: _regionNom,
+                prefecture: _prefectureNom,
+                commune: _communeNom,
+                nbPoints: pts.length,
+                distanceKm: distanceKm,
+                startLat: pts.first.latitude,
+                startLng: pts.first.longitude,
+                endLat: pts.last.latitude,
+                endLng: pts.last.longitude,
+              );
+            },
           );
         },
       ).toList();
@@ -2748,16 +3398,38 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-// === COLLEZ CETTE CLASSE DIRECTEMENT DANS home_page.dart ===
-// À la fin du fichier, avant la dernière accolade fermante
+
+String getEntityTypeFromTable(String tableName) {
+  const entityTypes = {
+    'localites': 'Localité',
+    'ecoles': 'École',
+    'marches': 'Marché',
+    'services_santes': 'Service de Santé',
+    'batiments_administratifs': 'Bâtiment Administratif',
+    'infrastructures_hydrauliques': 'Infrastructure Hydraulique',
+    'autres_infrastructures': 'Autre Infrastructure',
+    'ponts': 'Pont',
+    'buses': 'Buse',
+    'dalots': 'Dalot',
+    'points_critiques': 'Point Critique',
+    'points_coupures': 'Point de Coupure',
+  };
+  return entityTypes[tableName] ?? tableName;
+}
 
 class DisplayedPointsService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  Future<Set<Marker>> getDisplayedPointsMarkers() async {
+  Future<Set<Marker>> getDisplayedPointsMarkers({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
     try {
       final points = await _dbHelper.loadDisplayedPoints();
       final Set<Marker> markers = {};
+      final user = await _dbHelper.getCurrentUser();
+      final regionNom = (user?['region_nom'] ?? ApiService.regionNom ?? '----').toString();
+      final prefectureNom = (user?['prefecture_nom'] ?? ApiService.prefectureNom ?? '----').toString();
+      final communeNom = (user?['commune_nom'] ?? ApiService.communeNom ?? '----').toString();
 
       // Batch pour générer les icônes une seule fois par type
       final Map<String, Future<BitmapDescriptor>> iconFutures = {};
@@ -2793,8 +3465,13 @@ class DisplayedPointsService {
 
         final table = (point['original_table'] ?? '').toString();
         final pointName = point['point_name'] as String? ?? 'Sans nom';
-        final codePiste = point['code_piste'] as String? ?? 'N/A';
+        final typeLabel = getEntityTypeFromTable(table);
+// (ou copie la map entityTypes dans un helper commun, voir note en bas)
 
+        final name = (point['point_name'] ?? point['nom'] ?? 'Sans nom').toString();
+        final codePiste = point['code_piste'] as String? ?? 'N/A';
+        final double lat = (point['latitude'] as num).toDouble();
+        final double lng = (point['longitude'] as num).toDouble();
         // Utiliser l'icône du cache
         final icon = icons[table] ??
             BitmapDescriptor.defaultMarkerWithHue(
@@ -2810,10 +3487,17 @@ class DisplayedPointsService {
               (point['latitude'] as num).toDouble(),
               (point['longitude'] as num).toDouble(),
             ),
-            infoWindow: InfoWindow(
-              title: '${point['point_type']}: $pointName',
-              snippet: 'Code Piste: $codePiste',
-            ),
+            onTap: () {
+              onTapDetails({
+                'type': getEntityTypeFromTable(table),
+                'name': (point['point_name'] ?? point['nom'] ?? 'Sans nom').toString(),
+                'enqueteur': (point['enqueteur'] ?? '').toString(),
+                'code_piste': (codePiste ?? '').toString(),
+                'lat': lat,
+                'lng': lng,
+              });
+            },
+            infoWindow: const InfoWindow(title: ''),
             icon: icon,
           ),
         );
@@ -2827,8 +3511,10 @@ class DisplayedPointsService {
     }
   }
 
-  Future<Set<Marker>> refreshDisplayedPoints() async {
-    return await getDisplayedPointsMarkers();
+  Future<Set<Marker>> refreshDisplayedPoints({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
+    return await getDisplayedPointsMarkers(onTapDetails: onTapDetails);
   }
 }
 
@@ -2836,13 +3522,15 @@ class DisplayedPointsService {
 class SpecialLinesService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  Future<Set<Polyline>> getDisplayedSpecialLines() async {
+  Future<Set<Polyline>> getDisplayedSpecialLines({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
     try {
       final lines = await _dbHelper.loadDisplayedSpecialLines();
       final Set<Polyline> polylines = {};
 
       for (var line in lines) {
-        final specialType = line['special_type'] as String;
+        final specialType = (line['special_type'] ?? '').toString();
 
         Color lineColor;
         List<PatternItem> linePattern;
@@ -2851,70 +3539,79 @@ class SpecialLinesService {
           case 'bac':
             lineColor = Colors.purple;
             linePattern = [
-              PatternItem.dash(
-                15,
-              ),
-              PatternItem.gap(
-                5,
-              ),
+              PatternItem.dash(15),
+              PatternItem.gap(5)
             ];
             break;
           case 'passage submersible':
             lineColor = Colors.cyan;
             linePattern = [
-              PatternItem.dash(
-                10,
-              ),
-              PatternItem.gap(
-                5,
-              ),
+              PatternItem.dash(10),
+              PatternItem.gap(5)
             ];
             break;
           default:
             lineColor = Colors.blueGrey;
-            linePattern = [];
+            linePattern = const [];
         }
 
+        final start = LatLng(
+          (line['lat_debut'] as num).toDouble(),
+          (line['lng_debut'] as num).toDouble(),
+        );
+        final end = LatLng(
+          (line['lat_fin'] as num).toDouble(),
+          (line['lng_fin'] as num).toDouble(),
+        );
+
+        // ✅ distance en km (utilise tes méthodes haversine déjà ajoutées)
+        // (tu vas la calculer côté HomePage, pas ici)
+        // Ici on renvoie juste les coords.
+        final st = specialType.toLowerCase().trim();
+        final tag = st.contains('bac')
+            ? 'bac'
+            : st.contains('passage')
+                ? 'passage_submersible'
+                : 'special';
         polylines.add(
           Polyline(
-            polylineId: PolylineId(
-              'special_line_${line['id']}',
-            ),
+            polylineId: PolylineId('special_line_${tag}_${line['id']}'),
             points: [
-              LatLng(
-                (line['lat_debut'] as num).toDouble(),
-                (line['lng_debut'] as num).toDouble(),
-              ),
-              LatLng(
-                (line['lat_fin'] as num).toDouble(),
-                (line['lng_fin'] as num).toDouble(),
-              ),
+              start,
+              end
             ],
             color: lineColor,
             width: 4,
             patterns: linePattern,
+            consumeTapEvents: true,
+            onTap: () {
+              onTapDetails({
+                'special_type': specialType,
+                'start_lat': start.latitude,
+                'start_lng': start.longitude,
+                'end_lat': end.latitude,
+                'end_lng': end.longitude,
+              });
+            },
           ),
         );
       }
 
-      print(
-        '📍 ${polylines.length} lignes spéciales chargées',
-      );
-      return polylines.toSet();
+      print('📍 ${polylines.length} lignes spéciales chargées');
+      return polylines;
     } catch (e) {
-      print(
-        '❌ Erreur chargement lignes spéciales: $e',
-      );
+      print('❌ Erreur chargement lignes spéciales: $e');
       return {};
     }
   }
 }
 
-// Dans home_page.dart - Ajoutez cette classe
 class DownloadedPointsService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  Future<Set<Marker>> getDownloadedPointsMarkers() async {
+  Future<Set<Marker>> getDownloadedPointsMarkers({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
     try {
       final List<String> pointTables = [
         'localites',
@@ -2938,6 +3635,10 @@ class DownloadedPointsService {
         print('❌ [DL-POINTS] Impossible de déterminer login_id (viewer)');
         return {};
       }
+      final user = await _dbHelper.getCurrentUser();
+      final regionNom = (user?['region_nom'] ?? ApiService.regionNom ?? '----').toString();
+      final prefectureNom = (user?['prefecture_nom'] ?? ApiService.prefectureNom ?? '----').toString();
+      final communeNom = (user?['commune_nom'] ?? ApiService.communeNom ?? '----').toString();
 
       // Pré-générer toutes les icônes nécessaires
       final Map<String, Future<BitmapDescriptor>> iconFutures = {};
@@ -2970,29 +3671,33 @@ class DownloadedPointsService {
             final coordinates = _getCoordinatesFromPoint(point, tableName);
 
             if (coordinates['lat'] != null && coordinates['lng'] != null) {
+              final double lat = (coordinates['lat'] as num).toDouble();
+              final double lng = (coordinates['lng'] as num).toDouble();
+              final typeLabel = _getEntityTypeFromTable(tableName);
+              final name = (point['nom'] ?? point['name'] ?? point['libelle'] ?? 'Sans nom').toString();
+
               final pointName = point['nom'] ?? 'Sans nom';
               final codePiste = point['code_piste'] ?? 'N/A';
               final enqueteur = point['enqueteur'] ?? 'Autre utilisateur';
-              final creatorId = point['login_id'] ?? 'Unknown';
 
               // Utiliser l'icône du cache
               final icon = icons[tableName] ?? await CustomMarkerIcons.getIconForTable(tableName);
 
               markers.add(
                 Marker(
-                  markerId: MarkerId(
-                    'downloaded_${tableName}_${point['id']}',
-                  ),
-                  position: LatLng(
-                    (coordinates['lat'] as num).toDouble(),
-                    (coordinates['lng'] as num).toDouble(),
-                  ),
-                  infoWindow: InfoWindow(
-                    title: '${_getEntityTypeFromTable(tableName)}: $pointName',
-                    snippet: 'Code Piste: $codePiste\n'
-                        'Enquêteur: $enqueteur\n'
-                        'Créé par: User $creatorId',
-                  ),
+                  markerId: MarkerId('downloaded_${tableName}_${point['id']}'),
+                  position: LatLng(lat, lng),
+                  onTap: () {
+                    onTapDetails({
+                      'type': getEntityTypeFromTable(tableName),
+                      'name': (point['nom'] ?? point['name'] ?? point['libelle'] ?? 'Sans nom').toString(),
+                      'enqueteur': (point['enqueteur'] ?? '').toString(),
+                      'code_piste': (codePiste ?? '').toString(),
+                      'lat': lat,
+                      'lng': lng,
+                    });
+                  },
+                  infoWindow: const InfoWindow(title: ''),
                   icon: icon,
                 ),
               );
@@ -3209,7 +3914,36 @@ class DownloadedPistesService {
     return null;
   }
 
-  Future<Set<Polyline>> getDownloadedPistesPolylines() async {
+  double _deg2rad(double deg) => deg * (Math.pi / 180.0);
+
+  double _haversineMeters(LatLng a, LatLng b) {
+    const R = 6371000.0;
+    final dLat = _deg2rad(b.latitude - a.latitude);
+    final dLng = _deg2rad(b.longitude - a.longitude);
+
+    final lat1 = _deg2rad(a.latitude);
+    final lat2 = _deg2rad(b.latitude);
+
+    final sinDLat = Math.sin(dLat / 2);
+    final sinDLng = Math.sin(dLng / 2);
+
+    final h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+    final c = 2 * Math.asin(Math.min(1.0, Math.sqrt(h)));
+    return R * c;
+  }
+
+  double _polylineDistanceKm(List<LatLng> pts) {
+    if (pts.length < 2) return 0.0;
+    double sum = 0.0;
+    for (int i = 0; i < pts.length - 1; i++) {
+      sum += _haversineMeters(pts[i], pts[i + 1]);
+    }
+    return sum / 1000.0;
+  }
+
+  Future<Set<Polyline>> getDownloadedPistesPolylines({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
     try {
       final db = await _storageHelper.database;
       final loginId = await DatabaseHelper().resolveLoginId();
@@ -3302,6 +4036,7 @@ class DownloadedPistesService {
         final last = points.last;
         print('➕ [DL-PISTE:$id] $code -> polyline ${points.length} pts | '
             'start=(${first.latitude},${first.longitude}) end=(${last.latitude},${last.longitude})');
+        final distanceKm = _polylineDistanceKm(points);
 
         final pl = Polyline(
           polylineId: PolylineId('dl_piste_${id ?? DateTime.now().millisecondsSinceEpoch}'),
@@ -3310,8 +4045,21 @@ class DownloadedPistesService {
           width: 3,
           patterns: [
             PatternItem.dot,
-            PatternItem.gap(10)
+            PatternItem.gap(10),
           ],
+          consumeTapEvents: true,
+          onTap: () {
+            if (points.length < 2) return;
+            onTapDetails({
+              'code_piste': (code ?? '----').toString(),
+              'nb_points': points.length,
+              'start_lat': points.first.latitude,
+              'start_lng': points.first.longitude,
+              'end_lat': points.last.latitude,
+              'end_lng': points.last.longitude,
+              'distance_km': distanceKm,
+            });
+          },
         );
 
         polylines.add(pl);
@@ -3393,7 +4141,36 @@ class DownloadedChausseesService {
     return [];
   }
 
-  Future<Set<Polyline>> getDownloadedChausseesPolylines() async {
+  double _deg2rad(double deg) => deg * (Math.pi / 180.0);
+
+  double _haversineMeters(LatLng a, LatLng b) {
+    const R = 6371000.0;
+    final dLat = _deg2rad(b.latitude - a.latitude);
+    final dLng = _deg2rad(b.longitude - a.longitude);
+
+    final lat1 = _deg2rad(a.latitude);
+    final lat2 = _deg2rad(b.latitude);
+
+    final sinDLat = Math.sin(dLat / 2);
+    final sinDLng = Math.sin(dLng / 2);
+
+    final h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+    final c = 2 * Math.asin(Math.min(1.0, Math.sqrt(h)));
+    return R * c;
+  }
+
+  double _polylineDistanceKm(List<LatLng> pts) {
+    if (pts.length < 2) return 0.0;
+    double sum = 0.0;
+    for (int i = 0; i < pts.length - 1; i++) {
+      sum += _haversineMeters(pts[i], pts[i + 1]);
+    }
+    return sum / 1000.0;
+  }
+
+  Future<Set<Polyline>> getDownloadedChausseesPolylines({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
     final polylines = <Polyline>{};
     try {
       final db = await _storageHelper.database;
@@ -3437,6 +4214,7 @@ class DownloadedChausseesService {
         final color = helper.getChausseeColor(type); // mapping déjà présent chez toi
         final pattern = helper.getChausseePattern(type); // idem
         final width = 6;
+        final distanceKm = _polylineDistanceKm(pts);
 
         final pl = Polyline(
           polylineId: PolylineId('dl_chs_$id'),
@@ -3444,7 +4222,21 @@ class DownloadedChausseesService {
           color: color ?? DownloadedChausseesService.downloadedChausseeColor,
           width: width,
           patterns: pattern,
-          zIndex: 9, // sous les highlights, au-dessus des fonds
+          zIndex: 9,
+          consumeTapEvents: true,
+          onTap: () {
+            onTapDetails({
+              'type_chaussee': type,
+              'endroit': endroit,
+              'code_piste': codePiste,
+              'nb_points': pts.length,
+              'start_lat': pts.first.latitude,
+              'start_lng': pts.first.longitude,
+              'end_lat': pts.last.latitude,
+              'end_lng': pts.last.longitude,
+              'distance_km': distanceKm,
+            });
+          }, // sous les highlights, au-dessus des fonds
         );
 
         polylines.add(pl);
@@ -3456,5 +4248,116 @@ class DownloadedChausseesService {
       print('❌ [DL-CHAUSSEES] Erreur chargement: $e');
     }
     return polylines;
+  }
+}
+
+class DownloadedSpecialLinesService {
+  final SimpleStorageHelper _storageHelper = SimpleStorageHelper();
+
+  Future<Set<Polyline>> getDownloadedSpecialLinesPolylines({
+    required void Function(Map<String, dynamic>) onTapDetails,
+  }) async {
+    final polylines = <Polyline>{};
+
+    try {
+      final db = await _storageHelper.database;
+      final loginId = await DatabaseHelper().resolveLoginId();
+
+      if (loginId == null) {
+        print('❌ [DL-SPECIAL] Impossible de déterminer login_id (viewer)');
+        return {};
+      }
+
+      // ✅ change si ton nom de table diffère
+      const tableName = 'special_lines';
+
+      final rows = await db.query(
+        tableName,
+        where: 'downloaded = ? AND saved_by_user_id = ?',
+        whereArgs: [
+          1,
+          loginId
+        ],
+      );
+
+      int added = 0, skipped = 0;
+
+      for (final r in rows) {
+        final id = r['id'];
+
+        final specialTypeRaw = (r['special_type'] ?? r['type'] ?? '').toString();
+        final st = specialTypeRaw.toLowerCase().trim();
+
+        final latDebut = r['lat_debut'];
+        final lngDebut = r['lng_debut'];
+        final latFin = r['lat_fin'];
+        final lngFin = r['lng_fin'];
+
+        if (latDebut == null || lngDebut == null || latFin == null || lngFin == null) {
+          skipped++;
+          continue;
+        }
+
+        final start = LatLng((latDebut as num).toDouble(), (lngDebut as num).toDouble());
+        final end = LatLng((latFin as num).toDouble(), (lngFin as num).toDouble());
+
+        // ✅ tag logique pour la légende
+        final String tag = st.contains('bac') ? 'bac' : (st.contains('passage') ? 'passage_submersible' : 'special');
+
+        // ✅ style comme tes lignes locales
+        Color lineColor;
+        List<PatternItem> linePattern;
+
+        if (tag == 'bac') {
+          lineColor = Colors.purple;
+          linePattern = [
+            PatternItem.dash(15),
+            PatternItem.gap(5)
+          ];
+        } else if (tag == 'passage_submersible') {
+          lineColor = Colors.cyan;
+          linePattern = [
+            PatternItem.dash(10),
+            PatternItem.gap(5)
+          ];
+        } else {
+          lineColor = Colors.blueGrey;
+          linePattern = <PatternItem>[];
+        }
+
+        polylines.add(
+          Polyline(
+            polylineId: PolylineId('dl_special_${tag}_${id ?? DateTime.now().millisecondsSinceEpoch}'),
+            points: [
+              start,
+              end
+            ],
+            color: lineColor,
+            width: 4,
+            patterns: linePattern,
+            consumeTapEvents: true,
+            onTap: () {
+              onTapDetails({
+                'special_type': specialTypeRaw,
+                'tag': tag,
+                'start_lat': start.latitude,
+                'start_lng': start.longitude,
+                'end_lat': end.latitude,
+                'end_lng': end.longitude,
+                'code_piste': (r['code_piste'] ?? '').toString(),
+              });
+            },
+          ),
+        );
+
+        added++;
+      }
+
+      print('🎯 [DL-SPECIAL] ajoutées: $added | ignorées: $skipped');
+      return polylines;
+    } catch (e) {
+      print('❌ [DL-SPECIAL] Erreur chargement: $e');
+      return {};
+    }
   }
 }
