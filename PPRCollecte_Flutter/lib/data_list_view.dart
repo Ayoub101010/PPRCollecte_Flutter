@@ -167,14 +167,15 @@ class _DataListViewState extends State<DataListView> {
 
   Widget _buildListItem(Map<String, dynamic> item, BuildContext context) {
     final hasModification = item['updated_at'] != null && item['updated_at'] != item['created_at'];
-
+    final isChaussee = widget.entityType == "Chaussées";
+    final titleText = isChaussee ? 'Chaussée – ${(item['type_chaussee'] ?? item['type'] ?? '—')} (#${item['id'] ?? '—'})' : (item['nom'] ?? item['code_piste'] ?? 'Sans nom').toString();
     return Card(
       elevation: 0.8, // au lieu de default / gros shadow
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         title: Text(
-          (item['nom'] ?? item['code_piste'] ?? 'Sans nom').toString(),
+          titleText,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
@@ -545,6 +546,14 @@ class _DataListViewState extends State<DataListView> {
 
     if (value is DateTime) {
       return _formatDate(value.toString());
+    }
+// ✅ Format coordonnées : limiter à 7 décimales
+    final k = key.toLowerCase();
+    final isCoord = k.startsWith('x_') || k.startsWith('y_') || k.contains('latitude') || k.contains('longitude') || k.contains('lat') || k.contains('lon');
+
+    if (isCoord) {
+      final d = double.tryParse(value.toString());
+      if (d != null) return d.toStringAsFixed(7);
     }
 
     final s = value.toString().trim();

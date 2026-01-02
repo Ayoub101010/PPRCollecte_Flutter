@@ -135,6 +135,25 @@ class _HomePageState extends State<HomePage> {
     'bac': true,
     'passage_submersible': true,
   };
+  String enqueteurDisplayByStatut({
+    required String? enqueteurValue,
+    required String statut,
+  }) {
+    final v = (enqueteurValue ?? '').trim();
+
+    if (v.isNotEmpty && v.toLowerCase() != 'null' && v.toLowerCase() != 'sync') {
+      return v;
+    }
+
+    final isLocal = statut.toLowerCase().contains('localement');
+    if (isLocal) {
+      final a = widget.agentName.trim();
+      if (a.isNotEmpty) return a;
+    }
+
+    return '-----';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -191,6 +210,39 @@ class _HomePageState extends State<HomePage> {
     ));*/
   }
 
+  String _safe(dynamic v, {String empty = '----'}) {
+    final s = (v ?? '').toString().trim();
+    if (s.isEmpty) return empty;
+    if (s.toLowerCase() == 'null') return empty;
+    return s;
+  }
+
+  String _enqueteurDisplay(dynamic v) {
+    final s = _safe(v, empty: '-----'); // tu voulais "-----" pour enqueteur
+    if (s == '-----') return s;
+
+    final lower = s.toLowerCase();
+
+    // ✅ uniquement des valeurs "techniques" exactes (pas contains)
+    const badExact = {
+      'sync',
+      'synced',
+      'synchronise',
+      'synchronisé',
+      'synchronisee',
+      'synchronisée',
+      'download',
+      'downloaded'
+    };
+    if (badExact.contains(lower)) return '-----';
+
+    // ✅ si c’est juste un nombre (id), on masque
+    final onlyDigits = RegExp(r'^\d+$');
+    if (onlyDigits.hasMatch(s)) return '-----';
+
+    return s;
+  }
+
   Future<void> _loadDownloadedSpecialLines() async {
     print('🔄 [_loadDownloadedSpecialLines] start');
 
@@ -245,6 +297,7 @@ class _HomePageState extends State<HomePage> {
     required String typeChaussee,
     required String endroit,
     required String codePiste,
+    String? enqueteur,
     required String region,
     required String prefecture,
     required String commune,
@@ -300,6 +353,10 @@ class _HomePageState extends State<HomePage> {
               _detailRow('Préfecture', safe(prefecture)),
               _detailRow('Commune', safe(commune)),
               _detailRow('Type', safe(typeChaussee)),
+              _detailRow(
+                'Enquêteur',
+                enqueteurDisplayByStatut(enqueteurValue: enqueteur, statut: statut),
+              ),
               _detailRow('Endroit', safe(endroit)),
               _detailRow('Code piste', safe(codePiste)),
               _detailRow('Nb points', nbPoints.toString()),
@@ -324,7 +381,8 @@ class _HomePageState extends State<HomePage> {
   void _showSpecialLineDetailsSheet({
     required BuildContext context,
     required String specialType, // "Bac" / "Passage Submersible"
-    required String statut, // "Enregistrée localement"
+    required String statut,
+    String? enqueteur, // "Enregistrée localement"
     required String region,
     required String prefecture,
     required String commune,
@@ -373,6 +431,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 12),
               _detailRow('Statut', safe(statut)),
+              _detailRow(
+                'Enquêteur',
+                enqueteurDisplayByStatut(enqueteurValue: enqueteur, statut: statut),
+              ),
               _detailRow('Région', safe(region)),
               _detailRow('Préfecture', safe(prefecture)),
               _detailRow('Commune', safe(commune)),
@@ -397,6 +459,7 @@ class _HomePageState extends State<HomePage> {
   void _showPisteDetailsSheet({
     required BuildContext context,
     required String codePiste,
+    String? enqueteur,
     required String region,
     required String prefecture,
     required String commune,
@@ -443,6 +506,10 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 12),
               _detailRow('Statut', safe(statut)),
+              _detailRow(
+                'Enquêteur',
+                enqueteurDisplayByStatut(enqueteurValue: enqueteur, statut: statut),
+              ),
               _detailRow('Région', safe(region)),
               _detailRow('Préfecture', safe(prefecture)),
               _detailRow('Commune', safe(commune)),
@@ -476,6 +543,7 @@ class _HomePageState extends State<HomePage> {
     required String codePiste,
     required double lat,
     required double lng,
+    required String statut,
   }) {
     String safe(String s) => s.trim().isEmpty ? '----' : s.trim();
 
@@ -511,10 +579,14 @@ class _HomePageState extends State<HomePage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
+              _detailRow('Statut', safe(statut)),
               _detailRow('Région', safe(region)),
               _detailRow('Préfecture', safe(prefecture)),
               _detailRow('Commune', safe(commune)),
-              _detailRow('Enquêteur', _sanitizeEnqueteur(enqueteur)),
+              _detailRow(
+                'Enquêteur',
+                enqueteurDisplayByStatut(enqueteurValue: enqueteur, statut: statut),
+              ),
               _detailRow('Code piste', safe(codePiste)),
               _detailRow('Coordonnées', 'X=${lng.toStringAsFixed(6)}  •  Y=${lat.toStringAsFixed(6)}'),
               const SizedBox(height: 10),
@@ -1089,6 +1161,7 @@ class _HomePageState extends State<HomePage> {
             codePiste: (data['code_piste'] ?? '').toString(),
             lat: (data['lat'] as num).toDouble(),
             lng: (data['lng'] as num).toDouble(),
+            statut: 'Sauvegardée (downloaded)',
           );
         },
       );
@@ -1541,6 +1614,7 @@ class _HomePageState extends State<HomePage> {
             codePiste: (data['code_piste'] ?? '').toString(),
             lat: (data['lat'] as num).toDouble(),
             lng: (data['lng'] as num).toDouble(),
+            statut: 'Enregistrée localement',
           );
         },
       );

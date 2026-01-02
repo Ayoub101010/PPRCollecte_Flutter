@@ -388,21 +388,102 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
   }
 
   List<LatLng>? _extractPolyline(Map<String, dynamic> item) {
-    // Supporte: 'points_collectes' = List<Map>{latitude, longitude}
-    // ou 'points_json' (string JSON)
-    if (item['points_collectes'] is List) {
-      final list = (item['points_collectes'] as List).whereType<Map>().map((p) => LatLng((p['latitude'] as num).toDouble(), (p['longitude'] as num).toDouble())).toList();
-      if (list.isNotEmpty) return list;
+    double? _toDouble(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v.trim());
+      return null;
     }
-    if (item['points_json'] is String) {
+
+    LatLng? _latLngFrom(Map p) {
+      final lat = _toDouble(p['latitude'] ?? p['lat'] ?? p['y']);
+      final lng = _toDouble(p['longitude'] ?? p['lng'] ?? p['lon'] ?? p['x']);
+      if (lat == null || lng == null) return null;
+      return LatLng(lat, lng);
+    }
+
+    // ---------- 1) PISTES / CHAUSSEES : points_collectes ----------
+    if (item['points_collectes'] is List) {
+      final raw = item['points_collectes'] as List;
+      final pts = raw.whereType<Map>().map(_latLngFrom).whereType<LatLng>().toList();
+      if (pts.length >= 2) return pts;
+    }
+
+    // ---------- 2) points_json (JSON string OR list) ----------
+    dynamic rawJson = item['points_json'];
+    if (rawJson is String && rawJson.trim().isNotEmpty) {
       try {
-        final raw = jsonDecode(item['points_json']);
-        if (raw is List) {
-          final list = raw.whereType<Map>().map((p) => LatLng((p['latitude'] as num).toDouble(), (p['longitude'] as num).toDouble())).toList();
-          if (list.isNotEmpty) return list;
+        rawJson = jsonDecode(rawJson);
+      } catch (_) {}
+    }
+    if (rawJson is List) {
+      final pts = <LatLng>[];
+      for (final e in rawJson) {
+        if (e is Map) {
+          final p = _latLngFrom(e);
+          if (p != null) pts.add(p);
+        } else if (e is List && e.length >= 2) {
+          // cas [lon,lat]
+          final lon = _toDouble(e[0]);
+          final lat = _toDouble(e[1]);
+          if (lat != null && lon != null) pts.add(LatLng(lat, lon));
+        }
+      }
+      if (pts.length >= 2) return pts;
+    }
+
+    // ---------- 3) LIGNES SPECIALES : debut/fin ----------
+    LatLng? _pair(dynamic latV, dynamic lngV) {
+      final lat = _toDouble(latV);
+      final lng = _toDouble(lngV);
+      if (lat == null || lng == null) return null;
+      return LatLng(lat, lng);
+    }
+
+    final start = _pair(item['lat_debut'], item['lng_debut']) ?? _pair(item['start_lat'], item['start_lng']);
+    final end = _pair(item['lat_fin'], item['lng_fin']) ?? _pair(item['end_lat'], item['end_lng']);
+
+    if (start != null && end != null)
+      return [
+        start,
+        end
+      ];
+
+    // ---------- 4) GeoJSON optional ----------
+    for (final k in [
+      'geom',
+      'geometry',
+      'geojson'
+    ]) {
+      final v = item[k];
+      if (v == null) continue;
+      try {
+        final obj = (v is String) ? jsonDecode(v) : v;
+        if (obj is Map) {
+          final type = (obj['type'] ?? '').toString();
+          final coords = obj['coordinates'];
+          List<dynamic>? line;
+
+          if (type == 'LineString' && coords is List) line = coords;
+          if (type == 'MultiLineString' && coords is List && coords.isNotEmpty) {
+            line = (coords.first is List) ? coords.first : null;
+          }
+
+          if (line != null) {
+            final pts = <LatLng>[];
+            for (final c in line) {
+              if (c is List && c.length >= 2) {
+                final lon = _toDouble(c[0]);
+                final lat = _toDouble(c[1]);
+                if (lat != null && lon != null) pts.add(LatLng(lat, lon));
+              }
+            }
+            if (pts.length >= 2) return pts;
+          }
         }
       } catch (_) {}
     }
+
     return null;
   }
 
@@ -411,10 +492,13 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
 
     // 1) polyligne d'abord (ta fonction existante)
     final poly = _extractPolyline(item);
-    if (poly != null && poly.isNotEmpty) {
+    if (poly != null && poly.length >= 2) {
+      final st = (item['special_type'] ?? item['type'] ?? '').toString().trim();
+      final label = st.isNotEmpty ? st : (item['code_piste'] ?? item['nom'] ?? item['name'] ?? '').toString();
+
       target = MapFocusTarget.polyline(
         polyline: poly,
-        label: (item['nom'] ?? item['line_name'] ?? item['name'] ?? '').toString(),
+        label: label,
         id: item['id']?.toString(),
       );
     } else {
