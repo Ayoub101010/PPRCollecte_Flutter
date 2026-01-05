@@ -421,80 +421,13 @@ class GuineeLoginEmblem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        // Halo clair derrière (meilleure lisibilité)
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.75),
-          ),
-        ),
-
-        // Cercle principal
-        Container(
-          width: 56,
-          height: 56,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 12,
-                offset: Offset(0, 4),
-                color: Colors.black26,
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Image.asset(
-              "lib/NDGR_Logoo.png",
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-
-        // Satellite (plus grand & plus visible)
-        const Positioned(
-          top: 6,
-          right: 6,
-          child: FaIcon(
-            FontAwesomeIcons.satellite,
-            size: 18,
-            color: Color(0xFF2563EB),
-          ),
-        ),
-
-        // Carte de la Guinée (image, pas icône)
-        Positioned(
-          bottom: -6,
-          child: Container(
-            width: 38,
-            height: 26,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: const [
-                BoxShadow(
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                  color: Colors.black26,
-                ),
-              ],
-            ),
-            child: Image.asset(
-              "lib/carte_guinee.png",
-              fit: BoxFit.contain,
-            ),
-          ),
-        ),
-      ],
+    return Center(
+      child: Image.asset(
+        "lib/GeoNDGR_Collecte_Logo_FINAL.png",
+        width: 104,
+        height: 104,
+        fit: BoxFit.contain,
+      ),
     );
   }
 }

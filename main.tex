@@ -1,0 +1,1909 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    GUIDE DE DÉVELOPPEMENT - GeoNDGR-Collecte
+%                         Application Mobile de Collecte
+%                              VERSION FINALE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt,a4paper,openany]{report}
+
+%=============================================================================
+%                              PACKAGES
+%=============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{fontawesome5}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{pifont}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{etoolbox}
+\usepackage{mdframed}
+\usepackage{colortbl}
+
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, shadows, fit}
+\pgfplotsset{compat=1.18}
+\tcbuselibrary{skins,breakable}
+
+%=============================================================================
+%                              COULEURS
+%=============================================================================
+\definecolor{primarycolor}{RGB}{0, 102, 153}
+\definecolor{secondarycolor}{RGB}{0, 153, 76}
+\definecolor{accentcolor}{RGB}{255, 193, 7}
+\definecolor{darktext}{RGB}{33, 37, 41}
+\definecolor{lightbg}{RGB}{248, 249, 250}
+\definecolor{codebg}{RGB}{245, 245, 245}
+\definecolor{guineared}{RGB}{206, 17, 38}
+\definecolor{guineayellow}{RGB}{252, 209, 22}
+\definecolor{guineagreen}{RGB}{0, 154, 68}
+
+%=============================================================================
+%                              GÉOMÉTRIE
+%=============================================================================
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm,
+    headheight=15pt
+}
+
+%=============================================================================
+%                         STYLE DES TITRES
+%=============================================================================
+\titleformat{\chapter}[display]
+    {\normalfont\huge\bfseries\color{primarycolor}}
+    {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+\titleformat{\section}
+    {\normalfont\Large\bfseries\color{primarycolor}}
+    {\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2.3ex plus .2ex}
+
+\titleformat{\subsection}
+    {\normalfont\large\bfseries\color{secondarycolor}}
+    {\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+    {\normalfont\normalsize\bfseries\color{darktext}}
+    {\thesubsubsection}{1em}{}
+
+%=============================================================================
+%                         EN-TÊTE ET PIED DE PAGE
+%=============================================================================
+\pagestyle{fancy}
+\fancyhf{}
+
+% Header
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small\textcolor{primarycolor}{GeoNDGR-Collecte}}
+
+% Footer (largeurs fixes -> jamais de chevauchement)
+\newcommand{\MyFooter}{%
+  \footnotesize
+  \makebox[0.42\textwidth][l]{\textcolor{darktext}{Dahdouh Ayoub \& Moutamanni Abdourahman}}%
+  \makebox[0.16\textwidth][c]{\thepage}%
+  \makebox[0.42\textwidth][r]{\textcolor{primarycolor}{ETAFAT} | \textcolor{secondarycolor}{NDGR}}%
+}
+
+\fancyfoot[C]{\MyFooter}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% IMPORTANT : appliquer pareil au style "plain"
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0.4pt}
+  \fancyfoot[C]{\MyFooter}
+}
+
+
+%=============================================================================
+%                         STYLE DES LIENS
+%=============================================================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primarycolor,
+    filecolor=primarycolor,
+    urlcolor=primarycolor,
+    citecolor=primarycolor,
+    pdftitle={Guide de Développement - GeoNDGR-Collecte},
+    pdfauthor={DAHDOUH Ayoub, MOUTAMANNI Abdourahman},
+    pdfsubject={Guide de développement application mobile},
+    pdfkeywords={Flutter, GeoDjango, PostGIS, Mobile, GIS}
+}
+
+%=============================================================================
+%                         STYLE DU CODE
+%=============================================================================
+\lstdefinestyle{codestyle}{
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    commentstyle=\color{gray}\itshape,
+    frame=single,
+    framerule=0pt,
+    keepspaces=true,
+    keywordstyle=\color{primarycolor}\bfseries,
+    numbers=left,
+    numbersep=8pt,
+    numberstyle=\tiny\color{gray},
+    rulecolor=\color{lightbg},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    stringstyle=\color{secondarycolor},
+    tabsize=2,
+    xleftmargin=15pt,
+    framexleftmargin=15pt
+}
+\lstset{style=codestyle}
+
+% Définition du langage JSON
+\lstdefinelanguage{json}{
+    basicstyle=\ttfamily\footnotesize,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{codebg},
+    morestring=[b]",
+    stringstyle=\color{guineared}
+}
+
+% Style spécifique pour Dart/Flutter
+\lstdefinelanguage{Dart}{
+    keywords={abstract, as, assert, async, await, break, case, catch, class, const, continue, default, deferred, do, dynamic, else, enum, export, extends, external, factory, false, final, finally, for, get, if, implements, import, in, is, library, new, null, operator, part, rethrow, return, set, static, super, switch, this, throw, true, try, typedef, var, void, while, with, yield},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]',
+    morestring=[b]"
+}
+
+%=============================================================================
+%                         BOÎTES PERSONNALISÉES
+%=============================================================================
+\newtcolorbox{infobox}[1][]{
+    enhanced,
+    colback=primarycolor!5,
+    colframe=primarycolor,
+    fonttitle=\bfseries,
+    title={\faInfoCircle\ Information},
+    #1
+}
+
+\newtcolorbox{warningbox}[1][]{
+    enhanced,
+    colback=accentcolor!10,
+    colframe=accentcolor!80!black,
+    fonttitle=\bfseries,
+    title={\faExclamationTriangle\ Attention},
+    #1
+}
+
+\newtcolorbox{successbox}[1][]{
+    enhanced,
+    colback=secondarycolor!5,
+    colframe=secondarycolor,
+    fonttitle=\bfseries,
+    title={\faCheckCircle\ Bonne pratique},
+    #1
+}
+
+\newtcolorbox{commandbox}[1][]{
+    enhanced,
+    colback=darktext!5,
+    colframe=darktext!70,
+    fonttitle=\bfseries\ttfamily,
+    title={\faTerminal\ Commande},
+    #1
+}
+
+%=============================================================================
+%                         COMMANDES PERSONNALISÉES
+%=============================================================================
+\newcommand{\appname}{\textbf{\textcolor{primarycolor}{GeoNDGR-Collecte}}}
+\newcommand{\tech}[1]{\texttt{\textcolor{secondarycolor}{#1}}}
+\newcommand{\fichier}[1]{\texttt{\textcolor{darktext}{#1}}}
+\newcommand{\cmark}{\textcolor{secondarycolor}{\ding{51}}}
+\newcommand{\xmark}{\textcolor{guineared}{\ding{55}}}
+
+%=============================================================================
+%                         DÉBUT DU DOCUMENT
+%=============================================================================
+\begin{document}
+
+%=============================================================================
+%                         PAGE DE GARDE
+%=============================================================================
+\begin{titlepage}
+\thispagestyle{empty}
+\pagestyle{empty}
+
+% ================= BACKGROUND / CADRE =================
+\begin{tikzpicture}[remember picture, overlay]
+
+    % Bandes supérieures (Guinée)
+    \fill[guineared] (current page.north west)
+        rectangle ([yshift=-1cm]current page.north east);
+    \fill[guineayellow] ([yshift=-1cm]current page.north west)
+        rectangle ([yshift=-2cm]current page.north east);
+    \fill[guineagreen] ([yshift=-2cm]current page.north west)
+        rectangle ([yshift=-3cm]current page.north east);
+
+    % Bande inférieure
+    \fill[primarycolor!20] (current page.south west)
+        rectangle ([yshift=3cm]current page.south east);
+
+    % Cadre
+    \draw[primarycolor, line width=2pt, rounded corners=10pt]
+        ([xshift=1.5cm, yshift=-4cm]current page.north west)
+        rectangle
+        ([xshift=-1.5cm, yshift=4cm]current page.south east);
+
+    % Année (fixe, ne saute jamais)
+    \node[anchor=south, yshift=1.5cm] at (current page.south)
+        {\Large\textcolor{darktext}{\textbf{2025}}};
+
+\end{tikzpicture}
+
+% ================= CONTENU =================
+\centering
+\vspace*{0.5cm}
+
+% Logos institutionnels (haut)
+\begin{minipage}{0.35\textwidth}
+    \centering
+    \includegraphics[width=0.6\textwidth]{logo.png}
+\end{minipage}
+\hfill
+\begin{minipage}{0.35\textwidth}
+    \centering
+    \includegraphics[width=0.7\textwidth]{NDGR_Logoo.png}
+\end{minipage}
+
+\vspace{1.2cm}
+
+\noindent\textcolor{primarycolor}{\rule{\textwidth}{2pt}}
+
+\vspace{0.8cm}
+
+% Titre
+{\Huge\bfseries\textcolor{primarycolor}{Guide de Développement}}\\[0.6cm]
+{\LARGE\textcolor{secondarycolor}{\textit{Application Mobile}}}\\[0.4cm]
+{\huge\bfseries\textcolor{darktext}{GeoNDGR-Collecte}}
+
+\vspace{0.6cm}
+
+% Logo application
+\includegraphics[width=0.22\textwidth]{GeoNDGR_Collecte_Logo_FINAL.png}
+
+\vspace{0.4cm}
+
+\noindent\textcolor{primarycolor}{\rule{\textwidth}{2pt}}
+
+\vspace{1.0cm}
+
+% Réalisé / Encadré
+\begin{minipage}[t]{0.45\textwidth}
+    \raggedright
+    {\large\textbf{\textcolor{primarycolor}{Réalisé par :}}}\\[0.4cm]
+    {\Large\textbf{Dahdouh Ayoub}}\\[0.25cm]
+    {\Large\textbf{Moutamanni Abdourahman}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+    \raggedleft
+    {\large\textbf{\textcolor{primarycolor}{Encadré par :}}}\\[0.4cm]
+    {\Large\textit{\textbf{El Imami Ayoub}}}
+\end{minipage}
+
+% ================= BOX ETAFAT / NDGR =================
+\vspace{0.6cm}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=lightbg,
+    colframe=primarycolor,
+    boxrule=1pt,
+    arc=6pt,
+    width=0.78\textwidth,
+    left=8pt,right=8pt,top=5pt,bottom=5pt,
+    halign=center
+]
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{@{}c\hspace{8pt}l@{}}
+    \includegraphics[height=0.55cm]{logo.png} &
+    {\normalsize\textbf{ETAFAT}} \\[0.15cm]
+
+    \includegraphics[height=0.55cm]{NDGR_Logoo.png} &
+    {\normalsize\textbf{NDGR} (Direction Nationale du Génie Rural)} \\
+\end{tabular}
+\end{tcolorbox}
+
+\end{titlepage}
+
+\pagestyle{fancy}
+
+
+
+%=============================================================================
+%                         TABLE DES MATIÈRES
+%=============================================================================
+\tableofcontents
+\thispagestyle{plain}
+\clearpage
+
+%=============================================================================
+%                    CHAPITRE 1 : INTRODUCTION
+%=============================================================================
+\chapter{Introduction}
+
+\section{Objectif du document}
+
+Ce document constitue le \textbf{guide de développement officiel} de l'application mobile \appname{}. Il est destiné aux développeurs, chefs de projet et techniciens impliqués dans la conception, le développement, la maintenance et l'évolution de l'application.
+
+\begin{infobox}
+Ce guide couvre l'ensemble du cycle de vie du développement, depuis la configuration de l'environnement jusqu'au déploiement en production sur un serveur Windows avec \tech{NGINX} et \tech{Gunicorn}.
+\end{infobox}
+
+Le présent document décrit de manière exhaustive :
+
+\begin{itemize}[leftmargin=2cm]
+    \item[\cmark] L'architecture technique globale du système
+    \item[\cmark] Les technologies et outils utilisés
+    \item[\cmark] La structure et l'organisation du code source
+    \item[\cmark] Les procédures d'installation et de configuration
+    \item[\cmark] Les mécanismes de communication API
+    \item[\cmark] Le déploiement serveur (NGINX + Gunicorn sur Windows)
+    \item[\cmark] Les bonnes pratiques de développement et de maintenance
+\end{itemize}
+
+\section{Présentation du projet}
+
+\subsection{Contexte}
+
+Le projet \appname{} s'inscrit dans le cadre du \textbf{Projet de désenclavement des zones de production pisci-rizicole} en Basse Guinée et en Guinée Forestière. Ce programme est financé par l'AFD (Agence Française de Développement) et mis en œuvre par la \textbf{Direction Nationale du Génie Rural (NDGR)}.
+
+\subsection{Objectifs de l'application}
+
+L'objectif principal est de doter les équipes de terrain d'un outil mobile performant permettant de :
+
+\begin{enumerate}[leftmargin=2cm, label=\textcolor{primarycolor}{\arabic*.}]
+    \item \textbf{Collecter} des données géoréférencées sur les pistes, chaussées, ouvrages et infrastructures rurales
+    \item \textbf{Synchroniser} les données avec une base centrale via une API REST sécurisée
+    \item \textbf{Visualiser} et valider les données collectées directement sur le terrain
+    \item \textbf{Travailler hors-ligne} avec synchronisation différée lors du retour en zone connectée
+\end{enumerate}
+
+\subsection{Composants du système}
+
+Le système \appname{} repose sur une architecture à trois tiers :
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|>{\centering\arraybackslash}p{3cm}|X|>{\centering\arraybackslash}p{3cm}|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Composant} & \textbf{Description} & \textbf{Technologie} \\
+\hline
+\textbf{Application Mobile} & Interface de collecte et de consultation des données, fonctionnant sur Android & Flutter / Dart \\
+\hline
+\textbf{API Backend} & Serveur REST exposant les endpoints pour la communication avec l'application mobile & GeoDjango / DRF \\
+\hline
+\textbf{Base de données} & Stockage et gestion des données attributaires et géométriques & PostgreSQL / PostGIS \\
+\hline
+\end{tabularx}
+\caption{Composants principaux du système GeoNDGR-Collecte}
+\end{table}
+
+\section{Portée du document}
+
+\subsection{Public cible}
+
+Ce guide s'adresse principalement aux :
+
+\begin{itemize}
+    \item \textbf{Développeurs Flutter} : pour comprendre la structure du code mobile et les patterns utilisés
+    \item \textbf{Développeurs Backend} : pour la maintenance de l'API GeoDjango
+    \item \textbf{Administrateurs système} : pour le déploiement et la configuration serveur
+    \item \textbf{Chefs de projet} : pour avoir une vue d'ensemble technique du système
+\end{itemize}
+
+\subsection{Prérequis de lecture}
+
+Pour tirer pleinement profit de ce document, le lecteur devrait avoir des connaissances de base en :
+
+\begin{itemize}
+    \item Développement mobile (concepts généraux)
+    \item Programmation orientée objet
+    \item API REST et protocole HTTP
+    \item Bases de données relationnelles
+    \item Ligne de commande (bash/PowerShell)
+\end{itemize}
+
+%=============================================================================
+%                    CHAPITRE 2 : ARCHITECTURE GLOBALE
+%=============================================================================
+\chapter{Architecture Globale}
+
+\section{Vue d'ensemble}
+
+L'architecture de \appname{} suit un modèle \textbf{client-serveur} classique, adapté aux contraintes du terrain (connectivité intermittente, géolocalisation, données spatiales).
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=1.8cm,
+    box/.style={rectangle, rounded corners, draw=primarycolor, fill=primarycolor!10, 
+                minimum width=3cm, minimum height=1cm, align=center, 
+                font=\small\bfseries, drop shadow},
+    dbbox/.style={cylinder, draw=secondarycolor, fill=secondarycolor!10,
+                  shape border rotate=90, aspect=0.3, 
+                  minimum width=2cm, minimum height=1.2cm, 
+                  font=\small\bfseries, drop shadow},
+    arrow/.style={-{Stealth[length=3mm]}, thick, primarycolor},
+    doublearrow/.style={{Stealth[length=3mm]}-{Stealth[length=3mm]}, thick, secondarycolor}
+]
+
+% Application Mobile
+\node[box, fill=guineagreen!20, draw=guineagreen] (mobile) {
+    \faIcon{mobile-alt} Application\\Mobile Flutter
+};
+
+% API
+\node[box, right=2.5cm of mobile] (api) {
+    \faIcon{server} API\\GeoDjango
+};
+
+% Base de données
+\node[dbbox, right=2.5cm of api] (db) {
+    \faIcon{database}\\PostgreSQL\\PostGIS
+};
+
+% Serveur Web
+\node[box, above=1.2cm of api, fill=accentcolor!20, draw=accentcolor!80!black] (nginx) {
+    \faIcon{globe} NGINX
+};
+
+% Gunicorn
+\node[box, below=1.2cm of api, fill=guineared!20, draw=guineared] (gunicorn) {
+    \faIcon{cogs} Gunicorn
+};
+
+% SQLite Local
+\node[dbbox, below=1.2cm of mobile, fill=gray!20, draw=gray] (sqlite) {
+    \faIcon{database}\\SQLite
+};
+
+% Flèches
+\draw[doublearrow] (mobile) -- node[above, font=\scriptsize] {HTTPS} (api);
+\draw[arrow] (api) -- (db);
+\draw[arrow] (nginx) -- (api);
+\draw[arrow] (gunicorn) -- (api);
+\draw[doublearrow] (mobile) -- (sqlite);
+
+\end{tikzpicture}
+}
+\caption{Architecture globale du système GeoNDGR-Collecte}
+\label{fig:architecture}
+\end{figure}
+
+\section{Flux de données}
+
+\subsection{Collecte et synchronisation}
+
+Le flux de données dans \appname{} suit un cycle bien défini :
+
+\begin{enumerate}[leftmargin=2cm, label=\textcolor{primarycolor}{\textbf{Étape \arabic*:}}]
+    \item \textbf{Authentification} --- L'utilisateur se connecte via l'application mobile. Un token JWT est généré et stocké localement.
+    
+    \item \textbf{Collecte terrain} --- L'agent saisit les données (pistes, chaussées, points GPS) via les formulaires de l'application. Les données sont stockées dans la base SQLite locale.
+    
+    \item \textbf{Synchronisation} --- Lorsque la connectivité est disponible, l'application envoie les données au serveur via l'API REST (requêtes POST).
+    
+    \item \textbf{Validation et stockage} --- Le serveur GeoDjango valide les données, effectue les transformations de coordonnées nécessaires et stocke les informations dans PostgreSQL/PostGIS.
+    
+    \item \textbf{Consultation} --- Les données synchronisées peuvent être consultées depuis l'application (requêtes GET) ou depuis d'autres interfaces de visualisation.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.95\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    process/.style={rectangle, rounded corners=5pt, draw=primarycolor, fill=primarycolor!10,
+                    minimum width=2.5cm, minimum height=0.9cm, align=center, font=\small},
+    data/.style={trapezium, trapezium left angle=70, trapezium right angle=110,
+                 draw=secondarycolor, fill=secondarycolor!10, 
+                 minimum width=1.8cm, minimum height=0.7cm, align=center, font=\small},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick, darktext}
+]
+
+% Processus
+\node[process] (auth) {Authentification\\JWT};
+\node[process, right=of auth] (collect) {Collecte\\Terrain};
+\node[data, right=of collect] (local) {SQLite\\Local};
+\node[process, right=of local] (sync) {Sync\\API REST};
+\node[data, right=of sync] (server) {PostGIS\\Serveur};
+
+% Flèches
+\draw[arrow] (auth) -- (collect);
+\draw[arrow] (collect) -- (local);
+\draw[arrow] (local) -- (sync);
+\draw[arrow] (sync) -- (server);
+
+\end{tikzpicture}
+}
+\caption{Flux de données : de la collecte à la synchronisation}
+\label{fig:flux}
+\end{figure}
+
+\section{Rôles des composants}
+
+\subsection{Application Mobile Flutter}
+
+L'application mobile constitue l'interface principale avec les utilisateurs de terrain. Ses responsabilités incluent :
+
+\begin{itemize}
+    \item \textbf{Interface utilisateur} : Formulaires de saisie, cartes interactives, listes de données
+    \item \textbf{Géolocalisation} : Acquisition des coordonnées GPS en temps réel
+    \item \textbf{Stockage local} : Persistance des données hors-ligne via SQLite
+    \item \textbf{Synchronisation} : Envoi et réception des données via l'API REST
+    \item \textbf{Visualisation cartographique} : Affichage des entités géographiques sur Google Maps
+\end{itemize}
+
+\subsection{API GeoDjango (Backend)}
+
+Le backend GeoDjango joue le rôle de \textbf{couche intermédiaire} entre l'application mobile et la base de données :
+
+\begin{itemize}
+    \item \textbf{Exposition REST} : Endpoints sécurisés pour les opérations CRUD
+    \item \textbf{Authentification} : Gestion des tokens JWT et des sessions utilisateurs
+    \item \textbf{Validation} : Contrôle de la cohérence des données entrantes
+    \item \textbf{Transformation spatiale} : Conversion des systèmes de coordonnées (SRID)
+    \item \textbf{Sérialisation} : Conversion JSON/GeoJSON pour les échanges de données
+\end{itemize}
+
+\subsection{PostgreSQL / PostGIS}
+
+La base de données assure le \textbf{stockage centralisé} de toutes les données du projet :
+
+\begin{itemize}
+    \item \textbf{Données attributaires} : Informations descriptives (codes, états, types, etc.)
+    \item \textbf{Données géométriques} : Points, lignes et polygones avec leurs coordonnées
+    \item \textbf{Intégrité référentielle} : Relations entre les différentes entités
+    \item \textbf{Requêtes spatiales} : Analyses géographiques avancées (intersections, buffers, etc.)
+\end{itemize}
+
+\section{Schéma de déploiement}
+
+\begin{warningbox}
+Le déploiement de l'API est réalisé sur un \textbf{serveur Windows} en utilisant \tech{NGINX} comme reverse proxy et \tech{Gunicorn} comme serveur WSGI. Cette configuration sera détaillée dans le chapitre dédié au déploiement.
+\end{warningbox}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Composant} & \textbf{Rôle} & \textbf{Port} \\
+\hline
+NGINX & Reverse proxy, terminaison SSL & 82 \\
+\hline
+Gunicorn & Serveur WSGI pour Django & 8001 \\
+\hline
+PostgreSQL & Base de données & 5432 \\
+\hline
+\end{tabularx}
+\caption{Configuration des ports de déploiement}
+\end{table}
+
+
+%=============================================================================
+%                    CHAPITRE 3 : TECHNOLOGIES ET OUTILS
+%=============================================================================
+\chapter{Technologies et Outils}
+
+Ce chapitre présente en détail les technologies utilisées dans le développement de \appname{}, ainsi que les outils recommandés pour la maintenance et l'évolution du projet.
+
+\section{Stack technique}
+
+\subsection{Côté Mobile (Frontend)}
+
+\subsubsection{Flutter}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=primarycolor,
+    title={\faIcon{mobile-alt} Flutter SDK},
+    fonttitle=\bfseries
+]
+\begin{tabular}{@{}ll@{}}
+\textbf{Version} & 3.4.1 \\
+\textbf{Langage} & Dart \\
+\textbf{Plateforme cible} & Android (API Level 35) \\
+\textbf{Site officiel} & \url{https://flutter.dev}
+\end{tabular}
+\end{tcolorbox}
+
+Flutter est le framework de développement mobile choisi pour \appname{}. Ses avantages principaux :
+
+\begin{itemize}
+    \item \textbf{Hot Reload} : Rechargement instantané du code pendant le développement
+    \item \textbf{Compilation AOT} : Performances natives grâce à la compilation Ahead-Of-Time
+    \item \textbf{Widgets riches} : Bibliothèque complète de composants UI personnalisables
+    \item \textbf{Écosystème mature} : Large communauté et nombreux packages disponibles
+\end{itemize}
+
+\subsubsection{Packages Flutter essentiels}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Package} & \textbf{Utilisation} \\
+\hline
+\tech{http} & Communication HTTP avec l'API REST \\
+\hline
+\tech{google\_maps\_flutter} & Affichage et interaction avec les cartes Google Maps \\
+\hline
+\tech{location} & Acquisition des coordonnées GPS en temps réel \\
+\hline
+\tech{sqflite} & Base de données SQLite locale pour le mode hors-ligne \\
+\hline
+\tech{permission\_handler} & Gestion des permissions Android (GPS, stockage) \\
+\hline
+\tech{shared\_preferences} & Stockage de préférences utilisateur (tokens, paramètres) \\
+\hline
+\tech{provider} & Gestion d'état et injection de dépendances \\
+\hline
+\end{tabularx}
+\caption{Packages Flutter utilisés dans GeoNDGR-Collecte}
+\end{table}
+
+\subsection{Côté Serveur (Backend)}
+
+\subsubsection{GeoDjango}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=secondarycolor,
+    title={\faIcon{python} GeoDjango},
+    fonttitle=\bfseries
+]
+\begin{tabular}{@{}ll@{}}
+\textbf{Framework} & Django avec extension géospatiale \\
+\textbf{API} & Django REST Framework (DRF) \\
+\textbf{Sérialisation} & GeoFeatureModelSerializer \\
+\textbf{Site officiel} & \url{https://docs.djangoproject.com}
+\end{tabular}
+\end{tcolorbox}
+
+GeoDjango étend Django avec des capacités géospatiales complètes :
+
+\begin{itemize}
+    \item \textbf{Modèles géométriques} : Support natif des types Point, LineString, Polygon, etc.
+    \item \textbf{Requêtes spatiales} : Opérations géographiques (contains, intersects, distance)
+    \item \textbf{Intégration PostGIS} : Communication optimisée avec la base spatiale
+    \item \textbf{Transformation SRID} : Conversion automatique entre systèmes de coordonnées
+\end{itemize}
+
+\subsection{Base de données}
+
+\subsubsection{PostgreSQL + PostGIS}
+
+\begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=guineagreen,
+    title={\faIcon{database} PostgreSQL / PostGIS},
+    fonttitle=\bfseries
+]
+\begin{tabular}{@{}ll@{}}
+\textbf{SGBD} & PostgreSQL 14+ \\
+\textbf{Extension spatiale} & PostGIS 3.x \\
+\textbf{SRID projet} & 32628 (UTM Zone 28N) \\
+\textbf{Outil d'administration} & PgAdmin 4
+\end{tabular}
+\end{tcolorbox}
+
+\section{Formats d'échange de données}
+
+\subsection{JSON}
+
+Le format JSON standard est utilisé pour les données non spatiales :
+
+\begin{lstlisting}[language=json, caption=Exemple de réponse JSON]
+{
+    "id": 42,
+    "code_piste": "PST_001",
+    "etat_piste": "Bon",
+    "largeur_emprise": 4.5
+}
+\end{lstlisting}
+
+\subsection{GeoJSON}
+
+Le format GeoJSON est utilisé pour les données spatiales :
+
+\begin{lstlisting}[language=json, caption=Exemple de réponse GeoJSON]
+{
+    "type": "Feature",
+    "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [[[712897.6, 1053886.3]]]
+    },
+    "properties": {
+        "id": 12,
+        "code_piste": "PST_001"
+    }
+}
+\end{lstlisting}
+
+\begin{infobox}
+Les coordonnées sont exprimées dans le système de projection \textbf{UTM Zone 28N} (EPSG:32628), adapté à la zone géographique de la Guinée.
+\end{infobox}
+
+\section{Outils de développement}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Outil} & \textbf{Utilisation} & \textbf{Requis} \\
+\hline
+Visual Studio Code & IDE principal pour Flutter et Python & Recommandé \\
+\hline
+Android Studio & SDK Android, émulateurs, débogage & Obligatoire \\
+\hline
+Git & Gestion de versions & Obligatoire \\
+\hline
+Postman & Test des endpoints API & Recommandé \\
+\hline
+PgAdmin 4 & Administration PostgreSQL & Recommandé \\
+\hline
+\end{tabularx}
+\caption{Outils de développement recommandés}
+\end{table}
+
+\section{Serveur de déploiement}
+
+\subsection{NGINX}
+
+NGINX est utilisé comme \textbf{reverse proxy} devant Gunicorn. Il gère la terminaison SSL/TLS, la mise en cache des ressources statiques et le load balancing.
+
+\subsection{Gunicorn}
+
+Gunicorn est le serveur WSGI Python qui exécute l'application Django avec gestion des workers pour la concurrence.
+
+\begin{warningbox}
+Sur Windows, Gunicorn ne fonctionne pas nativement. Il est nécessaire d'utiliser \textbf{WSL (Windows Subsystem for Linux)} ou une solution alternative comme \tech{waitress}.
+\end{warningbox}
+
+%=============================================================================
+%                    CHAPITRE 4 : ENVIRONNEMENT DE DÉVELOPPEMENT
+%=============================================================================
+\chapter{Environnement de Développement}
+
+Ce chapitre détaille les étapes nécessaires pour configurer un environnement de développement complet.
+
+\section{Prérequis logiciels}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Composant} & \textbf{Description} & \textbf{Version} \\
+\hline
+\textbf{Flutter SDK} & Framework de développement mobile & 3.4.1+ \\
+\hline
+\textbf{Dart SDK} & Langage de programmation (inclus avec Flutter) & 3.x \\
+\hline
+\textbf{Android Studio} & IDE et SDK Android & Latest \\
+\hline
+\textbf{Android SDK} & Kit de développement Android & API Level 35 \\
+\hline
+\textbf{Java JDK} & Kit de développement Java & 11 ou 17 \\
+\hline
+\textbf{Git} & Gestion de versions & 2.x+ \\
+\hline
+\end{tabularx}
+\caption{Prérequis logiciels pour le développement}
+\end{table}
+
+\section{Installation de Flutter}
+
+\subsection{Téléchargement et installation}
+
+\begin{enumerate}[leftmargin=2cm, label=\textcolor{primarycolor}{\textbf{Étape \arabic*:}}]
+    \item \textbf{Télécharger Flutter SDK} depuis \url{https://docs.flutter.dev/get-started/install}
+
+    \item \textbf{Extraire l'archive}
+    
+    \begin{commandbox}
+    \begin{lstlisting}[language=bash, numbers=none]
+# Linux/macOS
+tar xf flutter_linux.tar.xz -C ~/development
+
+# Windows - Extraire vers C:\dev\flutter
+    \end{lstlisting}
+    \end{commandbox}
+
+    \item \textbf{Configurer le PATH}
+    
+    \begin{commandbox}
+    \begin{lstlisting}[language=bash, numbers=none]
+# Linux/macOS
+export PATH="$PATH:~/development/flutter/bin"
+    \end{lstlisting}
+    \end{commandbox}
+
+    \item \textbf{Vérifier l'installation}
+    
+    \begin{commandbox}
+    \begin{lstlisting}[language=bash, numbers=none]
+flutter --version
+flutter doctor
+    \end{lstlisting}
+    \end{commandbox}
+\end{enumerate}
+
+\section{Configuration du projet}
+
+\subsection{Clonage du dépôt}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+git clone https://github.com/Ayoub101010/PPRCollecte_Flutter.git
+cd PPRCollecte_Flutter
+flutter pub get
+\end{lstlisting}
+\end{commandbox}
+
+\subsection{Configuration de la clé Google Maps}
+
+Modifiez le fichier \fichier{android/app/src/main/AndroidManifest.xml} :
+
+\begin{lstlisting}[language=xml, caption=Configuration de la clé Google Maps]
+<meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="VOTRE_CLE_API_GOOGLE_MAPS"/>
+\end{lstlisting}
+
+\begin{warningbox}
+Ne jamais commiter la clé API dans le dépôt Git ! Utilisez des variables d'environnement.
+\end{warningbox}
+
+\section{Lancement de l'application}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+# Verifier les appareils connectes
+flutter devices
+
+# Lancer sur l'appareil par defaut
+flutter run
+
+# Lancer sur un appareil specifique
+flutter run -d emulator-5554
+\end{lstlisting}
+\end{commandbox}
+
+\subsection{Raccourcis utiles}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|c|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Touche} & \textbf{Action} \\
+\hline
+\textbf{r} & Hot Reload \\
+\hline
+\textbf{R} & Hot Restart \\
+\hline
+\textbf{q} & Quitter \\
+\hline
+\end{tabularx}
+\caption{Raccourcis clavier en mode debug}
+\end{table}
+
+%=============================================================================
+%                    CHAPITRE 5 : STRUCTURE DU CODE FLUTTER
+%=============================================================================
+\chapter{Structure du Code Flutter}
+
+Ce chapitre présente l'organisation du code source de l'application \appname{}.
+
+\section{Vue d'ensemble de l'arborescence}
+
+\begin{lstlisting}[numbers=none, caption=Arborescence du dossier lib/]
+lib/
+|-- main.dart           # Point d'entree
+|-- config.dart         # Configuration
+|-- models/             # Modeles de donnees
+|   |-- piste_model.dart
+|   |-- chaussee_model.dart
+|-- services/           # Services metier
+|   |-- api_service.dart
+|   |-- location_service.dart
+|   |-- sync_service.dart
+|-- pages/              # Ecrans
+|   |-- home_page.dart
+|   |-- login_page.dart
+|-- widgets/            # Composants UI
+|   |-- map_widget.dart
+|-- helpers/            # Utilitaires
+    |-- database_helper.dart
+\end{lstlisting}
+
+\section{Fichiers principaux}
+
+\subsection{main.dart --- Point d'entrée}
+
+\begin{lstlisting}[language=Dart, caption=Structure de main.dart]
+import 'package:flutter/material.dart';
+import 'pages/login_page.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'GeoNDGR-Collecte',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const LoginPage(),
+    );
+  }
+}
+\end{lstlisting}
+
+\subsection{config.dart --- Configuration}
+
+\begin{lstlisting}[language=Dart, caption=Exemple de config.dart]
+class AppConfig {
+  static const String baseUrl = 'https://api.example.com';
+  static const String loginEndpoint = '/api/auth/login/';
+  static const String pistesEndpoint = '/api/pistes/';
+  static const int connectionTimeout = 30;
+  static const int srid = 32628;
+}
+\end{lstlisting}
+
+\section{Couche Models}
+
+\begin{lstlisting}[language=Dart, caption=Exemple de piste\_model.dart]
+class PisteModel {
+  final int? id;
+  final String codePiste;
+  final String etatPiste;
+  final Map<String, dynamic>? geometry;
+
+  PisteModel({
+    this.id,
+    required this.codePiste,
+    required this.etatPiste,
+    this.geometry,
+  });
+
+  factory PisteModel.fromJson(Map<String, dynamic> json) {
+    return PisteModel(
+      id: json['id'],
+      codePiste: json['properties']['code_piste'],
+      etatPiste: json['properties']['etat_piste'],
+      geometry: json['geometry'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'code_piste': codePiste,
+      'etat_piste': etatPiste,
+      'geom': geometry,
+    };
+  }
+}
+\end{lstlisting}
+
+\section{Couche Services}
+
+\subsection{ApiService --- Communication HTTP}
+
+\begin{lstlisting}[language=Dart, caption=Extrait de api\_service.dart]
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class ApiService {
+  static String? _token;
+
+  static Future<bool> login(String username, String password) async {
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/api/auth/login/'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      _token = data['token'];
+      return true;
+    }
+    return false;
+  }
+}
+\end{lstlisting}
+
+\section{Diagramme des dépendances}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.7\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    box/.style={rectangle, rounded corners=5pt, draw=primarycolor, 
+                fill=primarycolor!10, minimum width=2cm, 
+                minimum height=0.8cm, align=center, font=\small\bfseries},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick, darktext}
+]
+
+\node[box] (pages) {Pages};
+\node[box, below left=of pages] (widgets) {Widgets};
+\node[box, below right=of pages] (services) {Services};
+\node[box, below=2cm of pages] (models) {Models};
+\node[box, below=of models] (helpers) {Helpers};
+
+\draw[arrow] (pages) -- (widgets);
+\draw[arrow] (pages) -- (services);
+\draw[arrow] (pages) -- (models);
+\draw[arrow] (services) -- (models);
+\draw[arrow] (services) -- (helpers);
+
+\end{tikzpicture}
+}
+\caption{Dépendances entre les couches de l'application}
+\end{figure}
+
+%=============================================================================
+%                    CHAPITRE 6 : API REST ET COMMUNICATION
+%=============================================================================
+\chapter{API REST et Communication}
+
+Ce chapitre détaille les mécanismes de communication entre l'application mobile et le backend GeoDjango.
+
+\section{Endpoints disponibles}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Méthode} & \textbf{Endpoint} & \textbf{Description} \\
+\hline
+POST & \texttt{/api/auth/login/} & Authentification \\
+\hline
+GET & \texttt{/api/pistes/} & Liste des pistes \\
+\hline
+POST & \texttt{/api/pistes/} & Créer une piste \\
+\hline
+GET & \texttt{/api/pistes/\{id\}/} & Détail d'une piste \\
+\hline
+PUT & \texttt{/api/pistes/\{id\}/} & Modifier une piste \\
+\hline
+DELETE & \texttt{/api/pistes/\{id\}/} & Supprimer une piste \\
+\hline
+GET & \texttt{/api/chaussees/} & Liste des chaussées \\
+\hline
+POST & \texttt{/api/chaussees/} & Créer une chaussée \\
+\hline
+\end{tabularx}
+\caption{Endpoints de l'API GeoNDGR-Collecte}
+\end{table}
+
+\section{Authentification JWT}
+
+L'API utilise l'authentification par \textbf{JSON Web Token (JWT)}.
+
+\subsection{Requête de login}
+
+\begin{lstlisting}[language=json, caption=Requête POST /api/auth/login/]
+{
+    "username": "agent_terrain",
+    "password": "motdepasse123"
+}
+\end{lstlisting}
+
+\subsection{Réponse de login}
+
+\begin{lstlisting}[language=json, caption=Réponse du serveur]
+{
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "user_id": 42,
+    "username": "agent_terrain"
+}
+\end{lstlisting}
+
+\subsection{Utilisation du token}
+
+Toutes les requêtes authentifiées doivent inclure le token :
+
+\begin{lstlisting}[language=bash, numbers=none]
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+\end{lstlisting}
+
+\section{Codes de réponse HTTP}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|c|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Code} & \textbf{Statut} & \textbf{Signification} \\
+\hline
+200 & OK & Requête réussie (GET, PUT) \\
+\hline
+201 & Created & Ressource créée (POST) \\
+\hline
+400 & Bad Request & Données invalides \\
+\hline
+401 & Unauthorized & Token invalide \\
+\hline
+404 & Not Found & Ressource introuvable \\
+\hline
+500 & Server Error & Erreur serveur \\
+\hline
+\end{tabularx}
+\caption{Codes de réponse HTTP de l'API}
+\end{table}
+
+\section{Cycle de synchronisation}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.6\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=1cm,
+    process/.style={rectangle, rounded corners=5pt, draw=primarycolor, 
+                    fill=primarycolor!10, minimum width=3cm, 
+                    minimum height=0.8cm, align=center, font=\small},
+    decision/.style={diamond, draw=accentcolor!80!black, fill=accentcolor!20,
+                     minimum width=1.5cm, align=center, font=\small, aspect=2},
+    arrow/.style={-{Stealth[length=2.5mm]}, thick, darktext}
+]
+
+\node[process] (collect) {Collecte terrain};
+\node[process, below=of collect] (save) {Sauvegarde SQLite};
+\node[decision, below=of save] (network) {Réseau ?};
+\node[process, below=of network] (sync) {Synchronisation};
+\node[process, below=of sync] (done) {Terminé};
+
+\draw[arrow] (collect) -- (save);
+\draw[arrow] (save) -- (network);
+\draw[arrow] (network) -- node[right, font=\scriptsize] {Oui} (sync);
+\draw[arrow] (sync) -- (done);
+\draw[arrow] (network.west) -- ++(-1.5,0) |- node[left, font=\scriptsize, pos=0.25] {Non} (save.west);
+
+\end{tikzpicture}
+}
+\caption{Flux de synchronisation des données}
+\end{figure}
+
+\section{Sécurité et bonnes pratiques}
+
+\begin{successbox}
+\textbf{Recommandations de sécurité :}
+\begin{itemize}
+    \item Toujours utiliser HTTPS en production
+    \item Ne jamais stocker les mots de passe en clair
+    \item Renouveler régulièrement les tokens JWT
+    \item Valider toutes les données côté serveur
+\end{itemize}
+\end{successbox}
+
+%=============================================================================
+%                    CHAPITRE 7 : BASE DE DONNÉES
+%=============================================================================
+\chapter{Base de Données}
+
+Ce chapitre présente l'architecture des données de \appname{}.
+
+\section{Architecture des données}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Aspect} & \textbf{SQLite (Local)} & \textbf{PostGIS (Serveur)} \\
+\hline
+\textbf{Usage} & Stockage temporaire hors-ligne & Stockage permanent \\
+\hline
+\textbf{Données} & Non synchronisées & Toutes les données \\
+\hline
+\textbf{Géométries} & JSON texte & Types natifs \\
+\hline
+\end{tabularx}
+\caption{Comparaison des deux systèmes de stockage}
+\end{table}
+
+\section{Schéma PostgreSQL/PostGIS}
+
+\subsection{Table : pistes}
+
+\begin{lstlisting}[language=SQL, caption=Structure de la table pistes]
+CREATE TABLE pistes (
+    id SERIAL PRIMARY KEY,
+    code_piste VARCHAR(50) UNIQUE NOT NULL,
+    nom_origine_piste VARCHAR(255),
+    nom_destination_piste VARCHAR(255),
+    largeur_emprise DOUBLE PRECISION,
+    frequence_trafic VARCHAR(50),
+    etat_piste VARCHAR(50),
+    geom GEOMETRY(MultiLineString, 32628),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_pistes_geom ON pistes USING GIST(geom);
+\end{lstlisting}
+
+\subsection{Table : chaussees}
+
+\begin{lstlisting}[language=SQL, caption=Structure de la table chaussees]
+CREATE TABLE chaussees (
+    id SERIAL PRIMARY KEY,
+    code_chaussee VARCHAR(50) UNIQUE NOT NULL,
+    piste_id INTEGER REFERENCES pistes(id),
+    type_chaussee VARCHAR(100),
+    etat_chaussee VARCHAR(50),
+    geom GEOMETRY(MultiLineString, 32628),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_chaussees_geom ON chaussees USING GIST(geom);
+\end{lstlisting}
+
+\section{Schéma SQLite local}
+
+\begin{lstlisting}[language=SQL, caption=Schéma SQLite local]
+CREATE TABLE pistes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code_piste TEXT NOT NULL,
+    nom_origine_piste TEXT,
+    nom_destination_piste TEXT,
+    geometry TEXT,
+    synced INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+\end{lstlisting}
+
+\section{Requêtes spatiales courantes}
+
+\begin{lstlisting}[language=SQL, caption=Requêtes spatiales utiles]
+-- Calculer la longueur totale des pistes
+SELECT SUM(ST_Length(geom)) AS longueur_totale
+FROM pistes;
+
+-- Trouver les pistes dans un rayon de 5km
+SELECT code_piste FROM pistes
+WHERE ST_DWithin(geom,
+    ST_SetSRID(ST_MakePoint(712897, 1053886), 32628),
+    5000);
+\end{lstlisting}
+
+%=============================================================================
+%                    CHAPITRE 8 : DÉPLOIEMENT SERVEUR
+%=============================================================================
+\chapter{Déploiement Serveur}
+
+Ce chapitre détaille la procédure de déploiement sur un serveur Windows avec \textbf{NGINX} et \textbf{Gunicorn}.
+
+\begin{warningbox}
+Gunicorn ne fonctionne pas nativement sous Windows. Ce guide utilise \textbf{WSL} (Windows Subsystem for Linux).
+\end{warningbox}
+
+\section{Architecture de déploiement}
+
+\begin{figure}[H]
+\centering
+\resizebox{0.9\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    box/.style={rectangle, rounded corners=5pt, draw=primarycolor, 
+                fill=primarycolor!10, minimum width=2.8cm, 
+                minimum height=1cm, align=center, font=\small\bfseries},
+    arrow/.style={-{Stealth[length=3mm]}, thick, primarycolor}
+]
+
+\node[box, fill=guineagreen!20, draw=guineagreen] (client) {\faIcon{mobile-alt} Client};
+\node[box, right=1.5cm of client, fill=accentcolor!20, draw=accentcolor!80!black] (nginx) {\faIcon{globe} NGINX\\:80/443};
+\node[box, right=1.5cm of nginx, fill=guineared!20, draw=guineared] (gunicorn) {\faIcon{cogs} Gunicorn\\:8000};
+\node[box, right=1.5cm of gunicorn] (django) {\faIcon{python} Django};
+\node[box, below=of django, fill=secondarycolor!20, draw=secondarycolor] (postgres) {\faIcon{database} PostgreSQL\\:5432};
+
+\draw[arrow] (client) -- (nginx);
+\draw[arrow] (nginx) -- (gunicorn);
+\draw[arrow] (gunicorn) -- (django);
+\draw[arrow] (django) -- (postgres);
+
+\end{tikzpicture}
+}
+\caption{Architecture de déploiement}
+\end{figure}
+
+\section{Installation de WSL}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+# PowerShell en administrateur
+wsl --install -d Ubuntu-22.04
+wsl --set-default-version 2
+\end{lstlisting}
+\end{commandbox}
+
+\section{Configuration PostgreSQL}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+sudo -u postgres psql
+CREATE USER geondgr_user WITH PASSWORD 'motdepasse';
+CREATE DATABASE geondgr_db OWNER geondgr_user;
+\c geondgr_db
+CREATE EXTENSION postgis;
+\end{lstlisting}
+\end{commandbox}
+
+\section{Déploiement Django}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+cd /var/www/geondgr
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install gunicorn
+python manage.py migrate
+python manage.py collectstatic
+\end{lstlisting}
+\end{commandbox}
+
+\section{Configuration Gunicorn}
+
+\begin{lstlisting}[language=Python, caption=gunicorn.conf.py]
+bind = "127.0.0.1:8000"
+workers = 4
+timeout = 120
+accesslog = "/var/log/gunicorn/access.log"
+errorlog = "/var/log/gunicorn/error.log"
+\end{lstlisting}
+
+\section{Configuration NGINX}
+
+\begin{lstlisting}[caption=Configuration NGINX]
+upstream gunicorn_backend {
+    server 127.0.0.1:8000;
+}
+
+server {
+    listen 80;
+    server_name votre-domaine.com;
+    client_max_body_size 50M;
+
+    location /static/ {
+        alias /var/www/geondgr/staticfiles/;
+    }
+
+    location / {
+        proxy_pass http://gunicorn_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+\end{lstlisting}
+
+\section{Vérification du déploiement}
+
+\begin{successbox}
+\textbf{Checklist :}
+\begin{itemize}
+    \item[\cmark] PostgreSQL démarre correctement
+    \item[\cmark] Gunicorn répond sur le port 8000
+    \item[\cmark] NGINX répond sur le port 80
+    \item[\cmark] L'API répond aux requêtes
+\end{itemize}
+\end{successbox}
+
+%=============================================================================
+%                    CHAPITRE 9 : TESTS ET VALIDATION
+%=============================================================================
+\chapter{Tests et Validation}
+
+\section{Types de tests}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Type} & \textbf{Description} & \textbf{Outils} \\
+\hline
+Unitaires & Fonctions individuelles & Flutter Test \\
+\hline
+Intégration & Interactions composants & Integration Test \\
+\hline
+UI & Interface utilisateur & Widget Test \\
+\hline
+API & Endpoints REST & Postman \\
+\hline
+Terrain & Conditions réelles & Appareil physique \\
+\hline
+\end{tabularx}
+\caption{Types de tests}
+\end{table}
+
+\section{Tests en mode Debug}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+flutter devices
+flutter run
+flutter run -d emulator-5554
+\end{lstlisting}
+\end{commandbox}
+
+\section{Génération des packages}
+
+\subsection{APK de release}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+flutter build apk --release
+# Sortie: build/app/outputs/flutter-apk/app-release.apk
+\end{lstlisting}
+\end{commandbox}
+
+\subsection{Android App Bundle}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+flutter build appbundle --release
+# Sortie: build/app/outputs/bundle/release/app-release.aab
+\end{lstlisting}
+\end{commandbox}
+
+\section{Tests hors-ligne}
+
+\begin{enumerate}[leftmargin=2cm, label=\textcolor{primarycolor}{\arabic*.}]
+    \item Activer le Mode Avion
+    \item Collecter des données
+    \item Fermer et rouvrir l'app
+    \item Vérifier les données locales
+    \item Désactiver Mode Avion
+    \item Synchroniser et vérifier
+\end{enumerate}
+
+\section{Checklist avant release}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|X|c|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Vérification} & \textbf{OK} \\
+\hline
+Code analysé (\texttt{flutter analyze}) & $\square$ \\
+\hline
+Tests passent (\texttt{flutter test}) & $\square$ \\
+\hline
+Testé sur émulateur & $\square$ \\
+\hline
+Testé sur appareil physique & $\square$ \\
+\hline
+Tests hors-ligne effectués & $\square$ \\
+\hline
+Aucune clé API exposée & $\square$ \\
+\hline
+Version mise à jour & $\square$ \\
+\hline
+\end{tabularx}
+\caption{Checklist avant release}
+\end{table}
+
+%=============================================================================
+%                    CHAPITRE 10 : MAINTENANCE ET CONTRIBUTION
+%=============================================================================
+\chapter{Maintenance et Contribution}
+
+\section{Gestion de versions avec Git}
+
+\subsection{Structure des branches}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Branche} & \textbf{Préfixe} & \textbf{Description} \\
+\hline
+\texttt{main} & --- & Code de production stable \\
+\hline
+\texttt{develop} & --- & Branche d'intégration \\
+\hline
+\texttt{feature/*} & \texttt{feature/} & Nouvelles fonctionnalités \\
+\hline
+\texttt{fix/*} & \texttt{fix/} & Corrections de bugs \\
+\hline
+\texttt{hotfix/*} & \texttt{hotfix/} & Corrections urgentes \\
+\hline
+\end{tabularx}
+\caption{Convention de nommage des branches}
+\end{table}
+
+\subsection{Workflow de développement}
+
+\begin{commandbox}
+\begin{lstlisting}[language=bash, numbers=none]
+git checkout develop
+git pull origin develop
+git checkout -b feature/ma-feature
+# ... developpement ...
+git add .
+git commit -m "feat: description"
+git push origin feature/ma-feature
+# Creer une Pull Request
+\end{lstlisting}
+\end{commandbox}
+
+\section{Conventions de commit}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Type} & \textbf{Description} & \textbf{Exemple} \\
+\hline
+\texttt{feat} & Nouvelle fonctionnalité & \texttt{feat: add offline sync} \\
+\hline
+\texttt{fix} & Correction de bug & \texttt{fix: resolve GPS timeout} \\
+\hline
+\texttt{docs} & Documentation & \texttt{docs: update README} \\
+\hline
+\texttt{refactor} & Refactorisation & \texttt{refactor: simplify API} \\
+\hline
+\texttt{test} & Ajout de tests & \texttt{test: add unit tests} \\
+\hline
+\texttt{chore} & Maintenance & \texttt{chore: update deps} \\
+\hline
+\end{tabularx}
+\caption{Types de commits}
+\end{table}
+
+\section{Conventions de code}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Élément} & \textbf{Convention} & \textbf{Exemple} \\
+\hline
+Variables & camelCase & \texttt{userName} \\
+\hline
+Fonctions & camelCase & \texttt{fetchData()} \\
+\hline
+Classes & PascalCase & \texttt{PisteModel} \\
+\hline
+Fichiers & snake\_case & \texttt{piste\_model.dart} \\
+\hline
+Constantes & UPPER\_SNAKE\_CASE & \texttt{API\_BASE\_URL} \\
+\hline
+\end{tabularx}
+\caption{Conventions de nommage}
+\end{table}
+
+\section{Checklist avant Pull Request}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|X|c|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Vérification} & \textbf{OK} \\
+\hline
+Code formaté (\texttt{flutter format .}) & $\square$ \\
+\hline
+Aucune erreur (\texttt{flutter analyze}) & $\square$ \\
+\hline
+Tests passent (\texttt{flutter test}) & $\square$ \\
+\hline
+Pas de secrets dans le code & $\square$ \\
+\hline
+Documentation mise à jour & $\square$ \\
+\hline
+\end{tabularx}
+\caption{Checklist avant PR}
+\end{table}
+
+\section{Versionnage sémantique}
+
+Le projet suit le \textbf{Semantic Versioning} : \texttt{MAJOR.MINOR.PATCH}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Élément} & \textbf{Incrémenté quand...} \\
+\hline
+MAJOR & Changements incompatibles \\
+\hline
+MINOR & Nouvelles fonctionnalités rétrocompatibles \\
+\hline
+PATCH & Corrections de bugs \\
+\hline
+\end{tabularx}
+\caption{Règles de versionnage}
+\end{table}
+
+\section{Contact et support}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Rôle} & \textbf{Nom} & \textbf{Responsabilité} \\
+\hline
+Développeur & Dahdouh Ayoub & Architecture, développement, tests, conception \\
+\hline
+Développeur & Moutamanni Abdourahman & Architecture, développement, tests, conception \\
+\hline
+Encadrant & \textit{El Imami Ayoub} & Supervision \\
+\hline
+\end{tabularx}
+\caption{Équipe de développement}
+\end{table}
+
+%=============================================================================
+%                    CHAPITRE 11 : ANNEXES
+%=============================================================================
+\chapter{Annexes}
+
+\section{Glossaire}
+
+\begin{longtable}{|p{3.5cm}|p{10.5cm}|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Terme} & \textbf{Définition} \\
+\hline
+\endfirsthead
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Terme} & \textbf{Définition} \\
+\hline
+\endhead
+
+\textbf{API} & Application Programming Interface \\
+\hline
+\textbf{APK} & Android Package Kit \\
+\hline
+\textbf{AAB} & Android App Bundle \\
+\hline
+\textbf{CRUD} & Create, Read, Update, Delete \\
+\hline
+\textbf{DRF} & Django REST Framework \\
+\hline
+\textbf{GeoJSON} & Format JSON pour données géographiques \\
+\hline
+\textbf{GPS} & Global Positioning System \\
+\hline
+\textbf{Gunicorn} & Serveur HTTP WSGI pour Python \\
+\hline
+\textbf{JWT} & JSON Web Token \\
+\hline
+\textbf{NGINX} & Serveur web / Reverse proxy \\
+\hline
+\textbf{PostGIS} & Extension spatiale PostgreSQL \\
+\hline
+\textbf{REST} & Representational State Transfer \\
+\hline
+\textbf{SRID} & Spatial Reference System Identifier \\
+\hline
+\textbf{SQLite} & Base de données légère intégrée \\
+\hline
+\textbf{UTM} & Universal Transverse Mercator \\
+\hline
+\textbf{WSGI} & Web Server Gateway Interface \\
+\hline
+\textbf{WSL} & Windows Subsystem for Linux \\
+\hline
+\end{longtable}
+
+\section{Références techniques}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Technologie} & \textbf{URL} \\
+\hline
+Flutter & \url{https://docs.flutter.dev} \\
+\hline
+Django & \url{https://docs.djangoproject.com} \\
+\hline
+PostgreSQL & \url{https://www.postgresql.org/docs/} \\
+\hline
+PostGIS & \url{https://postgis.net/documentation/} \\
+\hline
+NGINX & \url{https://nginx.org/en/docs/} \\
+\hline
+\end{tabularx}
+\caption{Documentation officielle}
+\end{table}
+
+\section{Codes EPSG}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Code} & \textbf{Nom} & \textbf{Utilisation} \\
+\hline
+4326 & WGS 84 & Coordonnées GPS \\
+\hline
+32628 & UTM zone 28N & Projection Guinée \\
+\hline
+\end{tabularx}
+\caption{Codes EPSG utilisés}
+\end{table}
+
+\section{Variables d'environnement}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Variable} & \textbf{Description} \\
+\hline
+\texttt{DJANGO\_SECRET\_KEY} & Clé secrète Django \\
+\hline
+\texttt{DB\_PASSWORD} & Mot de passe PostgreSQL \\
+\hline
+\texttt{DB\_HOST} & Hôte de la base de données \\
+\hline
+\texttt{DEBUG} & Mode debug (True/False) \\
+\hline
+\end{tabularx}
+\caption{Variables d'environnement}
+\end{table}
+
+\section{Historique des versions}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Version} & \textbf{Date} & \textbf{Changements} \\
+\hline
+1.0.0 & Sept. 2025 & Version initiale (PPRCollecte) \\
+\hline
+2.0.0 & Déc. 2025 & Renommage GeoNDGR-Collecte \\
+\hline
+\end{tabularx}
+\caption{Historique des versions}
+\end{table}
+
+%=============================================================================
+%                         PAGE DE FIN
+%=============================================================================
+\clearpage
+\thispagestyle{empty}
+
+\vspace*{\fill}
+\begin{center}
+\noindent\textcolor{primarycolor}{\rule{0.8\textwidth}{1pt}}
+
+\vspace{0.8cm}
+
+{\Huge\bfseries\textcolor{primarycolor}{GeoNDGR-Collecte}}
+
+\vspace{0.5cm}
+
+{\Large\textcolor{gray}{Guide de Développement}}
+
+\vspace{0.6cm}
+
+{\large Réalisé par \textbf{Dahdouh Ayoub} \& \textbf{Moutamanni Abdourahman}}
+
+\vspace{0.3cm}
+
+{\large Encadré par \textbf{\textit{El Imami Ayoub}}}
+
+\vspace{0.5cm}
+
+{\large\textcolor{primarycolor}{ETAFAT} | \textcolor{secondarycolor}{NDGR}}
+
+\vspace{0.6cm}
+
+{\Large\textbf{2025}}
+
+\vspace{0.8cm}
+
+\noindent\textcolor{primarycolor}{\rule{0.8\textwidth}{1pt}}
+\end{center}
+\vspace*{\fill}
+
+
+\end{document}

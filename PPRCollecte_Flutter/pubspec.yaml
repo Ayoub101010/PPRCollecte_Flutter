@@ -77,6 +77,8 @@ flutter:
   assets:
     - lib/NDGR_Logoo.png
     - lib/carte_guinee.png
+    - lib/GeoNDGR_Collecte_Logo_ICON.png
+    - lib/GeoNDGR_Collecte_Logo_FINAL.png
 
   # assets:
   #   - images/a_dot_burr.jpeg
