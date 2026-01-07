@@ -75,10 +75,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - lib/NDGR_Logoo.png
-    - lib/carte_guinee.png
-    - lib/GeoNDGR_Collecte_Logo_ICON.png
-    - lib/GeoNDGR_Collecte_Logo_FINAL.png
+    - assets/NDGR_Logoo.png
+    - assets/carte_guinee.png
+    - assets/GeoNDGR_Collecte_Logo_ICON.png
+    - assets/GeoNDGR_Collecte_Logo_FINAL.png
 
   # assets:
   #   - images/a_dot_burr.jpeg

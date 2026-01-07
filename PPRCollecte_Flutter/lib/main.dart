@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
-import 'database_helper.dart';
+import 'screens/auth/login_page.dart';
+import 'data/local/database_helper.dart';
+
+// OU avec barrel files:
+// import 'screens/screens.dart';
+// import 'data/data.dart';
 
 void main() async {
   // 1. Initialisation obligatoire pour Flutter
