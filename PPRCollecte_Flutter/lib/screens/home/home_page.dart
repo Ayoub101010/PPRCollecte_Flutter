@@ -10,7 +10,8 @@ import 'dart:math';
 import 'dart:math' as Math;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 // ============================================================
 // WIDGETS
@@ -111,7 +112,7 @@ class _HomePageState extends State<HomePage> {
   List<Polyline> collectedPolylines = [];
   List<Polyline> _finishedPistes = []; // ← AJOUTEZ ICI
   List<Polyline> _finishedChaussees = [];
-  Set<Marker> formMarkers = {};
+  List<Marker> formMarkers = [];
   bool isSyncing = false;
   bool isDownloading = false;
   SyncResult? lastSyncResult;
@@ -123,31 +124,31 @@ class _HomePageState extends State<HomePage> {
   String _currentSyncOperation = "Préparation de la synchronisation...";
   int _syncTotalItems = 0;
   int _syncProcessedItems = 0;
-  Set<Marker> _displayedPointsMarkers = {};
+  List<Marker> _displayedPointsMarkers = [];
   String? _currentNearestPisteCode;
   bool _isSpecialCollection = false;
   String? _specialCollectionType;
-  final Completer<GoogleMapController> _controller = Completer();
+  MapController? _mapController;
   LatLng? _lastCameraPosition;
   late final HomeController homeController;
   final DisplayedPointsService _pointsService = DisplayedPointsService();
   final SpecialLinesService _specialLinesService = SpecialLinesService();
-  Set<Polyline> _displayedSpecialLines = {};
+  List<Polyline> _displayedSpecialLines = [];
   final DownloadedPointsService _downloadedPointsService = DownloadedPointsService();
-  Set<Marker> _downloadedPointsMarkers = {};
+  List<Marker> _downloadedPointsMarkers = [];
   bool _showDownloadedPoints = true;
-  MapType _currentMapType = MapType.normal;
+  bool _isSatellite = false;
   final DownloadedSpecialLinesService _downloadedSpecialLinesService = DownloadedSpecialLinesService();
-  Set<Polyline> _downloadedSpecialLinesPolylines = {};
+  List<Polyline> _downloadedSpecialLinesPolylines = [];
   bool _showDownloadedSpecialLines = true;
 
   // Téléchargés : Pistes
 
   final DownloadedPistesService _downloadedPistesService = DownloadedPistesService();
-  Set<Polyline> _downloadedPistesPolylines = {};
+  List<Polyline> _downloadedPistesPolylines = [];
   bool _showDownloadedPistes = true; // comme pour les points
   DownloadedChausseesService _downloadedChausseesService = DownloadedChausseesService();
-  Set<Polyline> _downloadedChausseesPolylines = {};
+  List<Polyline> _downloadedChausseesPolylines = [];
   bool _showDownloadedChaussees = true;
   bool get _autoCenterSuspended => _suspendAutoCenterUntil != null && DateTime.now().isBefore(_suspendAutoCenterUntil!);
   String? _lastSyncTimeText;
@@ -725,8 +726,8 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Méthode pour filtrer les polylines selon la légende
-  Set<Polyline> _getFilteredPolylines() {
-    final Set<Polyline> filtered = Set<Polyline>.from(collectedPolylines);
+  List<Polyline> _getFilteredPolylines() {
+    final List<Polyline> filtered = List<Polyline>.from(collectedPolylines);
     if (_legendVisibility['pistes'] == true) {
       filtered.addAll(_finishedPistes);
     }
@@ -755,10 +756,12 @@ class _HomePageState extends State<HomePage> {
     }
 
     for (final l in _displayedSpecialLines) {
-      final id = l.polylineId.value.toLowerCase();
+      // flutter_map n'a pas d'ID sur Polyline, on utilise la couleur pour identifier
+      final color = l.color;
 
-      final isBac = id.contains('bac'); // ex: "special_line_bac_12"
-      final isPassage = id.contains('passage'); // ex: "special_line_passage_12"
+      // Bac = purple, Passage submersible = cyan
+      final isBac = color == Colors.purple;
+      final isPassage = color == Colors.cyan;
 
       if (isBac && (_legendVisibility['bac'] == true)) {
         filtered.add(l);
@@ -772,10 +775,12 @@ class _HomePageState extends State<HomePage> {
 
     if (_showDownloadedSpecialLines) {
       for (final l in _downloadedSpecialLinesPolylines) {
-        final id = l.polylineId.value.toLowerCase();
+        // flutter_map n'a pas d'ID sur Polyline, on utilise la couleur pour identifier
+        final color = l.color;
 
-        final isBac = id.contains('_bac_');
-        final isPassage = id.contains('_passage_submersible_');
+        // Bac = purple, Passage submersible = cyan
+        final isBac = color == Colors.purple;
+        final isPassage = color == Colors.cyan;
 
         if (isBac && (_legendVisibility['bac'] == true)) {
           filtered.add(l);
@@ -794,16 +799,15 @@ class _HomePageState extends State<HomePage> {
       if (lignePoints.length > 1) {
         filtered.add(
           Polyline(
-            polylineId: const PolylineId('currentLigne'),
             points: lignePoints,
             color: homeController.ligneCollection!.isPaused ? Colors.orange : Colors.green,
-            width: 4,
-            patterns: homeController.ligneCollection!.isPaused
-                ? <PatternItem>[
-                    PatternItem.dash(10),
-                    PatternItem.gap(5)
-                  ]
-                : <PatternItem>[],
+            strokeWidth: 4.0,
+            pattern: homeController.ligneCollection!.isPaused
+                ? StrokePattern.dashed(segments: [
+                    10,
+                    5
+                  ])
+                : const StrokePattern.solid(),
           ),
         );
       }
@@ -815,16 +819,15 @@ class _HomePageState extends State<HomePage> {
       if (chausseePoints.length > 1) {
         filtered.add(
           Polyline(
-            polylineId: const PolylineId('currentChaussee'),
             points: chausseePoints,
             color: homeController.chausseeCollection!.isPaused ? Colors.deepOrange : const Color(0xFFFF9800),
-            width: 5,
-            patterns: homeController.chausseeCollection!.isPaused
-                ? <PatternItem>[
-                    PatternItem.dash(15),
-                    PatternItem.gap(5)
-                  ]
-                : <PatternItem>[],
+            strokeWidth: 5.0,
+            pattern: homeController.chausseeCollection!.isPaused
+                ? StrokePattern.dashed(segments: [
+                    15,
+                    5
+                  ])
+                : const StrokePattern.solid(),
           ),
         );
       }
@@ -838,16 +841,15 @@ class _HomePageState extends State<HomePage> {
 
         filtered.add(
           Polyline(
-            polylineId: const PolylineId('currentSpecial'),
             points: specialPoints,
             color: specialColor,
-            width: 5,
-            patterns: homeController.specialCollection!.isPaused
-                ? <PatternItem>[
-                    PatternItem.dash(10),
-                    PatternItem.gap(5)
-                  ]
-                : <PatternItem>[],
+            strokeWidth: 5.0,
+            pattern: homeController.specialCollection!.isPaused
+                ? StrokePattern.dashed(segments: [
+                    10,
+                    5
+                  ])
+                : const StrokePattern.solid(),
           ),
         );
       }
@@ -857,13 +859,13 @@ class _HomePageState extends State<HomePage> {
   }
 
 // Méthode pour filtrer les markers selon la légende
-  Set<Marker> _getFilteredMarkers() {
+  List<Marker> _getFilteredMarkers() {
     // Si "Points" est décoché => cacher TOUS les markers (local + downloaded)
     if (_legendVisibility['points'] != true) {
-      return <Marker>{};
+      return <Marker>[];
     }
 
-    final Set<Marker> filtered = <Marker>{};
+    final List<Marker> filtered = <Marker>[];
 
     // Points créés/affichés (local: synced=0/downloaded=0, etc.)
     filtered.addAll(_displayedPointsMarkers);
@@ -980,18 +982,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   LatLngBounds _boundsFor(List<LatLng> pts) {
-    double minLat = pts.first.latitude, maxLat = pts.first.latitude;
-    double minLng = pts.first.longitude, maxLng = pts.first.longitude;
-    for (final p in pts) {
-      if (p.latitude < minLat) minLat = p.latitude;
-      if (p.latitude > maxLat) maxLat = p.latitude;
-      if (p.longitude < minLng) minLng = p.longitude;
-      if (p.longitude > maxLng) maxLng = p.longitude;
-    }
-    return LatLngBounds(
-      southwest: LatLng(minLat, minLng),
-      northeast: LatLng(maxLat, maxLng),
-    );
+    // flutter_map utilise fromPoints pour créer des bounds
+    return LatLngBounds.fromPoints(pts);
   }
 
   double _deg2rad(double deg) => deg * (Math.pi / 180.0);
@@ -1057,113 +1049,103 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _focusOnTarget(MapFocusTarget target) async {
-    final controller = await _controller.future;
-
     // ⏸️ Empêche le recentrage sur l'utilisateur pendant le focus
     _suspendAutoCenterFor(const Duration(seconds: 3));
 
     setState(() {
       if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
         _displayedSpecialLines.add(Polyline(
-          polylineId: PolylineId('focus_${DateTime.now().millisecondsSinceEpoch}'),
           points: target.polyline!,
           color: Colors.purple,
-          width: 6,
-          patterns: [
-            PatternItem.dash(12),
-            PatternItem.gap(6)
-          ],
+          strokeWidth: 6.0,
+          pattern: StrokePattern.dashed(segments: [
+            12,
+            6
+          ]),
         ));
       } else if (target.kind == 'point' && target.point != null) {
         _displayedPointsMarkers.add(Marker(
-          markerId: MarkerId('focus_${DateTime.now().millisecondsSinceEpoch}'),
-          position: target.point!,
-          infoWindow: InfoWindow(title: target.label ?? 'Point'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+          point: target.point!,
+          width: 40,
+          height: 40,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.purple,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: const Icon(Icons.location_on, color: Colors.white, size: 24),
+          ),
         ));
       }
     });
 
-    if (target.kind == 'point' && target.point != null) {
-      await controller.animateCamera(CameraUpdate.newLatLngZoom(target.point!, 18));
-    } else if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
-      final b = _boundsFor(target.polyline!);
-      await controller.animateCamera(CameraUpdate.newLatLngBounds(b, 64));
+    // Déplacer la caméra
+    if (_mapController != null) {
+      if (target.kind == 'point' && target.point != null) {
+        _mapController!.move(target.point!, 18);
+      } else if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
+        final bounds = LatLngBounds.fromPoints(target.polyline!);
+        _mapController!.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(64)));
+      }
     }
 
-    // 👇 Remplace TOUT ce bloc "Retrait auto du highlight (2s)"
-    final String focusPrefix = 'focus_';
-    final String focusId = _displayedSpecialLines.any((pl) => pl.polylineId.value.startsWith(focusPrefix))
-        ? _displayedSpecialLines.firstWhere((pl) => pl.polylineId.value.startsWith(focusPrefix)).polylineId.value
-        : _displayedPointsMarkers.any((m) => m.markerId.value.startsWith(focusPrefix))
-            ? _displayedPointsMarkers.firstWhere((m) => m.markerId.value.startsWith(focusPrefix)).markerId.value
-            : 'focus_${DateTime.now().millisecondsSinceEpoch}'; // fallback (rare)
-
-    final Duration keepFor = const Duration(seconds: 10); // mets 30s si tu veux
+    final Duration keepFor = const Duration(seconds: 10);
     final startedAt = DateTime.now();
 
-// On garde une copie locale des éléments focus pour pouvoir les réinjecter si un refresh les efface
+    // Copie locale pour réinjection
     final polylineCopy = (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty)
         ? Polyline(
-            polylineId: PolylineId(focusId),
             points: target.polyline!,
             color: Colors.purple,
-            width: 6,
-            patterns: [
-              PatternItem.dash(12),
-              PatternItem.gap(6)
-            ],
+            strokeWidth: 6.0,
+            pattern: StrokePattern.dashed(segments: [
+              12,
+              6
+            ]),
           )
         : null;
 
     final markerCopy = (target.kind == 'point' && target.point != null)
         ? Marker(
-            markerId: MarkerId(focusId),
-            position: target.point!,
-            infoWindow: InfoWindow(title: target.label ?? 'Point'),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+            point: target.point!,
+            width: 40,
+            height: 40,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.purple,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: const Icon(Icons.location_on, color: Colors.white, size: 24),
+            ),
           )
         : null;
 
-// ⏱️ Keep-alive: re-ajoute le focus s’il a été effacé par un refresh ailleurs
-    final timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    // ⏱️ Keep-alive: retire après 10 secondes
+    Timer.periodic(const Duration(seconds: 1), (t) {
       final elapsed = DateTime.now().difference(startedAt);
       if (elapsed >= keepFor) {
         t.cancel();
         if (!mounted) return;
         setState(() {
-          _displayedSpecialLines.removeWhere((pl) => pl.polylineId.value.startsWith(focusPrefix));
-          _displayedPointsMarkers.removeWhere((m) => m.markerId.value.startsWith(focusPrefix));
+          // Retirer le dernier élément ajouté (le focus)
+          if (polylineCopy != null && _displayedSpecialLines.isNotEmpty) {
+            _displayedSpecialLines.removeLast();
+          }
+          if (markerCopy != null && _displayedPointsMarkers.isNotEmpty) {
+            _displayedPointsMarkers.removeLast();
+          }
         });
         return;
       }
-
-      if (!mounted) return;
-
-      setState(() {
-        // Réinjecte si disparu
-        if (polylineCopy != null && !_displayedSpecialLines.any((pl) => pl.polylineId.value == focusId)) {
-          _displayedSpecialLines = {
-            ..._displayedSpecialLines,
-            polylineCopy,
-          };
-        }
-        if (markerCopy != null && !_displayedPointsMarkers.any((m) => m.markerId.value == focusId)) {
-          _displayedPointsMarkers = {
-            ..._displayedPointsMarkers,
-            markerCopy,
-          };
-        }
-      });
     });
   }
 
   void _toggleMapType() {
-    setState(
-      () {
-        _currentMapType = _currentMapType == MapType.normal ? MapType.satellite : MapType.normal;
-      },
-    );
+    setState(() {
+      _isSatellite = !_isSatellite;
+    });
   }
 
   Future<void> _refreshAllPoints() async {
@@ -1416,21 +1398,13 @@ class _HomePageState extends State<HomePage> {
         () {
           _finishedPistes.add(
             Polyline(
-              polylineId: PolylineId(
-                'special_${DateTime.now().millisecondsSinceEpoch}',
-              ),
-              points: result.points,
-              color: specialColor,
-              width: 6, // ← Augmentez pour mieux voir
-              patterns: [
-                PatternItem.dash(
+                points: result.points,
+                color: specialColor,
+                strokeWidth: 6.0,
+                pattern: StrokePattern.dashed(segments: [
                   10,
-                ),
-                PatternItem.gap(
-                  5,
-                ),
-              ], // ← Motif distinctif
-            ),
+                  5
+                ])),
           );
         },
       );
@@ -1455,39 +1429,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  List<PatternItem> getChausseePattern(
-    String type,
-  ) {
+  StrokePattern? getChausseePattern(String type) {
     switch (type.toLowerCase()) {
       case 'asphalte':
-        return <PatternItem>[]; // ligne continue
+      case 'bitume':
+        return null; // ligne continue
       case 'terre':
-        return [
-          PatternItem.dash(
-            20,
-          ),
-          PatternItem.gap(
-            10,
-          ),
-        ];
+        return StrokePattern.dashed(segments: [
+          20,
+          10
+        ]);
       case 'béton':
-        return [
-          PatternItem.dot,
-          PatternItem.gap(
-            5,
-          ),
-        ];
+        return StrokePattern.dotted(spacingFactor: 1.5);
       case 'pavée':
-        return [
-          PatternItem.dash(
-            10,
-          ),
-          PatternItem.gap(
-            5,
-          ),
-        ];
+      case 'latérite':
+        return StrokePattern.dashed(segments: [
+          10,
+          5
+        ]);
+      case 'bouwal':
+        return StrokePattern.dotted(spacingFactor: 2.0);
       default:
-        return <PatternItem>[]; // par défaut, ligne continue
+        return null; // par défaut, ligne continue
     }
   }
 
@@ -1503,13 +1466,11 @@ class _HomePageState extends State<HomePage> {
         final pts = p.points;
 
         return Polyline(
-          polylineId: p.polylineId ?? PolylineId('chs_${DateTime.now().millisecondsSinceEpoch}'),
           points: pts,
           color: p.color,
-          width: p.width,
-          patterns: p.patterns,
-          zIndex: p.zIndex,
-          consumeTapEvents: true,
+          strokeWidth: p.strokeWidth,
+          pattern: p.pattern ?? const StrokePattern.solid(),
+          /*consumeTapEvents: true,
           onTap: () {
             if (pts.length < 2) return;
 
@@ -1532,7 +1493,7 @@ class _HomePageState extends State<HomePage> {
               endLat: pts.last.latitude,
               endLng: pts.last.longitude,
             );
-          },
+          },*/
         );
       }).toList();
 
@@ -1657,14 +1618,18 @@ class _HomePageState extends State<HomePage> {
         return '$t:$i';
       }).toSet();
 
-      final validMarkers = markers.where((marker) {
-        // 'displayed_point:<table>:<id>'
-        final raw = marker.markerId.value;
-        final parts = raw.split(':');
-        if (parts.length != 3) return false;
-        final key = '${parts[1]}:${parts[2]}';
-        return existingKeys.contains(key);
+      // Créer un Set des positions existantes (lat_lng comme clé unique)
+      final existingPositions = existingPoints.map((p) {
+        final lat = (p['latitude'] as num).toDouble();
+        final lng = (p['longitude'] as num).toDouble();
+        return '${lat}_${lng}';
       }).toSet();
+
+// Filtrer les markers dont la position existe encore
+      final validMarkers = markers.where((marker) {
+        final posKey = '${marker.point.latitude}_${marker.point.longitude}';
+        return existingPositions.contains(posKey);
+      }).toList();
 
       setState(() {
         _displayedPointsMarkers = validMarkers;
@@ -1680,42 +1645,25 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _onMapCreated(
-    GoogleMapController controller,
-  ) async {
-    if (!_controller.isCompleted) {
-      _controller.complete(
-        controller,
-      );
-    }
+  void _onMapCreated(MapController controller) {
+    _mapController = controller;
 
     if (userPosition.latitude != 34.020882 || userPosition.longitude != -6.841650) {
-      await controller.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: userPosition,
-            zoom: 17,
-          ),
-        ),
-      );
+      controller.move(userPosition, 17);
       _lastCameraPosition = userPosition;
     }
-    // ... à la fin de _onMapCreated, quand tout est prêt :
-    try {
-      if (widget.initialFocus != null) {
-        // petit délai pour laisser GoogleMap finir son premier layout
-        await Future.delayed(const Duration(milliseconds: 150));
-        await _focusOnTarget(widget.initialFocus!);
-      }
-    } catch (e) {
-      debugPrint('Focus initial échoué: $e');
+
+    // Focus initial si demandé
+    if (widget.initialFocus != null) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        _focusOnTarget(widget.initialFocus!);
+      });
     }
   }
 
-  Future<void> _moveCameraIfNeeded() async {
-    if (!_controller.isCompleted) return;
+  void _moveCameraIfNeeded() {
+    if (_mapController == null) return;
     try {
-      final controller = await _controller.future;
       final shouldMove = _lastCameraPosition == null ||
           _coordinateDistance(
                 _lastCameraPosition!.latitude,
@@ -1725,14 +1673,9 @@ class _HomePageState extends State<HomePage> {
               ) >
               20;
       if (_autoCenterSuspended) {
-        // Debug:
-        // print('⏭️ auto-center ignoré (focus en cours)');
+        // Debug
       } else if (shouldMove) {
-        await controller.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: userPosition, zoom: 17),
-          ),
-        );
+        _mapController!.move(userPosition, 17);
         _lastCameraPosition = userPosition;
       }
     } catch (_) {}
@@ -1800,23 +1743,24 @@ class _HomePageState extends State<HomePage> {
     if (result != null && result is Map<String, dynamic>) {
       setState(
         () {
-          collectedMarkers.add(
-            Marker(
-              markerId: MarkerId(
-                'poi${collectedMarkers.length + 1}',
-              ),
-              position: LatLng(
-                result['latitude'],
-                result['longitude'],
-              ),
-              infoWindow: InfoWindow(
-                title: result['nom'] ?? 'Nouveau point',
-              ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueRed,
+          collectedMarkers.add(Marker(
+            point: LatLng(result['latitude'], result['longitude']),
+            width: 40,
+            height: 40,
+            child: GestureDetector(
+              onTap: () {
+                // Si vous aviez un onTap, mettez-le ici
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(Icons.location_on, color: Colors.white, size: 24),
               ),
             ),
-          );
+          ));
         },
       );
     }
@@ -1949,21 +1893,13 @@ class _HomePageState extends State<HomePage> {
     if (formResult != null) {
       setState(
         () {
-          // ✅ AJOUTEZ LA PISTE TERMINÉE (NOUVEAU)
+          //  AJOUTEZ LA PISTE TERMINÉE (NOUVEAU)
           _finishedPistes.add(
             Polyline(
-              polylineId: PolylineId(
-                'piste_${DateTime.now().millisecondsSinceEpoch}',
-              ),
               points: result['points'],
-              color: Colors.brown, // ✅ couleur marron
-              width: 3,
-              patterns: [
-                PatternItem.dot,
-                PatternItem.gap(
-                  10,
-                ),
-              ], // ✅ style pointillé
+              color: Colors.brown, //  couleur marron
+              strokeWidth: 3.0,
+              pattern: StrokePattern.dotted(spacingFactor: 2.0), //  style pointillé
             ),
           );
         },
@@ -2102,16 +2038,8 @@ class _HomePageState extends State<HomePage> {
         (
           p,
         ) {
-          return Polyline(
-            polylineId: p.polylineId ?? PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
-            points: p.points,
-            color: p.color ?? Colors.brown,
-            width: p.width ?? 3,
-            patterns: [
-              PatternItem.dot,
-              PatternItem.gap(10),
-            ],
-            consumeTapEvents: true,
+          return Polyline(points: p.points, color: p.color ?? Colors.brown, strokeWidth: p.strokeWidth ?? 3, pattern: StrokePattern.dotted(spacingFactor: 2.0)
+              /*consumeTapEvents: true,
             onTap: () async {
               final pts = p.points;
               if (pts.length < 2) return;
@@ -2133,8 +2061,8 @@ class _HomePageState extends State<HomePage> {
                 endLat: pts.last.latitude,
                 endLng: pts.last.longitude,
               );
-            },
-          );
+            },*/
+              );
         },
       ).toList();
 
@@ -2288,17 +2216,12 @@ class _HomePageState extends State<HomePage> {
           final typeChaussee = formResult['type_chaussee'] ?? 'inconnu';
           collectedPolylines.add(
             Polyline(
-              polylineId: PolylineId(
-                'chaussee_${collectedPolylines.length + 1}',
-              ),
               points: result['points'],
               color: getChausseeColor(
                 typeChaussee,
               ),
-              width: 4,
-              patterns: getChausseePattern(
-                typeChaussee,
-              ),
+              strokeWidth: 4.0,
+              pattern: getChausseePattern(typeChaussee) ?? const StrokePattern.solid(),
             ),
           );
         },
@@ -3088,10 +3011,10 @@ class _HomePageState extends State<HomePage> {
   Widget build(
     BuildContext context,
   ) {
-    final Set<Marker> filteredMarkers = _getFilteredMarkers();
+    final List<Marker> filteredMarkers = _getFilteredMarkers();
 
     // 2. Filtrer les polylines selon la légende
-    final Set<Polyline> filteredPolylines = _getFilteredPolylines();
+    final List<Polyline> filteredPolylines = _getFilteredPolylines();
 
     // === LOGS POUR DEBUG ===
     print('📍 [MAP] filteredMarkers size = ${filteredMarkers.length}');
@@ -3107,16 +3030,15 @@ class _HomePageState extends State<HomePage> {
 
         filteredPolylines.add(
           Polyline(
-            polylineId: const PolylineId('currentSpecial'),
             points: specialPoints,
             color: specialColor,
-            width: 5,
-            patterns: homeController.specialCollection!.isPaused
-                ? <PatternItem>[
-                    PatternItem.dash(10),
-                    PatternItem.gap(5),
-                  ]
-                : <PatternItem>[],
+            strokeWidth: 5.0,
+            pattern: homeController.specialCollection!.isPaused
+                ? StrokePattern.dashed(segments: [
+                    10,
+                    5
+                  ])
+                : const StrokePattern.solid(),
           ),
         );
       }
@@ -3128,16 +3050,15 @@ class _HomePageState extends State<HomePage> {
       if (lignePoints.length > 1) {
         filteredPolylines.add(
           Polyline(
-            polylineId: const PolylineId('currentLigne'),
             points: lignePoints,
             color: homeController.ligneCollection!.isPaused ? Colors.orange : Colors.green,
-            width: 4,
-            patterns: homeController.ligneCollection!.isPaused
-                ? <PatternItem>[
-                    PatternItem.dash(10),
-                    PatternItem.gap(5),
-                  ]
-                : <PatternItem>[],
+            strokeWidth: 4.0,
+            pattern: homeController.ligneCollection!.isPaused
+                ? StrokePattern.dashed(segments: [
+                    10,
+                    5
+                  ])
+                : const StrokePattern.solid(),
           ),
         );
       }
@@ -3149,16 +3070,15 @@ class _HomePageState extends State<HomePage> {
       if (chausseePoints.length > 1) {
         filteredPolylines.add(
           Polyline(
-            polylineId: const PolylineId('currentChaussee'),
             points: chausseePoints,
             color: homeController.chausseeCollection!.isPaused ? Colors.deepOrange : const Color(0xFFFF9800),
-            width: 5,
-            patterns: homeController.chausseeCollection!.isPaused
-                ? <PatternItem>[
-                    PatternItem.dash(15),
-                    PatternItem.gap(5),
-                  ]
-                : <PatternItem>[],
+            strokeWidth: 5.0,
+            pattern: homeController.chausseeCollection!.isPaused
+                ? StrokePattern.dashed(segments: [
+                    15,
+                    5
+                  ])
+                : const StrokePattern.solid(),
           ),
         );
       }
@@ -3185,7 +3105,7 @@ class _HomePageState extends State<HomePage> {
                     polylines: filteredPolylines,
                     onMapCreated: _onMapCreated,
                     formMarkers: formMarkers,
-                    mapType: _currentMapType,
+                    isSatellite: _isSatellite,
                   ),
                   // === WIDGET DE LÉGENDE ===
                   LegendWidget(
@@ -3363,13 +3283,13 @@ class _HomePageState extends State<HomePage> {
                     onStopSpecial: finishSpecialCollection,
                   ),
                   MapTypeToggle(
-                    currentMapType: _currentMapType,
+                    isSatellite: _isSatellite,
                     onMapTypeChanged: (
                       newType,
                     ) {
                       setState(
                         () {
-                          _currentMapType = newType;
+                          _isSatellite = newType;
                         },
                       );
                     },
@@ -3524,43 +3444,18 @@ String getEntityTypeFromTable(String tableName) {
 class DisplayedPointsService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  Future<Set<Marker>> getDisplayedPointsMarkers({
+  Future<List<Marker>> getDisplayedPointsMarkers({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     try {
       final points = await _dbHelper.loadDisplayedPoints();
-      final Set<Marker> markers = {};
+      final List<Marker> markers = [];
       final user = await _dbHelper.getCurrentUser();
       final regionNom = (user?['region_nom'] ?? ApiService.regionNom ?? '----').toString();
       final prefectureNom = (user?['prefecture_nom'] ?? ApiService.prefectureNom ?? '----').toString();
       final communeNom = (user?['commune_nom'] ?? ApiService.communeNom ?? '----').toString();
 
-      // Batch pour générer les icônes une seule fois par type
-      final Map<String, Future<BitmapDescriptor>> iconFutures = {};
-
-      for (var point in points) {
-        final pointType = point['point_type'] as String?;
-        if (pointType == "Bac" || pointType == "Passage Submersible") {
-          continue;
-        }
-
-        final table = (point['original_table'] ?? '').toString();
-
-        // Préparer la future icône si pas déjà en cours
-        if (!iconFutures.containsKey(table)) {
-          iconFutures[table] = CustomMarkerIcons.getIconForTable(table);
-        }
-      }
-
-      // Attendre toutes les icônes
-      final Map<String, BitmapDescriptor> icons = {};
-      await Future.wait(
-        iconFutures.entries.map((entry) async {
-          icons[entry.key] = await entry.value;
-        }),
-      );
-
-      // Créer les marqueurs avec les icônes
+      // Créer les marqueurs avec les icônes (flutter_map utilise des Widgets, pas besoin de cache)
       for (var point in points) {
         final pointType = point['point_type'] as String?;
         if (pointType == "Bac" || pointType == "Passage Submersible") {
@@ -3570,27 +3465,17 @@ class DisplayedPointsService {
         final table = (point['original_table'] ?? '').toString();
         final pointName = point['point_name'] as String? ?? 'Sans nom';
         final typeLabel = getEntityTypeFromTable(table);
-// (ou copie la map entityTypes dans un helper commun, voir note en bas)
 
         final name = (point['point_name'] ?? point['nom'] ?? 'Sans nom').toString();
         final codePiste = point['code_piste'] as String? ?? 'N/A';
         final double lat = (point['latitude'] as num).toDouble();
         final double lng = (point['longitude'] as num).toDouble();
-        // Utiliser l'icône du cache
-        final icon = icons[table] ??
-            BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueRed,
-            );
 
-        markers.add(
-          Marker(
-            markerId: MarkerId(
-              'displayed_point:${table}:${point['id']}',
-            ),
-            position: LatLng(
-              (point['latitude'] as num).toDouble(),
-              (point['longitude'] as num).toDouble(),
-            ),
+        markers.add(Marker(
+          point: LatLng(lat, lng),
+          width: 40,
+          height: 40,
+          child: GestureDetector(
             onTap: () {
               onTapDetails({
                 'type': getEntityTypeFromTable(table),
@@ -3601,21 +3486,20 @@ class DisplayedPointsService {
                 'lng': lng,
               });
             },
-            infoWindow: const InfoWindow(title: ''),
-            icon: icon,
+            child: CustomMarkerIcons.getMarkerWidget(table),
           ),
-        );
+        ));
       }
 
       print('📍 ${markers.length} points affichés chargés (cache: ${CustomMarkerIcons.getCacheSize()} icônes)');
       return markers;
     } catch (e) {
       print('❌ Erreur dans getDisplayedPointsMarkers: $e');
-      return {};
+      return [];
     }
   }
 
-  Future<Set<Marker>> refreshDisplayedPoints({
+  Future<List<Marker>> refreshDisplayedPoints({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     return await getDisplayedPointsMarkers(onTapDetails: onTapDetails);
@@ -3626,37 +3510,37 @@ class DisplayedPointsService {
 class SpecialLinesService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  Future<Set<Polyline>> getDisplayedSpecialLines({
+  Future<List<Polyline>> getDisplayedSpecialLines({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     try {
       final lines = await _dbHelper.loadDisplayedSpecialLines();
-      final Set<Polyline> polylines = {};
+      final List<Polyline> polylines = [];
 
       for (var line in lines) {
         final specialType = (line['special_type'] ?? '').toString();
 
         Color lineColor;
-        List<PatternItem> linePattern;
+        StrokePattern? linePattern;
 
         switch (specialType.toLowerCase()) {
           case 'bac':
             lineColor = Colors.purple;
-            linePattern = [
-              PatternItem.dash(15),
-              PatternItem.gap(5)
-            ];
+            linePattern = StrokePattern.dashed(segments: [
+              15,
+              5
+            ]);
             break;
           case 'passage submersible':
             lineColor = Colors.cyan;
-            linePattern = [
-              PatternItem.dash(10),
-              PatternItem.gap(5)
-            ];
+            linePattern = StrokePattern.dashed(segments: [
+              15,
+              5
+            ]);
             break;
           default:
             lineColor = Colors.blueGrey;
-            linePattern = const [];
+            linePattern = null;
         }
 
         final start = LatLng(
@@ -3679,15 +3563,14 @@ class SpecialLinesService {
                 : 'special';
         polylines.add(
           Polyline(
-            polylineId: PolylineId('special_line_${tag}_${line['id']}'),
             points: [
               start,
               end
             ],
             color: lineColor,
-            width: 4,
-            patterns: linePattern,
-            consumeTapEvents: true,
+            strokeWidth: 4.0,
+            pattern: linePattern ?? const StrokePattern.solid(),
+            /*consumeTapEvents: true,
             onTap: () {
               onTapDetails({
                 'special_type': specialType,
@@ -3696,7 +3579,7 @@ class SpecialLinesService {
                 'end_lat': end.latitude,
                 'end_lng': end.longitude,
               });
-            },
+            },*/
           ),
         );
       }
@@ -3705,7 +3588,7 @@ class SpecialLinesService {
       return polylines;
     } catch (e) {
       print('❌ Erreur chargement lignes spéciales: $e');
-      return {};
+      return [];
     }
   }
 }
@@ -3713,7 +3596,7 @@ class SpecialLinesService {
 class DownloadedPointsService {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  Future<Set<Marker>> getDownloadedPointsMarkers({
+  Future<List<Marker>> getDownloadedPointsMarkers({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     try {
@@ -3732,12 +3615,12 @@ class DownloadedPointsService {
         'points_coupures',
       ];
 
-      final Set<Marker> markers = {};
+      final List<Marker> markers = [];
       final loginId = await DatabaseHelper().resolveLoginId();
 
       if (loginId == null) {
         print('❌ [DL-POINTS] Impossible de déterminer login_id (viewer)');
-        return {};
+        return [];
       }
       final user = await _dbHelper.getCurrentUser();
       final regionNom = (user?['region_nom'] ?? ApiService.regionNom ?? '----').toString();
@@ -3745,7 +3628,7 @@ class DownloadedPointsService {
       final communeNom = (user?['commune_nom'] ?? ApiService.communeNom ?? '----').toString();
 
       // Pré-générer toutes les icônes nécessaires
-      final Map<String, Future<BitmapDescriptor>> iconFutures = {};
+      /* final Map<String, Future<BitmapDescriptor>> iconFutures = {};
       for (var tableName in pointTables) {
         iconFutures[tableName] = CustomMarkerIcons.getIconForTable(tableName);
       }
@@ -3756,7 +3639,7 @@ class DownloadedPointsService {
         iconFutures.entries.map((entry) async {
           icons[entry.key] = await entry.value;
         }),
-      );
+      );*/
 
       // Traiter chaque table
       for (var tableName in pointTables) {
@@ -3785,24 +3668,26 @@ class DownloadedPointsService {
               final enqueteur = point['enqueteur'] ?? 'Autre utilisateur';
 
               // Utiliser l'icône du cache
-              final icon = icons[tableName] ?? await CustomMarkerIcons.getIconForTable(tableName);
+              // final icon = icons[tableName] ?? await CustomMarkerIcons.getIconForTable(tableName);
 
               markers.add(
                 Marker(
-                  markerId: MarkerId('downloaded_${tableName}_${point['id']}'),
-                  position: LatLng(lat, lng),
-                  onTap: () {
-                    onTapDetails({
-                      'type': getEntityTypeFromTable(tableName),
-                      'name': (point['nom'] ?? point['name'] ?? point['libelle'] ?? 'Sans nom').toString(),
-                      'enqueteur': (point['enqueteur'] ?? '').toString(),
-                      'code_piste': (codePiste ?? '').toString(),
-                      'lat': lat,
-                      'lng': lng,
-                    });
-                  },
-                  infoWindow: const InfoWindow(title: ''),
-                  icon: icon,
+                  point: LatLng(lat, lng),
+                  width: 40,
+                  height: 40,
+                  child: GestureDetector(
+                    onTap: () {
+                      onTapDetails({
+                        'type': getEntityTypeFromTable(tableName),
+                        'name': (point['nom'] ?? point['name'] ?? point['libelle'] ?? 'Sans nom').toString(),
+                        'enqueteur': (point['enqueteur'] ?? '').toString(),
+                        'code_piste': (codePiste ?? '').toString(),
+                        'lat': lat,
+                        'lng': lng,
+                      });
+                    },
+                    child: CustomMarkerIcons.getMarkerWidget(tableName),
+                  ),
                 ),
               );
             }
@@ -3816,7 +3701,7 @@ class DownloadedPointsService {
       return markers;
     } catch (e) {
       print('❌ Erreur dans getDownloadedPointsMarkers: $e');
-      return {};
+      return [];
     }
   }
 
@@ -4045,7 +3930,7 @@ class DownloadedPistesService {
     return sum / 1000.0;
   }
 
-  Future<Set<Polyline>> getDownloadedPistesPolylines({
+  Future<List<Polyline>> getDownloadedPistesPolylines({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     try {
@@ -4053,7 +3938,7 @@ class DownloadedPistesService {
       final loginId = await DatabaseHelper().resolveLoginId();
       if (loginId == null) {
         print('❌ [DL-PISTES] Impossible de déterminer login_id (viewer)');
-        return {};
+        return [];
       }
       print('🔎 [DL-PISTES] Chargement (downloaded=1, saved_by_user_id=${ApiService.userId})');
       final pistes = await db.query(
@@ -4143,15 +4028,11 @@ class DownloadedPistesService {
         final distanceKm = _polylineDistanceKm(points);
 
         final pl = Polyline(
-          polylineId: PolylineId('dl_piste_${id ?? DateTime.now().millisecondsSinceEpoch}'),
           points: points,
           color: downloadedPisteColor,
-          width: 3,
-          patterns: [
-            PatternItem.dot,
-            PatternItem.gap(10),
-          ],
-          consumeTapEvents: true,
+          strokeWidth: 3.0,
+          pattern: StrokePattern.dotted(spacingFactor: 2.0),
+          /*consumeTapEvents: true,
           onTap: () {
             if (points.length < 2) return;
             onTapDetails({
@@ -4163,7 +4044,7 @@ class DownloadedPistesService {
               'end_lng': points.last.longitude,
               'distance_km': distanceKm,
             });
-          },
+          },*/
         );
 
         polylines.add(pl);
@@ -4171,10 +4052,10 @@ class DownloadedPistesService {
       }
 
       print('🎯 [DL-PISTES] ajoutées: $added | ignorées: $skipped');
-      return polylines;
+      return polylines.toList();
     } catch (e) {
       print('❌ [DL-PISTES] Erreur chargement: $e');
-      return {};
+      return [];
     }
   }
 }
@@ -4272,7 +4153,7 @@ class DownloadedChausseesService {
     return sum / 1000.0;
   }
 
-  Future<Set<Polyline>> getDownloadedChausseesPolylines({
+  Future<List<Polyline>> getDownloadedChausseesPolylines({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     final polylines = <Polyline>{};
@@ -4281,7 +4162,7 @@ class DownloadedChausseesService {
       final loginId = await DatabaseHelper().resolveLoginId();
       if (loginId == null) {
         print('❌ [DL-CHAUSSEES] Impossible de déterminer login_id (viewer)');
-        return {};
+        return [];
       }
       // même filtre que pour les pistes téléchargées
       final rows = await db.query(
@@ -4321,12 +4202,11 @@ class DownloadedChausseesService {
         final distanceKm = _polylineDistanceKm(pts);
 
         final pl = Polyline(
-          polylineId: PolylineId('dl_chs_$id'),
           points: pts,
           color: color ?? DownloadedChausseesService.downloadedChausseeColor,
-          width: width,
-          patterns: pattern,
-          zIndex: 9,
+          strokeWidth: width.toDouble(),
+          pattern: pattern ?? const StrokePattern.solid(),
+          /*zIndex: 9,
           consumeTapEvents: true,
           onTap: () {
             onTapDetails({
@@ -4340,7 +4220,7 @@ class DownloadedChausseesService {
               'end_lng': pts.last.longitude,
               'distance_km': distanceKm,
             });
-          }, // sous les highlights, au-dessus des fonds
+          }, // sous les highlights, au-dessus des fonds*/
         );
 
         polylines.add(pl);
@@ -4351,14 +4231,14 @@ class DownloadedChausseesService {
     } catch (e) {
       print('❌ [DL-CHAUSSEES] Erreur chargement: $e');
     }
-    return polylines;
+    return polylines.toList();
   }
 }
 
 class DownloadedSpecialLinesService {
   final SimpleStorageHelper _storageHelper = SimpleStorageHelper();
 
-  Future<Set<Polyline>> getDownloadedSpecialLinesPolylines({
+  Future<List<Polyline>> getDownloadedSpecialLinesPolylines({
     required void Function(Map<String, dynamic>) onTapDetails,
   }) async {
     final polylines = <Polyline>{};
@@ -4369,7 +4249,7 @@ class DownloadedSpecialLinesService {
 
       if (loginId == null) {
         print('❌ [DL-SPECIAL] Impossible de déterminer login_id (viewer)');
-        return {};
+        return [];
       }
 
       // ✅ change si ton nom de table diffère
@@ -4410,36 +4290,35 @@ class DownloadedSpecialLinesService {
 
         // ✅ style comme tes lignes locales
         Color lineColor;
-        List<PatternItem> linePattern;
+        StrokePattern? linePattern;
 
         if (tag == 'bac') {
           lineColor = Colors.purple;
-          linePattern = [
-            PatternItem.dash(15),
-            PatternItem.gap(5)
-          ];
+          linePattern = StrokePattern.dashed(segments: [
+            15,
+            5
+          ]);
         } else if (tag == 'passage_submersible') {
           lineColor = Colors.cyan;
-          linePattern = [
-            PatternItem.dash(10),
-            PatternItem.gap(5)
-          ];
+          linePattern = StrokePattern.dashed(segments: [
+            15,
+            5
+          ]);
         } else {
           lineColor = Colors.blueGrey;
-          linePattern = <PatternItem>[];
+          linePattern = null;
         }
 
         polylines.add(
           Polyline(
-            polylineId: PolylineId('dl_special_${tag}_${id ?? DateTime.now().millisecondsSinceEpoch}'),
             points: [
               start,
               end
             ],
             color: lineColor,
-            width: 4,
-            patterns: linePattern,
-            consumeTapEvents: true,
+            strokeWidth: 4.0,
+            pattern: linePattern ?? const StrokePattern.solid(),
+            /*consumeTapEvents: true,
             onTap: () {
               onTapDetails({
                 'special_type': specialTypeRaw,
@@ -4450,7 +4329,7 @@ class DownloadedSpecialLinesService {
                 'end_lng': end.longitude,
                 'code_piste': (r['code_piste'] ?? '').toString(),
               });
-            },
+            },*/
           ),
         );
 
@@ -4458,10 +4337,10 @@ class DownloadedSpecialLinesService {
       }
 
       print('🎯 [DL-SPECIAL] ajoutées: $added | ignorées: $skipped');
-      return polylines;
+      return polylines.toList();
     } catch (e) {
       print('❌ [DL-SPECIAL] Erreur chargement: $e');
-      return {};
+      return [];
     }
   }
 }

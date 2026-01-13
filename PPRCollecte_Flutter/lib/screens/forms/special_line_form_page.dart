@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../../widgets/forms/point_form_widget.dart';
 import '../../core/config/infrastructure_config.dart';
 import '../../data/remote/api_service.dart';

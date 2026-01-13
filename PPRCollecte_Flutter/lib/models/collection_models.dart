@@ -1,5 +1,5 @@
 // lib/collection_models.dart - VERSION CORRIGÉE
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 
 enum CollectionType {
   ligne,

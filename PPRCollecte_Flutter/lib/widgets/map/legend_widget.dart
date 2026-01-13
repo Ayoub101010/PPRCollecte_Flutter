@@ -1,6 +1,6 @@
 // legend_widget.dart - VERSION COMPLÈTE
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
 
 class LegendData {
   final String id;
@@ -23,8 +23,8 @@ class LegendData {
 class LegendWidget extends StatefulWidget {
   final Map<String, bool> initialVisibility;
   final Function(Map<String, bool>) onVisibilityChanged;
-  final Set<Polyline> allPolylines;
-  final Set<Marker> allMarkers;
+  final List<Polyline> allPolylines;
+  final List<Marker> allMarkers;
 
   const LegendWidget({
     super.key,
@@ -53,10 +53,9 @@ class _LegendWidgetState extends State<LegendWidget> {
     if (type == 'point') {
       return widget.allMarkers.length;
     } else if (type == 'piste') {
+      // Compter les pistes par couleur (marron/brun)
       return widget.allPolylines.where((p) {
-        final id = p.polylineId.value;
-        // ✅ IDs de pistes (local + rechargées + téléchargées)
-        return id.startsWith('piste_') || id.startsWith('displayed_piste_') || id.startsWith('dl_piste_');
+        return p.color == Colors.brown || p.color == const Color(0xFFB86E1D); // downloadedPisteColor
       }).length;
     } else if (type.startsWith('chaussee_')) {
       final chausseeType = type.replaceFirst('chaussee_', '');
@@ -96,27 +95,24 @@ class _LegendWidgetState extends State<LegendWidget> {
   }
 
 // Obtenir le motif par type de chaussée
-  List<PatternItem> _getPatternForChausseeType(String type) {
+  StrokePattern? _getPatternForChausseeType(String type) {
     switch (type.toLowerCase()) {
       case 'bitume':
-        return [];
+        return null; // ligne continue
       case 'terre':
-        return [
-          PatternItem.dash(20),
-          PatternItem.gap(10)
-        ];
+        return StrokePattern.dashed(segments: [
+          20,
+          10
+        ]);
       case 'latérite':
-        return [
-          PatternItem.dash(10),
-          PatternItem.gap(10)
-        ];
+        return StrokePattern.dashed(segments: [
+          10,
+          10
+        ]);
       case 'bouwal':
-        return [
-          PatternItem.dot,
-          PatternItem.gap(5)
-        ];
+        return StrokePattern.dotted(spacingFactor: 1.5);
       default:
-        return [];
+        return null;
     }
   }
 
@@ -343,10 +339,9 @@ class _LegendWidgetState extends State<LegendWidget> {
 }
 
 // Peintre pour dessiner les motifs sur les chaussées
-// Peintre pour dessiner les motifs sur les chaussées
 class _PatternPainter extends CustomPainter {
   final Color color;
-  final List<PatternItem> pattern;
+  final StrokePattern? pattern;
 
   _PatternPainter({required this.color, required this.pattern});
 
@@ -358,20 +353,15 @@ class _PatternPainter extends CustomPainter {
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
-    if (pattern.isEmpty) {
+    if (pattern == null) {
       // Ligne continue
       canvas.drawLine(
         Offset(0, size.height / 2),
         Offset(size.width, size.height / 2),
         paint,
       );
-    } else if (pattern.first == PatternItem.dot) {
-      // Points
-      for (double i = 0; i < size.width; i += 8) {
-        canvas.drawCircle(Offset(i, size.height / 2), 1, paint);
-      }
     } else {
-      // Tiretés - Dessiner manuellement
+      // Tiretés ou pointillés
       _drawDashedLine(canvas, size, paint);
     }
   }
@@ -382,7 +372,6 @@ class _PatternPainter extends CustomPainter {
     const double gapWidth = 5;
 
     while (startX < size.width) {
-      // Dessiner le tiret
       final endX = startX + dashWidth;
       if (endX > size.width) break;
 
@@ -392,7 +381,6 @@ class _PatternPainter extends CustomPainter {
         paint,
       );
 
-      // Passer au prochain tiret
       startX = endX + gapWidth;
     }
   }

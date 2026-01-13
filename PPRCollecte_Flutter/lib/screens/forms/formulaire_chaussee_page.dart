@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'dart:math';
 import '../../data/local/piste_chaussee_db_helper.dart';
 import '../../data/remote/api_service.dart';

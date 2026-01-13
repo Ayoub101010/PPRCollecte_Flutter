@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
-class MapWidget extends StatelessWidget {
+class MapWidget extends StatefulWidget {
   final LatLng userPosition;
   final bool gpsEnabled;
-  final Set<Marker> markers;
-  final Set<Polyline> polylines;
-  final Function(GoogleMapController) onMapCreated;
-  final Set<Marker> formMarkers;
-  final MapType mapType;
+  final List<Marker> markers;
+  final List<Polyline> polylines;
+  final Function(MapController) onMapCreated;
+  final List<Marker> formMarkers;
+  final bool isSatellite;
 
   const MapWidget({
     super.key,
@@ -18,45 +19,195 @@ class MapWidget extends StatelessWidget {
     required this.polylines,
     required this.onMapCreated,
     required this.formMarkers,
-    this.mapType = MapType.normal,
+    this.isSatellite = false,
   });
+
+  @override
+  State<MapWidget> createState() => _MapWidgetState();
+}
+
+class _MapWidgetState extends State<MapWidget> {
+  late final MapController _mapController;
+  bool _controllerReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+
+    // Notifier le parent après le premier frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onMapCreated(_mapController);
+      setState(() {
+        _controllerReady = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _zoomIn() {
+    if (_controllerReady) {
+      final currentZoom = _mapController.camera.zoom;
+      _mapController.move(_mapController.camera.center, currentZoom + 1);
+    }
+  }
+
+  void _zoomOut() {
+    if (_controllerReady) {
+      final currentZoom = _mapController.camera.zoom;
+      _mapController.move(_mapController.camera.center, currentZoom - 1);
+    }
+  }
+
+  void _goToUserLocation() {
+    if (_controllerReady) {
+      _mapController.move(widget.userPosition, 17);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     // Fusionner tous les marqueurs
-    final allMarkers = {
-      ...markers,
-      ...formMarkers
-    };
-    return GoogleMap(
-      initialCameraPosition: CameraPosition(target: userPosition, zoom: 15),
-      markers: allMarkers,
-      polylines: polylines,
-      myLocationEnabled: gpsEnabled,
-      myLocationButtonEnabled: true,
-      compassEnabled: true,
-      onMapCreated: (controller) => onMapCreated(controller),
-      mapType: mapType,
+    final allMarkers = [
+      ...widget.markers,
+      ...widget.formMarkers,
+      // Marqueur de position utilisateur (si GPS activé)
+      if (widget.gpsEnabled)
+        Marker(
+          point: widget.userPosition,
+          width: 18,
+          height: 18,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.blue,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 6,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+    ];
+
+    // URL des tuiles selon le mode (normal ou satellite)
+    final String tileUrl = widget.isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: widget.userPosition,
+            initialZoom: 15,
+            minZoom: 3,
+            maxZoom: 19,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all,
+            ),
+          ),
+          children: [
+            // Couche de tuiles (fond de carte)
+            TileLayer(
+              urlTemplate: tileUrl,
+              userAgentPackageName: 'com.example.pprcollecte',
+              maxZoom: 19,
+            ),
+            // Couche des polylignes
+            PolylineLayer(
+              polylines: widget.polylines,
+            ),
+            // Couche des marqueurs
+            MarkerLayer(
+              markers: allMarkers,
+            ),
+          ],
+        ),
+        Positioned(
+          top: 8,
+          right: 10,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.my_location, color: Colors.blue),
+              onPressed: _goToUserLocation,
+              tooltip: 'Ma position',
+            ),
+          ),
+        ),
+
+        // Boutons de zoom (+/-)
+        Positioned(
+          right: 5,
+          bottom: 10, // ajuste
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.add, color: Colors.black87),
+                  onPressed: _zoomIn,
+                  tooltip: 'Zoom avant',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                  ],
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.remove, color: Colors.black87),
+                  onPressed: _zoomOut,
+                  tooltip: 'Zoom arrière',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
 class MapTypeToggle extends StatelessWidget {
-  final MapType currentMapType;
-  final Function(MapType) onMapTypeChanged;
+  final bool isSatellite;
+  final Function(bool) onMapTypeChanged;
 
   const MapTypeToggle({
     super.key,
-    required this.currentMapType,
+    required this.isSatellite,
     required this.onMapTypeChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool isSatellite = currentMapType == MapType.satellite;
-
     return Positioned(
-      top: 55, // Ajustez selon la position de vos autres contrôles
+      top: 55,
       right: 10,
       child: Container(
         decoration: BoxDecoration(
@@ -75,9 +226,7 @@ class MapTypeToggle extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () {
-              // Basculer entre normal et satellite
-              final newType = isSatellite ? MapType.normal : MapType.satellite;
-              onMapTypeChanged(newType);
+              onMapTypeChanged(!isSatellite);
             },
             child: Container(
               padding: EdgeInsets.all(12),
@@ -110,7 +259,7 @@ class MapTypeToggle extends StatelessWidget {
 
 class DownloadedPistesToggle extends StatelessWidget {
   final bool isOn;
-  final int count; // optionnel: nombre de polylignes téléchargées
+  final int count;
   final ValueChanged<bool> onChanged;
 
   const DownloadedPistesToggle({
@@ -122,9 +271,8 @@ class DownloadedPistesToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // même placement que "Satellite", juste en dessous (ajuste top si besoin)
     return Positioned(
-      top: 100, // 👈 sous le bouton Satellite (qui est à 110 chez toi)
+      top: 100,
       right: 10,
       child: Container(
         decoration: BoxDecoration(
@@ -145,9 +293,9 @@ class DownloadedPistesToggle extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.alt_route, // ou Icons.route
+                    Icons.alt_route,
                     size: 22,
-                    color: isOn ? const Color(0xFFB86E1D) : Colors.grey, // brun-orangé quand ON
+                    color: isOn ? const Color(0xFFB86E1D) : Colors.grey,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -200,9 +348,8 @@ class DownloadedChausseesToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // même placement que le bouton Pistes, juste en dessous
     return Positioned(
-      top: 206, // 👈 ajusté pour être exactement sous le bouton Pistes (160 + hauteur du bouton ~46)
+      top: 206,
       right: 10,
       child: Container(
         decoration: BoxDecoration(
@@ -229,9 +376,7 @@ class DownloadedChausseesToggle extends StatelessWidget {
                   Icon(
                     Icons.alt_route_rounded,
                     size: 22,
-                    color: isOn
-                        ? const Color(0xFFB86E1D) // même brun-orangé que pistes
-                        : Colors.grey,
+                    color: isOn ? const Color(0xFFB86E1D) : Colors.grey,
                   ),
                   const SizedBox(width: 8),
                   const Text(

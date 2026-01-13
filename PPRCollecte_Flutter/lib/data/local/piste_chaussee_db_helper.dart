@@ -5,7 +5,8 @@ import '../../models/piste_model.dart';
 import '../../models/chaussee_model.dart';
 import 'dart:convert'; // Pour jsonEncode/jsonDecode
 import 'package:flutter/material.dart'; // Pour Color
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // Pour LatLng et Polyline
+import 'package:flutter_map/flutter_map.dart'; // Pour Polyline
+import 'package:latlong2/latlong.dart'; // Pour LatLng
 import '../remote/api_service.dart';
 import 'dart:math';
 import 'database_helper.dart';
@@ -212,27 +213,35 @@ class SimpleStorageHelper {
     }
   }
 
-  List<PatternItem> getChausseePattern(String type) {
+  StrokePattern? getChausseePattern(String type) {
     switch (type.toLowerCase()) {
       case 'bitume':
-        return <PatternItem>[]; // ligne continue
+      case 'asphalte':
+        return null; // ligne continue
       case 'terre':
-        return [
-          PatternItem.dash(20),
-          PatternItem.gap(10),
-        ];
-      case 'latérite': // ← minuscule
-        return [
-          PatternItem.dash(10),
-          PatternItem.gap(10),
-        ];
+        return StrokePattern.dashed(segments: [
+          20,
+          10
+        ]);
+      case 'latérite':
+        return StrokePattern.dashed(segments: [
+          15,
+          8
+        ]);
       case 'bouwal':
-        return [
-          PatternItem.dot,
-          PatternItem.gap(5),
-        ];
+        return StrokePattern.dashed(segments: [
+          12,
+          6
+        ]);
+      case 'béton':
+        return StrokePattern.dotted(spacingFactor: 1.5);
+      case 'pavée':
+        return StrokePattern.dashed(segments: [
+          10,
+          5
+        ]);
       default:
-        return <PatternItem>[]; // ligne continue par défaut
+        return null; // ligne continue par défaut
     }
   }
 
@@ -329,11 +338,10 @@ class SimpleStorageHelper {
 
         if (points.isNotEmpty) {
           polylines.add(Polyline(
-            polylineId: PolylineId('displayed_chaussee_${map['id']}'),
             points: points,
             color: getChausseeColor(typeChaussee),
-            width: map['width'] as int,
-            patterns: getChausseePattern(typeChaussee),
+            strokeWidth: (map['width'] as int).toDouble(),
+            pattern: getChausseePattern(typeChaussee) ?? const StrokePattern.solid(),
           ));
         }
       }
@@ -382,10 +390,9 @@ class SimpleStorageHelper {
 
         if (points.isNotEmpty) {
           polylines.add(Polyline(
-            polylineId: PolylineId('displayed_piste_${map['id']}'),
             points: points,
             color: Color(map['color'] as int),
-            width: map['width'] as int,
+            strokeWidth: (map['width'] as int).toDouble(),
           ));
         }
       }

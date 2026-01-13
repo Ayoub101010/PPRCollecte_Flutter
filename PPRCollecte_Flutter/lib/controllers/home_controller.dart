@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 
 import '../services/location_service.dart';
@@ -19,8 +20,8 @@ class HomeController extends ChangeNotifier {
   String? lastSync;
   bool isOnline = true;
   LatLng userPosition = const LatLng(7.5, 10.5);
-  Set<Marker> formMarkers = {}; // Marqueurs des formulaires enregistrés
-  final Set<Polyline> collectedPolylines = <Polyline>{};
+  List<Marker> formMarkers = []; // Marqueurs des formulaires enregistrés
+  final List<Polyline> collectedPolylines = <Polyline>[];
   // Anciens états ligne pour compatibilité
   bool lineActive = false;
   bool linePaused = false;
@@ -227,16 +228,11 @@ class HomeController extends ChangeNotifier {
       await Future.delayed(Duration(milliseconds: 20 + random.nextInt(30)));
     }
 
-    // ✅ Ajout de la polyline normalisée
     final newPolyline = Polyline(
-      polylineId: PolylineId('piste_${DateTime.now().millisecondsSinceEpoch}'),
       points: pistePoints,
       color: Colors.brown, // norme : piste non revêtue
-      width: 3,
-      patterns: [
-        PatternItem.dot,
-        PatternItem.gap(10)
-      ], // style pointillé
+      strokeWidth: 3,
+      pattern: StrokePattern.dotted(spacingFactor: 2.0), // style pointillé
     );
 
     collectedPolylines.add(newPolyline);
