@@ -635,6 +635,73 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _handlePolylineTap(Object? hitValue) {
+    if (hitValue == null || hitValue is! PolylineTapData) return;
+
+    final tapData = hitValue;
+    final type = tapData.type;
+    final data = tapData.data;
+
+    print('🖱️ Polyline tappée: type=$type');
+
+    switch (type) {
+      case 'piste_local':
+      case 'piste_downloaded':
+        _showPisteDetailsSheet(
+          context: context,
+          codePiste: (data['code_piste'] ?? '----').toString(),
+          statut: type == 'piste_local' ? 'Enregistrée localement' : 'Sauvegardée (downloaded)',
+          region: _regionNom,
+          prefecture: _prefectureNom,
+          commune: _communeNom,
+          nbPoints: (data['nb_points'] as int?) ?? 0,
+          distanceKm: (data['distance_km'] as num?)?.toDouble() ?? 0.0,
+          startLat: (data['start_lat'] as num).toDouble(),
+          startLng: (data['start_lng'] as num).toDouble(),
+          endLat: (data['end_lat'] as num).toDouble(),
+          endLng: (data['end_lng'] as num).toDouble(),
+        );
+        break;
+
+      case 'chaussee_local':
+      case 'chaussee_downloaded':
+        _showChausseeDetailsSheet(
+          context: context,
+          statut: type == 'chaussee_local' ? 'Enregistrée localement' : 'Sauvegardée (downloaded)',
+          typeChaussee: (data['type_chaussee'] ?? '----').toString(),
+          endroit: (data['endroit'] ?? '----').toString(),
+          codePiste: (data['code_piste'] ?? '----').toString(),
+          region: _regionNom,
+          prefecture: _prefectureNom,
+          commune: _communeNom,
+          nbPoints: (data['nb_points'] as int?) ?? 0,
+          distanceKm: (data['distance_km'] as num?)?.toDouble() ?? 0.0,
+          startLat: (data['start_lat'] as num).toDouble(),
+          startLng: (data['start_lng'] as num).toDouble(),
+          endLat: (data['end_lat'] as num).toDouble(),
+          endLng: (data['end_lng'] as num).toDouble(),
+        );
+        break;
+
+      case 'special_local':
+      case 'special_downloaded':
+        _showSpecialLineDetailsSheet(
+          context: context,
+          specialType: (data['special_type'] ?? '----').toString(),
+          statut: type == 'special_local' ? 'Enregistrée localement' : 'Sauvegardée (downloaded)',
+          region: _regionNom,
+          prefecture: _prefectureNom,
+          commune: _communeNom,
+          distanceKm: (data['distance_km'] as num?)?.toDouble() ?? 0.0,
+          startLat: (data['start_lat'] as num).toDouble(),
+          startLng: (data['start_lng'] as num).toDouble(),
+          endLat: (data['end_lat'] as num).toDouble(),
+          endLng: (data['end_lng'] as num).toDouble(),
+        );
+        break;
+    }
+  }
+
   String _sanitizeEnqueteur(String? v) {
     if (v == null) return '----';
 
@@ -1052,31 +1119,42 @@ class _HomePageState extends State<HomePage> {
     // ⏸️ Empêche le recentrage sur l'utilisateur pendant le focus
     _suspendAutoCenterFor(const Duration(seconds: 3));
 
-    setState(() {
-      if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
-        _displayedSpecialLines.add(Polyline(
-          points: target.polyline!,
-          color: Colors.purple,
-          strokeWidth: 6.0,
-          pattern: StrokePattern.dashed(segments: [
-            12,
-            6
-          ]),
-        ));
-      } else if (target.kind == 'point' && target.point != null) {
-        _displayedPointsMarkers.add(Marker(
-          point: target.point!,
-          width: 40,
-          height: 40,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.purple,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: const Icon(Icons.location_on, color: Colors.white, size: 24),
+    // Créer les éléments de focus
+    Polyline? focusPolyline;
+    Marker? focusMarker;
+
+    if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
+      focusPolyline = Polyline(
+        points: target.polyline!,
+        color: Colors.purple,
+        strokeWidth: 6.0,
+        pattern: StrokePattern.dashed(segments: [
+          12,
+          6
+        ]),
+      );
+    } else if (target.kind == 'point' && target.point != null) {
+      focusMarker = Marker(
+        point: target.point!,
+        width: 40,
+        height: 40,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.purple,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
           ),
-        ));
+          child: const Icon(Icons.location_on, color: Colors.white, size: 24),
+        ),
+      );
+    }
+
+    setState(() {
+      if (focusPolyline != null) {
+        _displayedSpecialLines.add(focusPolyline);
+      }
+      if (focusMarker != null) {
+        _displayedPointsMarkers.add(focusMarker);
       }
     });
 
@@ -1090,55 +1168,17 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    final Duration keepFor = const Duration(seconds: 10);
-    final startedAt = DateTime.now();
-
-    // Copie locale pour réinjection
-    final polylineCopy = (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty)
-        ? Polyline(
-            points: target.polyline!,
-            color: Colors.purple,
-            strokeWidth: 6.0,
-            pattern: StrokePattern.dashed(segments: [
-              12,
-              6
-            ]),
-          )
-        : null;
-
-    final markerCopy = (target.kind == 'point' && target.point != null)
-        ? Marker(
-            point: target.point!,
-            width: 40,
-            height: 40,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.purple,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: const Icon(Icons.location_on, color: Colors.white, size: 24),
-            ),
-          )
-        : null;
-
-    // ⏱️ Keep-alive: retire après 10 secondes
-    Timer.periodic(const Duration(seconds: 1), (t) {
-      final elapsed = DateTime.now().difference(startedAt);
-      if (elapsed >= keepFor) {
-        t.cancel();
-        if (!mounted) return;
-        setState(() {
-          // Retirer le dernier élément ajouté (le focus)
-          if (polylineCopy != null && _displayedSpecialLines.isNotEmpty) {
-            _displayedSpecialLines.removeLast();
-          }
-          if (markerCopy != null && _displayedPointsMarkers.isNotEmpty) {
-            _displayedPointsMarkers.removeLast();
-          }
-        });
-        return;
-      }
+    // ⏱️ Retirer le focus après 10 secondes (par référence exacte, pas removeLast)
+    Future.delayed(const Duration(seconds: 10), () {
+      if (!mounted) return;
+      setState(() {
+        if (focusPolyline != null) {
+          _displayedSpecialLines.remove(focusPolyline);
+        }
+        if (focusMarker != null) {
+          _displayedPointsMarkers.remove(focusMarker);
+        }
+      });
     });
   }
 
@@ -1384,37 +1424,9 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (formResult != null) {
-      final specialColor = _specialCollectionType == "Bac" ? Colors.purple : Colors.deepPurple;
-
-      // ⭐⭐ AJOUTEZ DU DEBUG POUR LE TRACAGE ⭐⭐
-      print(
-        '🎨 Tracing special line: ${result.points.length} points',
-      );
-      print(
-        '🎨 Color: $specialColor',
-      );
-
-      setState(
-        () {
-          _finishedPistes.add(
-            Polyline(
-                points: result.points,
-                color: specialColor,
-                strokeWidth: 6.0,
-                pattern: StrokePattern.dashed(segments: [
-                  10,
-                  5
-                ])),
-          );
-        },
-      );
-
-      final storageHelper = SimpleStorageHelper();
-      await storageHelper.saveDisplayedPiste(
-        result.points,
-        specialColor,
-        4.0,
-      );
+      // La ligne spéciale est déjà sauvegardée en DB par le formulaire
+      // On recharge simplement depuis la DB pour éviter les doublons
+      await _loadDisplayedSpecialLines();
 
       ScaffoldMessenger.of(
         context,
@@ -1464,39 +1476,29 @@ class _HomePageState extends State<HomePage> {
 
       final displayedChaussees = displayedChausseesRaw.map((p) {
         final pts = p.points;
+        final distanceKm = pts.length >= 2 ? polylineDistanceKm(pts) : 0.0;
 
         return Polyline(
           points: pts,
           color: p.color,
           strokeWidth: p.strokeWidth,
           pattern: p.pattern ?? const StrokePattern.solid(),
-          /*consumeTapEvents: true,
-          onTap: () {
-            if (pts.length < 2) return;
-
-            final distanceKm = polylineDistanceKm(pts);
-
-            // ⚠️ si tu n'as pas ces champs dans la chaussée locale, on met '----'
-            _showChausseeDetailsSheet(
-              context: context,
-              statut: 'Enregistrée localement',
-              typeChaussee: '----',
-              endroit: '----',
-              codePiste: '----',
-              region: _regionNom,
-              prefecture: _prefectureNom,
-              commune: _communeNom,
-              nbPoints: pts.length,
-              distanceKm: distanceKm,
-              startLat: pts.first.latitude,
-              startLng: pts.first.longitude,
-              endLat: pts.last.latitude,
-              endLng: pts.last.longitude,
-            );
-          },*/
+          hitValue: PolylineTapData(
+            type: 'chaussee_local',
+            data: {
+              'type_chaussee': '----',
+              'endroit': '----',
+              'code_piste': '----',
+              'nb_points': pts.length,
+              'distance_km': distanceKm,
+              'start_lat': pts.isNotEmpty ? pts.first.latitude : 0.0,
+              'start_lng': pts.isNotEmpty ? pts.first.longitude : 0.0,
+              'end_lat': pts.isNotEmpty ? pts.last.latitude : 0.0,
+              'end_lng': pts.isNotEmpty ? pts.last.longitude : 0.0,
+            },
+          ),
         );
       }).toList();
-
       setState(() {
         _finishedChaussees = displayedChaussees;
       });
@@ -2035,34 +2037,28 @@ class _HomePageState extends State<HomePage> {
       final displayedPistesRaw = await storageHelper.loadDisplayedPistes();
 
       final displayedPistes = displayedPistesRaw.map(
-        (
-          p,
-        ) {
-          return Polyline(points: p.points, color: p.color ?? Colors.brown, strokeWidth: p.strokeWidth ?? 3, pattern: StrokePattern.dotted(spacingFactor: 2.0)
-              /*consumeTapEvents: true,
-            onTap: () async {
-              final pts = p.points;
-              if (pts.length < 2) return;
+        (p) {
+          final pts = p.points;
+          final distanceKm = pts.length >= 2 ? polylineDistanceKm(pts) : 0.0;
 
-              final code = await _resolveLocalPisteCodeFromPolyline(pts);
-              final distanceKm = polylineDistanceKm(pts);
-
-              _showPisteDetailsSheet(
-                context: context,
-                codePiste: code,
-                statut: 'Enregistrée localement',
-                region: _regionNom,
-                prefecture: _prefectureNom,
-                commune: _communeNom,
-                nbPoints: pts.length,
-                distanceKm: distanceKm,
-                startLat: pts.first.latitude,
-                startLng: pts.first.longitude,
-                endLat: pts.last.latitude,
-                endLng: pts.last.longitude,
-              );
-            },*/
-              );
+          return Polyline(
+            points: pts,
+            color: p.color ?? Colors.brown,
+            strokeWidth: p.strokeWidth ?? 3,
+            pattern: StrokePattern.dotted(spacingFactor: 2.0),
+            hitValue: PolylineTapData(
+              type: 'piste_local',
+              data: {
+                'code_piste': '', // Résolu dans _handlePolylineTap si nécessaire
+                'nb_points': pts.length,
+                'distance_km': distanceKm,
+                'start_lat': pts.isNotEmpty ? pts.first.latitude : 0.0,
+                'start_lng': pts.isNotEmpty ? pts.first.longitude : 0.0,
+                'end_lat': pts.isNotEmpty ? pts.last.latitude : 0.0,
+                'end_lng': pts.isNotEmpty ? pts.last.longitude : 0.0,
+              },
+            ),
+          );
         },
       ).toList();
 
@@ -3106,6 +3102,7 @@ class _HomePageState extends State<HomePage> {
                     onMapCreated: _onMapCreated,
                     formMarkers: formMarkers,
                     isSatellite: _isSatellite,
+                    onPolylineTap: _handlePolylineTap,
                   ),
                   // === WIDGET DE LÉGENDE ===
                   LegendWidget(
@@ -3519,7 +3516,9 @@ class SpecialLinesService {
 
       for (var line in lines) {
         final specialType = (line['special_type'] ?? '').toString();
-
+// DEBUG
+        print('🔍 Special line type from DB: "$specialType"');
+        print('🔍 toLowerCase: "${specialType.toLowerCase()}"');
         Color lineColor;
         StrokePattern? linePattern;
 
@@ -3561,6 +3560,8 @@ class SpecialLinesService {
             : st.contains('passage')
                 ? 'passage_submersible'
                 : 'special';
+        final distanceKm = _haversineDistance(start, end);
+
         polylines.add(
           Polyline(
             points: [
@@ -3570,16 +3571,19 @@ class SpecialLinesService {
             color: lineColor,
             strokeWidth: 4.0,
             pattern: linePattern ?? const StrokePattern.solid(),
-            /*consumeTapEvents: true,
-            onTap: () {
-              onTapDetails({
+
+            // ✅ IMPORTANT : PolylineTapData (comme Chaussees)
+            hitValue: PolylineTapData(
+              type: 'special_local',
+              data: {
                 'special_type': specialType,
                 'start_lat': start.latitude,
                 'start_lng': start.longitude,
                 'end_lat': end.latitude,
                 'end_lng': end.longitude,
-              });
-            },*/
+                'distance_km': distanceKm,
+              },
+            ),
           ),
         );
       }
@@ -3590,6 +3594,15 @@ class SpecialLinesService {
       print('❌ Erreur chargement lignes spéciales: $e');
       return [];
     }
+  }
+
+  double _haversineDistance(LatLng start, LatLng end) {
+    const double R = 6371; // Rayon de la Terre en km
+    final dLat = (end.latitude - start.latitude) * pi / 180;
+    final dLon = (end.longitude - start.longitude) * pi / 180;
+    final a = sin(dLat / 2) * sin(dLat / 2) + cos(start.latitude * pi / 180) * cos(end.latitude * pi / 180) * sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
   }
 }
 
@@ -4032,10 +4045,11 @@ class DownloadedPistesService {
           color: downloadedPisteColor,
           strokeWidth: 3.0,
           pattern: StrokePattern.dotted(spacingFactor: 2.0),
-          /*consumeTapEvents: true,
-          onTap: () {
-            if (points.length < 2) return;
-            onTapDetails({
+
+          // ✅ AJOUT IMPORTANT
+          hitValue: PolylineTapData(
+            type: 'piste_downloaded',
+            data: {
               'code_piste': (code ?? '----').toString(),
               'nb_points': points.length,
               'start_lat': points.first.latitude,
@@ -4043,8 +4057,8 @@ class DownloadedPistesService {
               'end_lat': points.last.latitude,
               'end_lng': points.last.longitude,
               'distance_km': distanceKm,
-            });
-          },*/
+            },
+          ),
         );
 
         polylines.add(pl);
@@ -4206,10 +4220,11 @@ class DownloadedChausseesService {
           color: color ?? DownloadedChausseesService.downloadedChausseeColor,
           strokeWidth: width.toDouble(),
           pattern: pattern ?? const StrokePattern.solid(),
-          /*zIndex: 9,
-          consumeTapEvents: true,
-          onTap: () {
-            onTapDetails({
+
+          // ✅ AJOUT IMPORTANT
+          hitValue: PolylineTapData(
+            type: 'chaussee_downloaded',
+            data: {
               'type_chaussee': type,
               'endroit': endroit,
               'code_piste': codePiste,
@@ -4219,8 +4234,8 @@ class DownloadedChausseesService {
               'end_lat': pts.last.latitude,
               'end_lng': pts.last.longitude,
               'distance_km': distanceKm,
-            });
-          }, // sous les highlights, au-dessus des fonds*/
+            },
+          ),
         );
 
         polylines.add(pl);
@@ -4318,18 +4333,22 @@ class DownloadedSpecialLinesService {
             color: lineColor,
             strokeWidth: 4.0,
             pattern: linePattern ?? const StrokePattern.solid(),
-            /*consumeTapEvents: true,
-            onTap: () {
-              onTapDetails({
-                'special_type': specialTypeRaw,
-                'tag': tag,
+
+            // ✅ AJOUT IMPORTANT
+            hitValue: PolylineTapData(
+              type: 'special_downloaded',
+              data: {
+                'special_type': specialTypeRaw, // ou specialTypeRaw / r['special_type']
                 'start_lat': start.latitude,
                 'start_lng': start.longitude,
                 'end_lat': end.latitude,
                 'end_lng': end.longitude,
-                'code_piste': (r['code_piste'] ?? '').toString(),
-              });
-            },*/
+                // si tu veux aussi l’afficher :
+                'code_piste': (r['code_piste'] ?? '----').toString(),
+                // tu peux ajouter distance si tu veux:
+                'distance_km': _haversineDistance(start, end),
+              },
+            ),
           ),
         );
 
@@ -4343,4 +4362,24 @@ class DownloadedSpecialLinesService {
       return [];
     }
   }
+
+  double _haversineDistance(LatLng start, LatLng end) {
+    const double R = 6371; // Rayon de la Terre en km
+    final dLat = (end.latitude - start.latitude) * pi / 180;
+    final dLon = (end.longitude - start.longitude) * pi / 180;
+    final a = sin(dLat / 2) * sin(dLat / 2) + cos(start.latitude * pi / 180) * cos(end.latitude * pi / 180) * sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+}
+
+/// Données associées à une Polyline pour gérer les taps
+class PolylineTapData {
+  final String type; // 'piste', 'chaussee', 'special_bac', 'special_passage', 'downloaded_piste', etc.
+  final Map<String, dynamic> data;
+
+  PolylineTapData({
+    required this.type,
+    required this.data,
+  });
 }

@@ -10,6 +10,7 @@ class MapWidget extends StatefulWidget {
   final Function(MapController) onMapCreated;
   final List<Marker> formMarkers;
   final bool isSatellite;
+  final Function(Object?)? onPolylineTap;
 
   const MapWidget({
     super.key,
@@ -20,6 +21,7 @@ class MapWidget extends StatefulWidget {
     required this.onMapCreated,
     required this.formMarkers,
     this.isSatellite = false,
+    this.onPolylineTap,
   });
 
   @override
@@ -29,7 +31,8 @@ class MapWidget extends StatefulWidget {
 class _MapWidgetState extends State<MapWidget> {
   late final MapController _mapController;
   bool _controllerReady = false;
-
+// Notifier pour détecter les taps sur les polylines
+  final _polylineHitNotifier = ValueNotifier<LayerHitResult<Object>?>(null);
   @override
   void initState() {
     super.initState();
@@ -42,12 +45,37 @@ class _MapWidgetState extends State<MapWidget> {
         _controllerReady = true;
       });
     });
+    // Écouter les taps sur les polylines
+    _polylineHitNotifier.addListener(_onPolylineHit);
   }
 
   @override
   void dispose() {
+    _polylineHitNotifier.removeListener(_onPolylineHit);
     _mapController.dispose();
     super.dispose();
+  }
+
+  void _onPolylineHit() {
+    final hitResult = _polylineHitNotifier.value;
+    print('🖱️ [MapWidget] _onPolylineHit appelé');
+    print('🖱️ [MapWidget] hitResult: $hitResult');
+
+    if (hitResult != null) {
+      print('🖱️ [MapWidget] hitValues: ${hitResult.hitValues}');
+      print('🖱️ [MapWidget] hitValues.length: ${hitResult.hitValues.length}');
+
+      if (hitResult.hitValues.isNotEmpty) {
+        final hitValue = hitResult.hitValues.first;
+        print('🖱️ [MapWidget] hitValue trouvé: $hitValue (type: ${hitValue.runtimeType})');
+
+        if (widget.onPolylineTap != null) {
+          widget.onPolylineTap!(hitValue);
+        }
+      }
+    } else {
+      print('⚠️ [MapWidget] hitResult est null');
+    }
   }
 
   void _zoomIn() {
@@ -100,7 +128,7 @@ class _MapWidgetState extends State<MapWidget> {
     ];
 
     // URL des tuiles selon le mode (normal ou satellite)
-    final String tileUrl = widget.isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    final String tileUrl = widget.isSatellite ? 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     return Stack(
       children: [
@@ -125,6 +153,7 @@ class _MapWidgetState extends State<MapWidget> {
             // Couche des polylignes
             PolylineLayer(
               polylines: widget.polylines,
+              hitNotifier: _polylineHitNotifier,
             ),
             // Couche des marqueurs
             MarkerLayer(

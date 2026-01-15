@@ -2209,7 +2209,8 @@ class DatabaseHelper {
     // Créer une table dédiée pour les lignes spéciales si elle n'existe pas
     await db.execute('''
     CREATE TABLE IF NOT EXISTS displayed_special_lines (
-      id INTEGER PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      original_id INTEGER NOT NULL,
       original_table TEXT NOT NULL,
       lat_debut REAL NOT NULL,
       lng_debut REAL NOT NULL,
@@ -2218,15 +2219,18 @@ class DatabaseHelper {
       special_type TEXT NOT NULL,
       line_name TEXT NOT NULL,
       code_piste TEXT,
-      login_id INTEGER ,
-      date_created TEXT NOT NULL
+      login_id INTEGER,
+      date_created TEXT NOT NULL,
+      UNIQUE(original_id, original_table)
     )
   ''');
+
     final loginId = await _resolveLoginId();
+
     await db.insert(
       'displayed_special_lines',
       {
-        'id': id,
+        'original_id': id, // Renommé de 'id' à 'original_id'
         'original_table': tableName,
         'lat_debut': latDebut,
         'lng_debut': lngDebut,
@@ -2241,7 +2245,7 @@ class DatabaseHelper {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
-    print('✅ Ligne spéciale sauvegardée: $name (ID: $id)');
+    print('✅ Ligne spéciale sauvegardée: $name (original_id: $id, table: $tableName)');
   }
 
   Future<List<Map<String, dynamic>>> loadDisplayedSpecialLines() async {
