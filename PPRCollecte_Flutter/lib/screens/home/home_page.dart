@@ -1920,7 +1920,7 @@ class _HomePageState extends State<HomePage> {
       });
 
       final storageHelper = SimpleStorageHelper();
-      await storageHelper.saveDisplayedPiste(pts, Colors.brown, 3.0);
+      await storageHelper.saveDisplayedPiste(result['codePiste'], pts, Colors.brown, 3.0);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1989,98 +1989,65 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDisplayedPistes() async {
     try {
       final storageHelper = SimpleStorageHelper();
-      final dbHelper = DatabaseHelper();
-      final loginId = await dbHelper.resolveLoginId();
-      // ⭐⭐ SUPPRIMER CETTE LIGNE INUTILE ⭐⭐
-      // final db = await storageHelper.database;
 
-      // ⭐⭐ 2. FILTRER UNIQUEMENT LES PISTES DE L'UTILISATEUR COURANT ⭐⭐
-      final allPistes = await storageHelper.getAllPistesMaps();
-      final userPistes = allPistes
-          .where(
-            (
-              piste,
-            ) =>
-                piste['login_id'] == loginId,
-          )
-          .toList();
+      // ✅ au lieu de loadDisplayedPistes() (Polyline), on récupère les maps
+      final rows = await storageHelper.loadDisplayedPistesMaps();
 
-      print(
-        '📊 Pistes trouvées: ${allPistes.length}, Pistes utilisateur: ${userPistes.length}',
-      );
+      final displayedPistes = <Polyline>[];
 
-      for (final piste in userPistes) {
-        try {
-          final pointsJson = piste['points_json'] as String;
-          final pointsData = jsonDecode(
-            pointsJson,
-          ) as List;
-          final points = pointsData
-              .map(
-                (
-                  p,
-                ) =>
-                    LatLng(
-                  (p['latitude'] ?? p['lat']) as double,
-                  (p['longitude'] ?? p['lng']) as double,
-                ),
-              )
-              .toList();
+      for (final row in rows) {
+        final codePiste = (row['code_piste'] ?? '----').toString().trim();
 
-          // ⭐⭐ 3. UTILISER LA NOUVELLE MÉTHODE QUI NE SUPPRIME PAS ⭐⭐
-          await storageHelper.saveDisplayedPiste(
-            points,
-            Colors.brown,
-            3.0,
-          );
-        } catch (e) {
-          print(
-            '❌ Erreur recréation piste ${piste['id']}: $e',
-          );
+        final pointsData = jsonDecode(row['points_json'] as String) as List;
+        final pts = <LatLng>[];
+
+        for (final p in pointsData) {
+          final lat = (p['latitude'] ?? p['lat'] as dynamic);
+          final lng = (p['longitude'] ?? p['lng'] as dynamic);
+
+          final latD = (lat is num) ? lat.toDouble() : null;
+          final lngD = (lng is num) ? lng.toDouble() : null;
+
+          if (latD != null && lngD != null) {
+            pts.add(LatLng(latD, lngD));
+          }
         }
-      }
 
-      final displayedPistesRaw = await storageHelper.loadDisplayedPistes();
+        if (pts.isEmpty) continue;
 
-      final displayedPistes = displayedPistesRaw.map(
-        (p) {
-          final pts = p.points;
-          final distanceKm = pts.length >= 2 ? polylineDistanceKm(pts) : 0.0;
+        final distanceKm = pts.length >= 2 ? polylineDistanceKm(pts) : 0.0;
 
-          return Polyline(
+        displayedPistes.add(
+          Polyline(
             points: pts,
-            color: p.color ?? Colors.brown,
-            strokeWidth: p.strokeWidth ?? 3,
+            color: Color(row['color'] as int),
+            strokeWidth: (row['width'] as num).toDouble(), // ✅ width REAL/num
             pattern: StrokePattern.dotted(spacingFactor: 2.0),
+
+            // ✅ tu gardes ton onTap exactement comme avant
             hitValue: PolylineTapData(
               type: 'piste_local',
               data: {
-                'code_piste': '', // Résolu dans _handlePolylineTap si nécessaire
+                'code_piste': codePiste,
                 'nb_points': pts.length,
                 'distance_km': distanceKm,
-                'start_lat': pts.isNotEmpty ? pts.first.latitude : 0.0,
-                'start_lng': pts.isNotEmpty ? pts.first.longitude : 0.0,
-                'end_lat': pts.isNotEmpty ? pts.last.latitude : 0.0,
-                'end_lng': pts.isNotEmpty ? pts.last.longitude : 0.0,
+                'start_lat': pts.first.latitude,
+                'start_lng': pts.first.longitude,
+                'end_lat': pts.last.latitude,
+                'end_lng': pts.last.longitude,
               },
             ),
-          );
-        },
-      ).toList();
+          ),
+        );
+      }
 
-      setState(
-        () {
-          _finishedPistes = displayedPistes;
-        },
-      );
+      setState(() {
+        _finishedPistes = displayedPistes;
+      });
 
-      print(
-        '✅ ${displayedPistes.length} pistes rechargées pour user: ${ApiService.userId}',
-      );
+      print('✅ ${displayedPistes.length} pistes rechargées (HomePage build + onTap OK)');
     } catch (e) {
-      print(
-        '❌ Erreur rechargement pistes: $e',
-      );
+      print('❌ Erreur rechargement pistes: $e');
     }
   }
 

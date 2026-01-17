@@ -108,14 +108,20 @@ class SimpleStorageHelper {
         ''');
         // Table pour le cache des pistes affichées
         await db.execute('''
-  CREATE TABLE IF NOT EXISTS displayed_pistes (
-    id INTEGER PRIMARY KEY,
-    points_json TEXT NOT NULL,
-    color INTEGER NOT NULL,
-    width INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    login_id INTEGER NOT NULL
-  )
+CREATE TABLE IF NOT EXISTS displayed_pistes (
+  id INTEGER PRIMARY KEY,
+  login_id INTEGER NOT NULL,
+  code_piste TEXT NOT NULL,
+  points_json TEXT NOT NULL,
+  color INTEGER NOT NULL,
+  width REAL NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+''');
+
+        await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_displayed_pistes_user_code
+ON displayed_pistes(login_id, code_piste);
 ''');
 
         await db.execute('''
@@ -246,7 +252,12 @@ class SimpleStorageHelper {
   }
 
 // Sauvegarder une piste affichée
-  Future<void> saveDisplayedPiste(List<LatLng> points, Color color, double width) async {
+  Future<void> saveDisplayedPiste(
+    String codePiste,
+    List<LatLng> points,
+    Color color,
+    double width,
+  ) async {
     try {
       final db = await database;
       final dbHelper = DatabaseHelper();
@@ -256,6 +267,7 @@ class SimpleStorageHelper {
         print('❌ [saveDisplayedPiste] Impossible de déterminer login_id');
         return;
       }
+
       final pointsJson = jsonEncode(points
           .map((p) => {
                 'lat': p.latitude,
@@ -263,46 +275,20 @@ class SimpleStorageHelper {
               })
           .toList());
 
-      // ⭐⭐ SUPPRIMER CETTE LIGNE QUI EFFACE TOUT ⭐⭐
-      // await db.delete('displayed_pistes', where: 'login_id = ?', whereArgs: [ApiService.userId]);
-
-      // ⭐⭐ AJOUTER SANS SUPPRIMER - vérifier si existe déjà ⭐⭐
-      final existing = await db.query(
+      await db.insert(
         'displayed_pistes',
-        where: 'login_id = ?',
-        whereArgs: [
-          loginId
-        ],
-      );
-
-      if (existing.isNotEmpty) {
-        // Mettre à jour l'existante
-        await db.update(
-          'displayed_pistes',
-          {
-            'points_json': pointsJson,
-            'color': color.value,
-            'width': width.toInt(),
-            'created_at': DateTime.now().toIso8601String(),
-          },
-          where: 'id = ? AND login_id = ?',
-          whereArgs: [
-            existing.first['id'],
-            loginId,
-          ],
-        );
-      } else {
-        // Ajouter une nouvelle
-        await db.insert('displayed_pistes', {
+        {
+          'login_id': loginId,
+          'code_piste': codePiste, // ✅ IMPORTANT
           'points_json': pointsJson,
           'color': color.value,
-          'width': width.toInt(),
+          'width': width, // ✅ REAL, pas toInt
           'created_at': DateTime.now().toIso8601String(),
-          'login_id': loginId,
-        });
-      }
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace, // ✅ UPSERT
+      );
 
-      print('✅ Piste sauvegardée pour user: $loginId');
+      print('✅ Piste sauvegardée: $codePiste (user=$loginId)');
     } catch (e) {
       print('❌ Erreur sauvegarde piste: $e');
     }
@@ -401,6 +387,30 @@ class SimpleStorageHelper {
       return polylines;
     } catch (e) {
       print('❌ Erreur chargement pistes: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> loadDisplayedPistesMaps() async {
+    try {
+      final db = await database;
+      final loginId = await DatabaseHelper().resolveLoginId();
+
+      if (loginId == null) {
+        print('❌ [loadDisplayedPistesMaps] loginId null');
+        return [];
+      }
+
+      return await db.query(
+        'displayed_pistes',
+        where: 'login_id = ?',
+        whereArgs: [
+          loginId
+        ],
+        orderBy: 'created_at DESC',
+      );
+    } catch (e) {
+      print('❌ Erreur loadDisplayedPistesMaps: $e');
       return [];
     }
   }

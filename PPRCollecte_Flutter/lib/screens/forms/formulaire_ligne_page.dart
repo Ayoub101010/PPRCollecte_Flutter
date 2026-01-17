@@ -707,7 +707,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
         if (savedId != null) {
           print('✅ Piste sauvegardée en local avec ID: $savedId');
           await storageHelper.debugPrintAllPistes();
-          await storageHelper.saveDisplayedPiste(widget.linePoints, Colors.blue, 4.0);
+          await storageHelper.saveDisplayedPiste(_codeController.text, widget.linePoints, Colors.blue, 4.0);
         }
       }
 
