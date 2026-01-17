@@ -1893,32 +1893,38 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (formResult != null) {
-      setState(
-        () {
-          //  AJOUTEZ LA PISTE TERMINÉE (NOUVEAU)
-          _finishedPistes.add(
-            Polyline(
-              points: result['points'],
-              color: Colors.brown, //  couleur marron
-              strokeWidth: 3.0,
-              pattern: StrokePattern.dotted(spacingFactor: 2.0), //  style pointillé
+      final List<LatLng> pts = List<LatLng>.from(result['points'] as List<LatLng>);
+      final distanceKm = pts.length >= 2 ? polylineDistanceKm(pts) : 0.0;
+
+      setState(() {
+        _finishedPistes.add(
+          Polyline<PolylineTapData>(
+            points: pts,
+            color: Colors.brown,
+            strokeWidth: 3.0,
+            pattern: StrokePattern.dotted(spacingFactor: 2.0),
+            hitValue: PolylineTapData(
+              type: 'piste_local',
+              data: {
+                'code_piste': (formResult['code_piste'] ?? result['codePiste'] ?? '').toString(),
+                'nb_points': pts.length,
+                'distance_km': distanceKm,
+                'start_lat': pts.isNotEmpty ? pts.first.latitude : 0.0,
+                'start_lng': pts.isNotEmpty ? pts.first.longitude : 0.0,
+                'end_lat': pts.isNotEmpty ? pts.last.latitude : 0.0,
+                'end_lng': pts.isNotEmpty ? pts.last.longitude : 0.0,
+              },
             ),
-          );
-        },
-      );
-      final storageHelper = SimpleStorageHelper();
-      await storageHelper.saveDisplayedPiste(
-        result['points'],
-        Colors.brown, // ✅ couleur marron
-        3.0, // largeur
-      );
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Piste enregistrée avec succès',
           ),
+        );
+      });
+
+      final storageHelper = SimpleStorageHelper();
+      await storageHelper.saveDisplayedPiste(pts, Colors.brown, 3.0);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Piste enregistrée avec succès'),
           backgroundColor: Colors.green,
         ),
       );
