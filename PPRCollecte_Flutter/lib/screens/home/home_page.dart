@@ -2551,6 +2551,7 @@ class _HomePageState extends State<HomePage> {
         ) =>
             DataCategoriesPage(
           isOnline: _isOnlineDynamic,
+          agentName: widget.agentName,
         ),
       ),
     ).then(

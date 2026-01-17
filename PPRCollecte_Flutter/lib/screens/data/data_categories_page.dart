@@ -3,9 +3,11 @@ import 'data_subcategories_page.dart';
 
 class DataCategoriesPage extends StatelessWidget {
   final bool isOnline;
+  final String agentName;
   const DataCategoriesPage({
     super.key,
-    required this.isOnline, // 🔵 obligatoire
+    required this.isOnline,
+    required this.agentName,
   });
 
   String _getDataFilterType(String categoryTitle) {
@@ -117,6 +119,7 @@ class DataCategoriesPage extends StatelessWidget {
               categoryType: title,
               dataFilter: _getDataFilterType(title),
               isOnline: isOnline,
+              agentName: agentName,
             ),
           ),
         );

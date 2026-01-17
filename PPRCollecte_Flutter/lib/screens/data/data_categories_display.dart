@@ -25,11 +25,13 @@ class DataCategoriesDisplay extends StatefulWidget {
   final String mainCategory;
   final String dataFilter; // "unsynced", "synced", "saved"
   final bool isOnline;
+  final String agentName;
   const DataCategoriesDisplay({
     super.key,
     required this.mainCategory,
     required this.dataFilter,
     required this.isOnline,
+    required this.agentName,
   });
 
   @override
@@ -543,8 +545,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     }
 
     // ... ton code existant pour récupérer l'agent, pousser HomePage, etc.
-    final email = await DatabaseHelper().getCurrentUserEmail();
-    final fullName = await DatabaseHelper().getAgentFullName(email ?? '') ?? 'Utilisateur';
+    final fullName = widget.agentName;
 
     if (!mounted) return;
     Navigator.pushReplacement(

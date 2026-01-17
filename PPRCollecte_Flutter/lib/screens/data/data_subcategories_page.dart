@@ -5,11 +5,13 @@ class DataSubcategoriesPage extends StatelessWidget {
   final String categoryType;
   final String dataFilter; // "unsynced", "synced", "saved"
   final bool isOnline;
+  final String agentName;
   const DataSubcategoriesPage({
     super.key,
     required this.categoryType,
     required this.dataFilter,
     required this.isOnline,
+    required this.agentName,
   });
 
   @override
@@ -66,6 +68,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                             mainCategory: "Pistes",
                             dataFilter: dataFilter,
                             isOnline: isOnline,
+                            agentName: agentName,
                           ),
                         ),
                       );
@@ -85,6 +88,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                             mainCategory: "Chaussées",
                             dataFilter: dataFilter,
                             isOnline: isOnline,
+                            agentName: agentName,
                           ),
                         ),
                       );
@@ -106,6 +110,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                             mainCategory: "Infrastructures Rurales",
                             dataFilter: dataFilter,
                             isOnline: isOnline,
+                            agentName: agentName,
                           ),
                         ),
                       );
@@ -126,6 +131,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                             mainCategory: "Ouvrages",
                             dataFilter: dataFilter,
                             isOnline: isOnline,
+                            agentName: agentName,
                           ),
                         ),
                       );
@@ -146,6 +152,7 @@ class DataSubcategoriesPage extends StatelessWidget {
                             mainCategory: "Points Critiques",
                             dataFilter: dataFilter,
                             isOnline: isOnline,
+                            agentName: agentName,
                           ),
                         ),
                       );
