@@ -98,10 +98,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  LatLng userPosition = const LatLng(
-    34.020882,
-    -6.841650,
-  );
+  LatLng? userPosition;
   bool gpsEnabled = true;
   String _regionNom = '----';
   String _prefectureNom = '----';
@@ -213,7 +210,12 @@ class _HomePageState extends State<HomePage> {
           },
         );
 
-        _moveCameraIfNeeded();
+        if (_mapController != null && _lastCameraPosition == null && userPosition != null) {
+          _mapController!.move(userPosition!, 17);
+          _lastCameraPosition = userPosition;
+        } else {
+          _moveCameraIfNeeded();
+        }
       },
     );
 
@@ -1650,8 +1652,9 @@ class _HomePageState extends State<HomePage> {
   void _onMapCreated(MapController controller) {
     _mapController = controller;
 
-    if (userPosition.latitude != 34.020882 || userPosition.longitude != -6.841650) {
-      controller.move(userPosition, 17);
+    // ⭐⭐ NOUVELLE LOGIQUE: Toujours déplacer vers la position GPS réelle ⭐⭐
+    if (userPosition != null) {
+      controller.move(userPosition!, 17);
       _lastCameraPosition = userPosition;
     }
 
@@ -1665,19 +1668,25 @@ class _HomePageState extends State<HomePage> {
 
   void _moveCameraIfNeeded() {
     if (_mapController == null) return;
+
+    // ⭐⭐ AJOUT: Vérifier que userPosition n'est pas null ⭐⭐
+    if (userPosition == null) return;
+
     try {
+      // ⭐⭐ Utiliser userPosition! car on a vérifié qu'il n'est pas null ⭐⭐
       final shouldMove = _lastCameraPosition == null ||
           _coordinateDistance(
                 _lastCameraPosition!.latitude,
                 _lastCameraPosition!.longitude,
-                userPosition.latitude,
-                userPosition.longitude,
+                userPosition!.latitude, // ← Ajout du !
+                userPosition!.longitude, // ← Ajout du !
               ) >
               20;
+
       if (_autoCenterSuspended) {
         // Debug
       } else if (shouldMove) {
-        _mapController!.move(userPosition, 17);
+        _mapController!.move(userPosition!, 17); // ← Ajout du !
         _lastCameraPosition = userPosition;
       }
     } catch (_) {}
@@ -3061,7 +3070,7 @@ class _HomePageState extends State<HomePage> {
               child: Stack(
                 children: [
                   MapWidget(
-                    userPosition: userPosition,
+                    userPosition: userPosition ?? homeController.userPosition,
                     gpsEnabled: gpsEnabled,
                     markers: filteredMarkers,
                     polylines: filteredPolylines,

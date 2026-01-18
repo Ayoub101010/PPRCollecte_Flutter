@@ -149,6 +149,7 @@ class HomeController extends ChangeNotifier {
       final loc = await _locationService.getCurrent();
       if (loc.latitude != null && loc.longitude != null) {
         userPosition = LatLng(loc.latitude!, loc.longitude!);
+        notifyListeners();
       }
 
       gpsAccuracy = loc.accuracy?.round();
