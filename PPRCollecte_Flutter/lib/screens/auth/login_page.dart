@@ -67,11 +67,7 @@ class _LoginPageState extends State<LoginPage> {
     final isValidLocal = await DatabaseHelper().validateUser(email, password);
     if (isValidLocal) {
       // ✅ Gérer la case "Se souvenir" même hors-ligne
-      if (rememberMe) {
-        await DatabaseHelper().setCurrentUserEmail(email);
-      } else {
-        await DatabaseHelper().clearSession();
-      }
+      await DatabaseHelper().setCurrentUserEmail(email, remember: rememberMe);
 
       final fullName = await DatabaseHelper().getAgentFullName(email) ?? 'Utilisateur Local';
 
@@ -123,11 +119,7 @@ class _LoginPageState extends State<LoginPage> {
       final userData = await ApiService.login(email, password).timeout(_loginTimeout);
 
       // (C) Gestion du "Se souvenir" et mise à jour de la session
-      if (rememberMe) {
-        await DatabaseHelper().setCurrentUserEmail(email); // is_logged_in = 1
-      } else {
-        await DatabaseHelper().clearSession(); // is_logged_in = 0
-      }
+      await DatabaseHelper().setCurrentUserEmail(email, remember: rememberMe);
 
       final existingUser = await DatabaseHelper().userExists(email);
       final nom = userData['nom'] ?? '';
@@ -139,6 +131,7 @@ class _LoginPageState extends State<LoginPage> {
       final communeNom = userData['commune_nom'];
       final prefectureNom = userData['prefecture_nom'];
       final regionNom = userData['region_nom'];
+      final int? apiId = ApiService.userId;
 
       if (existingUser) {
         await DatabaseHelper().updateUser(
@@ -153,6 +146,7 @@ class _LoginPageState extends State<LoginPage> {
           communeNom,
           regionNom,
           role: userData['role'],
+          apiId: apiId,
         );
       } else {
         await DatabaseHelper().insertUser(
@@ -167,6 +161,7 @@ class _LoginPageState extends State<LoginPage> {
           communeNom,
           regionNom,
           role: userData['role'],
+          apiId: apiId,
         );
       }
 

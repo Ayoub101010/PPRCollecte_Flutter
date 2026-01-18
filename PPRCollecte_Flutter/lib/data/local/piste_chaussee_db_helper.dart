@@ -781,10 +781,14 @@ ON displayed_pistes(login_id, code_piste);
       final dataUserId = properties['login_id'];
       final communeId = await _getCommuneId();
       final viewerId = await DatabaseHelper().resolveLoginId();
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       // Extraire les coordonnées du MultiLineString GeoJSON
       final coordinates = geometry['coordinates'][0];
       final pointsJson = jsonEncode(coordinates
@@ -1083,10 +1087,14 @@ ON displayed_pistes(login_id, code_piste);
       final geometry = chausseeData['geometry'];
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       // Extraire les coordonnées du MultiLineString GeoJSON
       final coordinates = geometry['coordinates'][0];
       final pointsJson = jsonEncode(coordinates

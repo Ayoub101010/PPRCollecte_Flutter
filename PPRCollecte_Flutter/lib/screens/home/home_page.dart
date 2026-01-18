@@ -2586,22 +2586,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   // Ajoutez cette méthode pour effectuer la déconnexion
-  void _performLogout() {
-    homeController.clearActivePisteCode();
-    Navigator.of(
+  Future<void> _performLogout() async {
+    await DatabaseHelper().clearSession();
+    ApiService.userId = null;
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
       context,
-      rootNavigator: true,
-    ).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (
-          context,
-        ) =>
-            const LoginPage(),
-      ),
-      (
-        Route<dynamic> route,
-      ) =>
-          false,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
     );
   }
 

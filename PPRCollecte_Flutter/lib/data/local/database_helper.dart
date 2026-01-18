@@ -91,6 +91,7 @@ class DatabaseHelper {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS users(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      apiId INTEGER,
       nom TEXT,
       prenom TEXT,
       email TEXT NOT NULL UNIQUE,
@@ -490,13 +491,15 @@ class DatabaseHelper {
 
   Future<void> _createSessionTable(Database db) async {
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS app_session (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      current_user_email TEXT,
-      last_login TEXT,
-      is_logged_in INTEGER DEFAULT 0
-    )
-  ''');
+CREATE TABLE IF NOT EXISTS app_session (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  current_user_email TEXT,
+  last_login TEXT,
+  is_logged_in INTEGER DEFAULT 0,
+  remember_me INTEGER DEFAULT 0
+)
+''');
+
     print('✅ Table app_session créée');
   }
 
@@ -529,47 +532,65 @@ class DatabaseHelper {
   Future<void> _ensureAppSessionTable() async {
     final db = await database;
     await db.execute('''
-    CREATE TABLE IF NOT EXISTS app_session (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      current_user_email TEXT,
-      last_login TEXT,
-      is_logged_in INTEGER DEFAULT 0
-    )
-  ''');
+CREATE TABLE IF NOT EXISTS app_session (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  current_user_email TEXT,
+  last_login TEXT,
+  is_logged_in INTEGER DEFAULT 0,
+  remember_me INTEGER DEFAULT 0
+)
+''');
   }
 
-  Future<void> setCurrentUserEmail(String email) async {
+  Future<void> setCurrentUserEmail(String email, {required bool remember}) async {
     try {
       final db = await database;
+      await _ensureAppSessionTable();
 
-      // Vérifier si une session existe déjà
-      final existingSession = await db.query('app_session', limit: 1);
+      final existing = await db.query('app_session', limit: 1);
 
-      if (existingSession.isEmpty) {
-        // Insérer une nouvelle session
-        await db.insert('app_session', {
-          'current_user_email': email,
-          'last_login': DateTime.now().toIso8601String(),
-          'is_logged_in': 1,
-        });
+      final values = {
+        'current_user_email': email,
+        'last_login': DateTime.now().toIso8601String(),
+        'is_logged_in': 1,
+        'remember_me': remember ? 1 : 0,
+      };
+
+      if (existing.isEmpty) {
+        await db.insert('app_session', values);
       } else {
-        // Mettre à jour la session existante
-        await db.update(
-            'app_session',
-            {
-              'current_user_email': email,
-              'last_login': DateTime.now().toIso8601String(),
-              'is_logged_in': 1,
-            },
-            where: 'id = ?',
-            whereArgs: [
-              existingSession.first['id']
-            ]);
+        await db.update('app_session', values, where: 'id = ?', whereArgs: [
+          existing.first['id']
+        ]);
       }
 
-      print('✅ Email utilisateur stocké: $email');
+      print('✅ Session: $email | remember=$remember');
     } catch (e) {
       print("❌ Erreur setCurrentUserEmail: $e");
+    }
+  }
+
+  Future<String?> getSessionUserEmail() async {
+    try {
+      final db = await database;
+      await _ensureAppSessionTable();
+
+      final result = await db.query('app_session', limit: 1);
+      if (result.isNotEmpty) {
+        final row = result.first;
+
+        final isLoggedRaw = row['is_logged_in'];
+        final isLogged = (isLoggedRaw is int) ? isLoggedRaw : int.tryParse(isLoggedRaw.toString()) ?? 0;
+
+        if (isLogged == 1) {
+          final email = row['current_user_email'] as String?;
+          if (email != null && email.isNotEmpty) return email;
+        }
+      }
+      return null;
+    } catch (e) {
+      print("❌ Erreur getSessionUserEmail: $e");
+      return null;
     }
   }
 
@@ -581,15 +602,15 @@ class DatabaseHelper {
       final result = await db.query('app_session', limit: 1);
       if (result.isNotEmpty) {
         final row = result.first;
-        final isLoggedRaw = row['is_logged_in'];
-        final isLogged = (isLoggedRaw is int) ? isLoggedRaw : int.tryParse(isLoggedRaw.toString()) ?? 0;
 
-        if (isLogged == 1) {
+        final rememberRaw = row['remember_me'];
+        final remember = (rememberRaw is int) ? rememberRaw : int.tryParse(rememberRaw.toString()) ?? 0;
+
+        if (remember == 1) {
           final email = row['current_user_email'] as String?;
-          if (email != null && email.isNotEmpty) return email; // ✅ uniquement si “remember”
+          if (email != null && email.isNotEmpty) return email;
         }
       }
-      // 🚫 PAS DE FALLBACK ICI
       return null;
     } catch (e) {
       print("❌ Erreur getCurrentUserEmail: $e");
@@ -600,8 +621,32 @@ class DatabaseHelper {
   Future<void> clearSession() async {
     try {
       final db = await database;
-      await db.delete('app_session');
-      print('✅ Session effacée');
+      await _ensureAppSessionTable();
+
+      final rows = await db.query('app_session', limit: 1);
+      if (rows.isEmpty) return;
+
+      final row = rows.first;
+      final rememberRaw = row['remember_me'];
+      final remember = (rememberRaw is int) ? rememberRaw : int.tryParse(rememberRaw.toString()) ?? 0;
+
+      if (remember == 1) {
+        // ✅ on garde l’email remembered, on coupe juste la session
+        await db.update(
+            'app_session',
+            {
+              'is_logged_in': 0
+            },
+            where: 'id = ?',
+            whereArgs: [
+              row['id']
+            ]);
+      } else {
+        // ❌ pas remembered → on supprime tout
+        await db.delete('app_session');
+      }
+
+      print('✅ Logout: session effacée, remember=$remember');
     } catch (e) {
       print("❌ Erreur clearSession: $e");
     }
@@ -751,7 +796,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<int> insertUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role}) async {
+  Future<int> insertUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role, int? apiId}) async {
     try {
       print('🔄 Tentative insertion/mise à jour user: $email');
       final db = await database;
@@ -779,6 +824,7 @@ class DatabaseHelper {
         'region_nom': regionNom,
         'region_id': regionId,
         'date_creation': DateTime.now().toIso8601String(),
+        'apiId': apiId,
       };
 
       int result;
@@ -832,7 +878,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<int> updateUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role}) async {
+  Future<int> updateUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role, int? apiId}) async {
     try {
       final db = await database;
       final result = await db.update(
@@ -849,6 +895,7 @@ class DatabaseHelper {
           'region_nom': regionNom,
           'region_id': regionId,
           'date_creation': DateTime.now().toIso8601String(),
+          'apiId': apiId,
         },
         where: 'email = ?',
         whereArgs: [
@@ -1300,10 +1347,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'localites',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1358,10 +1409,14 @@ class DatabaseHelper {
       final sqliteId = properties['sqlite_id'];
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'ecoles',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1416,10 +1471,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'marches',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1474,10 +1533,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'services_santes',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1531,10 +1594,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'batiments_administratifs',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1588,10 +1655,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'infrastructures_hydrauliques',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1645,10 +1716,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'autres_infrastructures',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1702,10 +1777,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'ponts',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1857,10 +1936,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'buses',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -1913,10 +1996,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'dalots',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -2065,9 +2152,12 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
 
       // 🔹 Récupérer les coordonnées : d'abord depuis geometry, sinon depuis les properties
@@ -2147,10 +2237,14 @@ class DatabaseHelper {
       final dataUserId = properties['login_id'];
       final viewerId = await DatabaseHelper().resolveLoginId();
 
-      if (dataUserId == ApiService.userId) {
+      final apiUserId = ApiService.userId;
+
+// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
-        return; // Ne pas sauvegarder ses propres données
+        return;
       }
+
       final existing = await db.query(
         'points_coupures',
         where: 'id = ? AND saved_by_user_id = ?',
@@ -2342,12 +2436,14 @@ class DatabaseHelper {
 
     // 2) Sinon, on tente l'utilisateur courant (email) s'il est stocké
     try {
-      final email = await getCurrentUserEmail(); // si tu l'as déjà dans DatabaseHelper
+      final email = await getSessionUserEmail();
+      // si tu l'as déjà dans DatabaseHelper
       if (email != null && email.isNotEmpty) {
         final db = await database;
         final byMail = await db.query(
           'users',
           columns: [
+            'apiId',
             'id'
           ],
           where: 'email = ?',
@@ -2357,6 +2453,15 @@ class DatabaseHelper {
           limit: 1,
         );
         if (byMail.isNotEmpty) {
+          // ✅ priorité à l'id serveur stocké dans users.apiId
+          final vApi = byMail.first['apiId'];
+          if (vApi is int && vApi > 0) return vApi;
+          if (vApi is String) {
+            final parsed = int.tryParse(vApi);
+            if (parsed != null && parsed > 0) return parsed;
+          }
+
+          // fallback: ancien id local sqlite (au cas où apiId est vide)
           final v = byMail.first['id'];
           if (v is int) return v;
           if (v is String) return int.tryParse(v);
@@ -2366,23 +2471,6 @@ class DatabaseHelper {
       // si getCurrentUserEmail n'existe pas chez toi, on ignore
     }
 
-    // 3) Dernier fallback : dernier user (si tu as date_creation)
-    final db = await database;
-    final last = await db.query(
-      'users',
-      columns: [
-        'id'
-      ],
-      orderBy: 'date_creation DESC',
-      limit: 1,
-    );
-    if (last.isNotEmpty) {
-      final v = last.first['id'];
-      if (v is int) return v;
-      if (v is String) return int.tryParse(v);
-    }
-
-    // 4) Rien trouvé
     return null;
   }
 

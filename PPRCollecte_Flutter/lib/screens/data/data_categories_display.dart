@@ -553,7 +553,8 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
       MaterialPageRoute(
         builder: (_) => HomePage(
           agentName: fullName,
-          onLogout: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+          onLogout: () {}, // HomePage gère le vrai logout maintenant
+
           initialFocus: target,
           isOnline: widget.isOnline,
         ),
@@ -636,7 +637,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
           } else if (widget.dataFilter == "saved") {
             filteredData = allPistes.where((piste) => piste['downloaded'] == 1 && piste['saved_by_user_id'] == loginId).toList();
           } else {
-            filteredData = allPistes;
+            filteredData = allPistes.where((p) => p['login_id'] == loginId || p['saved_by_user_id'] == loginId).toList();
           }
 
           print('📊 Pistes ${widget.dataFilter}: ${filteredData.length}');
@@ -651,7 +652,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
           } else if (widget.dataFilter == "saved") {
             filteredData = allChaussees.where((ch) => ch['downloaded'] == 1 && ch['saved_by_user_id'] == loginId).toList();
           } else {
-            filteredData = allChaussees;
+            filteredData = allChaussees.where((ch) => ch['login_id'] == loginId || ch['saved_by_user_id'] == loginId).toList();
           }
 
           print('📊 Chaussées ${widget.dataFilter}: ${filteredData.length}');
@@ -678,7 +679,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
         } else if (widget.dataFilter == "saved") {
           filteredData = allData.where((item) => item['downloaded'] == 1 && item['saved_by_user_id'] == loginId).toList();
         } else {
-          filteredData = allData;
+          filteredData = allData.where((item) => item['login_id'] == loginId || item['saved_by_user_id'] == loginId).toList();
         }
       }
 
