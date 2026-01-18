@@ -1669,11 +1669,11 @@ class _HomePageState extends State<HomePage> {
   void _moveCameraIfNeeded() {
     if (_mapController == null) return;
 
-    // ⭐⭐ AJOUT: Vérifier que userPosition n'est pas null ⭐⭐
+    //  AJOUT: Vérifier que userPosition n'est pas null
     if (userPosition == null) return;
 
     try {
-      // ⭐⭐ Utiliser userPosition! car on a vérifié qu'il n'est pas null ⭐⭐
+      //  Utiliser userPosition! car on a vérifié qu'il n'est pas null
       final shouldMove = _lastCameraPosition == null ||
           _coordinateDistance(
                 _lastCameraPosition!.latitude,
@@ -3112,69 +3112,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                  // Dans le Stack de la méthode build() - Positionnez où vous voulez
-                  /*Positioned(
-                    top: 60, // Ajustez la position selon vos besoins
-                    right: 10,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(
-                          8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              setState(
-                                () {
-                                  _showDownloadedPoints = !_showDownloadedPoints;
-                                },
-                              );
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    _showDownloadedPoints ? 'Points téléchargés affichés (verts)' : 'Points téléchargés masqués',
-                                  ),
-                                  duration: Duration(
-                                    seconds: 2,
-                                  ),
-                                ),
-                              );
-                            },
-                            icon: Icon(
-                              _showDownloadedPoints ? Icons.visibility : Icons.visibility_off,
-                              color: _showDownloadedPoints ? Colors.green : Colors.grey,
-                            ),
-                            tooltip: _showDownloadedPoints ? 'Masquer les points téléchargés' : 'Afficher les points téléchargés',
-                          ),
-                          Text(
-                            'Données serveur',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          SizedBox(
-                            width: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),*/
-
                   // === AJOUTEZ ICI === //
-                  Positioned(
+                  /*Positioned(
                     bottom: 200,
                     right: 16,
                     child: Visibility(
@@ -3205,9 +3144,9 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'dev_button',
                       ),
                     ),
-                  ),
+                  ),*/
                   // Ajouter dans la section des boutons de debug
-                  Positioned(
+                  /* Positioned(
                     bottom: 120,
                     right: 16,
                     child: Visibility(
@@ -3238,7 +3177,7 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'simulate_special_button',
                       ),
                     ),
-                  ),
+                  ),*/
                   // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(
