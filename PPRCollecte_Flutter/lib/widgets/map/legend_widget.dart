@@ -49,21 +49,28 @@ class _LegendWidgetState extends State<LegendWidget> {
   }
 
   // Compter le nombre d'éléments par type
+  // Compter le nombre d'éléments par type
   int _countItemsByType(String type) {
     if (type == 'point') {
       return widget.allMarkers.length;
     } else if (type == 'piste') {
-      // Compter les pistes par couleur (marron/brun)
+      // ⭐⭐ CORRECTION: Pistes = brown + strokeWidth 3.0 ⭐⭐
       return widget.allPolylines.where((p) {
-        return p.color == Colors.brown || p.color == const Color(0xFFB86E1D); // downloadedPisteColor
+        final colorValue = p.color.value;
+        final isPisteColor = colorValue == Colors.brown.value || colorValue == const Color(0xFFB86E1D).value;
+        // Différencier des chaussées par strokeWidth (pistes = 3.0)
+        return isPisteColor && p.strokeWidth <= 3.5;
       }).length;
     } else if (type.startsWith('chaussee_')) {
       final chausseeType = type.replaceFirst('chaussee_', '');
-      return widget.allPolylines.where((p) => _getChausseeTypeFromColor(p.color) == chausseeType).length;
+      // ⭐⭐ CORRECTION: Chaussées = strokeWidth > 3.5 ⭐⭐
+      return widget.allPolylines.where((p) {
+        return _getChausseeTypeFromColor(p.color) == chausseeType && p.strokeWidth > 3.5;
+      }).length;
     } else if (type == 'bac') {
-      return widget.allPolylines.where((p) => p.color == Colors.purple).length;
+      return widget.allPolylines.where((p) => p.color.value == Colors.purple.value).length;
     } else if (type == 'passage_submersible') {
-      return widget.allPolylines.where((p) => p.color == Colors.cyan).length;
+      return widget.allPolylines.where((p) => p.color.value == Colors.cyan.value).length;
     }
     return 0;
   }

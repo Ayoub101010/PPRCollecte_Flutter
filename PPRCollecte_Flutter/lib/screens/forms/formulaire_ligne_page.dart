@@ -736,7 +736,7 @@ class _FormulairePageState extends State<FormulaireLignePage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _dateModification ?? DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
 

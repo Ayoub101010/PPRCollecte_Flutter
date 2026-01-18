@@ -875,7 +875,7 @@ class _PointFormWidgetState extends State<PointFormWidget> {
                     final DateTime? picked = await showDatePicker(
                       context: context,
                       initialDate: initialDate,
-                      firstDate: DateTime(1900),
+                      firstDate: DateTime.now(),
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
