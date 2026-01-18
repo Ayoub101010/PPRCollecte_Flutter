@@ -112,6 +112,7 @@ class DatabaseHelper {
     await db.execute('''
     CREATE TABLE IF NOT EXISTS localites(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER, 
       x_localite REAL NOT NULL,
       y_localite REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -130,11 +131,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table localites créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_localites_api_user
+ON localites(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE ECOLES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS ecoles(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_ecole REAL NOT NULL,
       y_ecole REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -153,11 +159,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table ecoles créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ecoles_api_user
+ON ecoles(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE MARCHES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS marches(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_marche REAL NOT NULL,
       y_marche REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -176,11 +187,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table marches créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_marches_api_user
+ON marches(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE SERVICES_SANTES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS services_santes(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_sante REAL NOT NULL,
       y_sante REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -199,11 +215,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table services_santes créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_services_santes_api_user
+ON services_santes(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE BATIMENTS_ADMINISTRATIFS ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS batiments_administratifs(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_batiment_administratif REAL NOT NULL,
       y_batiment_administratif REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -222,11 +243,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table batiments_administratifs créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_batiments_administratifs_api_user
+ON batiments_administratifs(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE INFRASTRUCTURES_HYDRAULIQUES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS infrastructures_hydrauliques(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_infrastructure_hydraulique REAL NOT NULL,
       y_infrastructure_hydraulique REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -245,11 +271,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table infrastructures_hydrauliques créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_infrastructures_hydrauliques_api_user
+ON infrastructures_hydrauliques(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE AUTRES_INFRASTRUCTURES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS autres_infrastructures(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_autre_infrastructure REAL NOT NULL,
       y_autre_infrastructure REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -268,11 +299,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table autres_infrastructures créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_autres_infrastructures_api_user
+ON autres_infrastructures(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE PONTS ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS ponts(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_pont REAL NOT NULL,
       y_pont REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -293,11 +329,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table ponts créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ponts_api_user
+ON ponts(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE BACS ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS bacs(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_debut_traversee_bac REAL NOT NULL,
       y_debut_traversee_bac REAL NOT NULL,
       x_fin_traversee_bac REAL NOT NULL,
@@ -320,11 +361,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table bacs créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bacs_api_user
+ON bacs(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE BUSES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS buses(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_buse REAL NOT NULL,
       y_buse REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -342,11 +388,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table buses créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_buses_api_user
+ON buses(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE DALOTS ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS dalots(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_dalot REAL NOT NULL,
       y_dalot REAL NOT NULL,
       nom TEXT NOT NULL,
@@ -365,11 +416,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table dalots créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dalots_api_user
+ON dalots(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE PASSAGES_SUBMERSIBLES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS passages_submersibles(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       x_debut_passage_submersible REAL NOT NULL,
       y_debut_passage_submersible REAL NOT NULL,
       x_fin_passage_submersible REAL NOT NULL,
@@ -391,11 +447,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table passages_submersibles créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_passages_submersibles_api_user
+ON passages_submersibles(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE POINTS_CRITIQUES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS points_critiques(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       nom TEXT,
       type TEXT,
       x_point_critique REAL NOT NULL,
@@ -415,11 +476,16 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table points_critiques créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_points_critiques_api_user
+ON points_critiques(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE POINTS_COUPURES ============
     await db.execute('''
     CREATE TABLE IF NOT EXISTS points_coupures(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      api_id INTEGER,
       nom TEXT,
       type TEXT,
       x_point_coupure REAL NOT NULL,
@@ -439,7 +505,11 @@ class DatabaseHelper {
     )
   ''');
     print('✅ Table points_coupures créée');
+    await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_points_coupures_api_user
+ON points_coupures(api_id, saved_by_user_id);
 
+''');
     // ============ TABLE TEST ============
     await db.execute('CREATE TABLE IF NOT EXISTS test (id INTEGER)');
     print('✅ Table test créée');
@@ -1357,7 +1427,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'localites',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1370,7 +1440,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'localites',
           {
-            'id': properties['sqlite_id'], // ID original de SQLite
+            'api_id': sqliteId, // ID original de SQLite
             'x_localite': geometry['coordinates'][0], // longitude
             'y_localite': geometry['coordinates'][1], // latitude
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1389,6 +1459,7 @@ CREATE TABLE IF NOT EXISTS app_session (
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        print('💾 [SAVE] viewerId=$viewerId, apiUserId=${ApiService.userId}, email=${await DatabaseHelper().getSessionUserEmail()}');
 
         print('✅ Localité sauvegardée: ${properties['nom']}');
       }
@@ -1419,7 +1490,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'ecoles',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1432,7 +1503,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'ecoles',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_ecole': geometry['coordinates'][0],
             'y_ecole': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1451,6 +1522,7 @@ CREATE TABLE IF NOT EXISTS app_session (
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        print('💾 [SAVE] viewerId=$viewerId, apiUserId=${ApiService.userId}, email=${await DatabaseHelper().getSessionUserEmail()}');
         print('✅ école sauvegardée: ${properties['nom']}');
       }
     } catch (e) {
@@ -1481,7 +1553,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'marches',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1494,7 +1566,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'marches',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_marche': geometry['coordinates'][0],
             'y_marche': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1513,6 +1585,7 @@ CREATE TABLE IF NOT EXISTS app_session (
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        print('💾 [SAVE] viewerId=$viewerId, apiUserId=${ApiService.userId}, email=${await DatabaseHelper().getSessionUserEmail()}');
         print('✅ Marché sauvegardée: ${properties['nom']}');
       }
     } catch (e) {
@@ -1543,7 +1616,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'services_santes',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1556,7 +1629,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'services_santes',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_sante': geometry['coordinates'][0],
             'y_sante': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1575,6 +1648,7 @@ CREATE TABLE IF NOT EXISTS app_session (
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        print('💾 [SAVE] viewerId=$viewerId, apiUserId=${ApiService.userId}, email=${await DatabaseHelper().getSessionUserEmail()}');
         print('✅ services_santes sauvegardée: ${properties['nom']}');
       }
     } catch (e) {
@@ -1604,7 +1678,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'batiments_administratifs',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1617,7 +1691,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'batiments_administratifs',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_batiment_administratif': geometry['coordinates'][0],
             'y_batiment_administratif': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1636,6 +1710,7 @@ CREATE TABLE IF NOT EXISTS app_session (
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        print('💾 [SAVE] viewerId=$viewerId, apiUserId=${ApiService.userId}, email=${await DatabaseHelper().getSessionUserEmail()}');
         print('✅ batiments_administratifs sauvegardée: ${properties['nom']}');
       }
     } catch (e) {
@@ -1665,7 +1740,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'infrastructures_hydrauliques',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1678,7 +1753,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'infrastructures_hydrauliques',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_infrastructure_hydraulique': geometry['coordinates'][0],
             'y_infrastructure_hydraulique': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1697,6 +1772,7 @@ CREATE TABLE IF NOT EXISTS app_session (
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
         );
+        print('💾 [SAVE] viewerId=$viewerId, apiUserId=${ApiService.userId}, email=${await DatabaseHelper().getSessionUserEmail()}');
         print('✅ infrastructures_hydrauliques sauvegardée: ${properties['nom']}');
       }
     } catch (e) {
@@ -1726,7 +1802,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'autres_infrastructures',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1739,7 +1815,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'autres_infrastructures',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_autre_infrastructure': geometry['coordinates'][0],
             'y_autre_infrastructure': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1787,7 +1863,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'ponts',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1800,7 +1876,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'ponts',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_pont': geometry['coordinates'][0],
             'y_pont': geometry['coordinates'][1],
             'nom': properties['nom'] ?? 'Sans nom',
@@ -1853,7 +1929,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'bacs',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1894,7 +1970,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'bacs',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_debut_traversee_bac': xDebut,
             'y_debut_traversee_bac': yDebut,
             'x_fin_traversee_bac': xFin,
@@ -1946,7 +2022,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'buses',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -1959,7 +2035,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'buses',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_buse': geometry['coordinates'][0] ?? 'Non spécifié',
             'y_buse': geometry['coordinates'][1] ?? 'Non spécifié',
             'nom': properties['nom'] ?? 'Sans nom',
@@ -2006,7 +2082,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'dalots',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -2019,7 +2095,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'dalots',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_dalot': geometry['coordinates'][0] ?? 'Non spécifié',
             'y_dalot': geometry['coordinates'][1] ?? 'Non spécifié',
             'nom': properties['nom'] ?? 'Sans nom',
@@ -2070,7 +2146,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'passages_submersibles',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -2111,7 +2187,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'passages_submersibles',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_debut_passage_submersible': xDebut,
             'y_debut_passage_submersible': yDebut,
             'x_fin_passage_submersible': xFin,
@@ -2181,7 +2257,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'points_critiques',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -2195,7 +2271,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'points_critiques',
           {
-            'id': sqliteId,
+            'api_id': sqliteId,
             'x_point_critique': x,
             'y_point_critique': y,
 
@@ -2247,7 +2323,7 @@ CREATE TABLE IF NOT EXISTS app_session (
 
       final existing = await db.query(
         'points_coupures',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
           sqliteId,
           viewerId
@@ -2260,7 +2336,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         await db.insert(
           'points_coupures',
           {
-            'id': properties['sqlite_id'],
+            'api_id': sqliteId,
             'x_point_coupure': geometry['coordinates'][0],
             'y_point_coupure': geometry['coordinates'][1],
             'causes_coupures': properties['causes_coupures'] ?? 'Non spécifié',

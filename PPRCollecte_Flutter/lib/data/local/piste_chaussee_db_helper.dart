@@ -38,6 +38,8 @@ class SimpleStorageHelper {
         await db.execute('''
           CREATE TABLE pistes (
             id INTEGER PRIMARY KEY ,
+            api_id INTEGER,
+
             code_piste TEXT NOT NULL,
             commune_rurale_id TEXT,
             commune_rurales INTEGER,
@@ -75,11 +77,17 @@ class SimpleStorageHelper {
             
           )
         ''');
+        await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pistes_api_user
+ON pistes(api_id, saved_by_user_id);
+
+''');
 
         // Table Chaussées
         await db.execute('''
           CREATE TABLE chaussees (
             id INTEGER PRIMARY KEY ,
+            api_id INTEGER,
             code_piste TEXT NOT NULL,
             code_gps TEXT ,
             communes_rurales_id INTEGER,
@@ -106,6 +114,11 @@ class SimpleStorageHelper {
 
           )
         ''');
+        await db.execute('''
+CREATE UNIQUE INDEX IF NOT EXISTS idx_chaussees_api_user
+ON chaussees(api_id, saved_by_user_id);
+
+''');
         // Table pour le cache des pistes affichées
         await db.execute('''
 CREATE TABLE IF NOT EXISTS displayed_pistes (
@@ -778,25 +791,30 @@ ON displayed_pistes(login_id, code_piste);
       final db = await database;
       final properties = pisteData['properties'];
       final geometry = pisteData['geometry'];
+
       final dataUserId = properties['login_id'];
-      final communeId = await _getCommuneId();
       final viewerId = await DatabaseHelper().resolveLoginId();
       final apiUserId = ApiService.userId;
 
-// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      // ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
       if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
         return;
       }
 
+      // id serveur postgres (celui qui posait conflit)
+      final serverId = pisteData['id'];
+
       // Extraire les coordonnées du MultiLineString GeoJSON
       final coordinates = geometry['coordinates'][0];
-      final pointsJson = jsonEncode(coordinates
-          .map((coord) => {
-                'longitude': coord[0],
-                'latitude': coord[1]
-              })
-          .toList());
+      final pointsJson = jsonEncode(
+        coordinates
+            .map((coord) => {
+                  'longitude': coord[0],
+                  'latitude': coord[1]
+                })
+            .toList(),
+      );
 
       // Convertir les dates du format PostgreSQL
       String formatDate(String? dateString) {
@@ -804,57 +822,67 @@ ON displayed_pistes(login_id, code_piste);
         return dateString.replaceFirst('T', ' ');
       }
 
-      // Vérifier si la piste existe déjà (par id PostgreSQL)
+      // ✅ Vérifier si la piste existe déjà (par api_id + viewer)
       final existing = await db.query(
         'pistes',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          pisteData['id'],
+          serverId,
           viewerId
-        ], // ID PostgreSQL
+        ],
+        limit: 1,
       );
 
       if (existing.isEmpty) {
-        // Insertion nouvelle piste avec ID PostgreSQL
-        await db.insert('pistes', {
-          'id': pisteData['id'], // ← ID PostgreSQL devient ID SQLite
-          'code_piste': properties['code_piste'],
-          'commune_rurale_id': properties['communes_rurales_id']?.toString(),
-          'user_login': properties['user_login'] ?? '',
-          'heure_debut': properties['heure_debut'],
-          'heure_fin': properties['heure_fin'],
-          'nom_origine_piste': properties['nom_origine_piste'],
-          'x_origine': properties['x_origine'],
-          'y_origine': properties['y_origine'],
-          'nom_destination_piste': properties['nom_destination_piste'],
-          'x_destination': properties['x_destination'],
-          'y_destination': properties['y_destination'],
-          'existence_intersection': properties['existence_intersection'] ?? 0,
-          'x_intersection': properties['x_intersection'],
-          'y_intersection': properties['y_intersection'],
-          'intersection_piste_code': properties['intersection_piste_code'],
-          'type_occupation': properties['type_occupation'],
-          'debut_occupation': formatDate(properties['debut_occupation']),
-          'fin_occupation': formatDate(properties['fin_occupation']),
-          'largeur_emprise': properties['largeur_emprise'],
-          'frequence_trafic': properties['frequence_trafic'],
-          'type_trafic': properties['type_trafic'],
-          'travaux_realises': properties['travaux_realises'],
-          'date_travaux': properties['date_travaux'],
-          'entreprise': properties['entreprise'],
-          'points_json': pointsJson,
-          'created_at': formatDate(properties['created_at']),
-          'updated_at': formatDate(properties['updated_at']),
-          'login_id': dataUserId ?? 'Non spécifié',
-          'saved_by_user_id': viewerId,
-          'sync_status': 'downloaded',
-          'synced': 0,
-          'date_sync': DateTime.now().toIso8601String(),
-          'downloaded': 1,
-        });
-        print('✅ Piste ${properties['code_piste']} sauvegardée (ID: ${pisteData['id']})');
+        // ✅ INSERT : id local (unique), api_id = id serveur
+        final localId = DateTime.now().millisecondsSinceEpoch;
+
+        await db.insert(
+          'pistes',
+          {
+            'id': localId, // ✅ ID local (dateNow)
+            'api_id': serverId, // ✅ ID serveur (Postgres)
+            'code_piste': properties['code_piste'],
+            'commune_rurale_id': properties['communes_rurales_id']?.toString(),
+            'user_login': properties['user_login'] ?? '',
+            'heure_debut': properties['heure_debut'],
+            'heure_fin': properties['heure_fin'],
+            'nom_origine_piste': properties['nom_origine_piste'],
+            'x_origine': properties['x_origine'],
+            'y_origine': properties['y_origine'],
+            'nom_destination_piste': properties['nom_destination_piste'],
+            'x_destination': properties['x_destination'],
+            'y_destination': properties['y_destination'],
+            'existence_intersection': properties['existence_intersection'] ?? 0,
+            'x_intersection': properties['x_intersection'],
+            'y_intersection': properties['y_intersection'],
+            'intersection_piste_code': properties['intersection_piste_code'],
+            'type_occupation': properties['type_occupation'],
+            'debut_occupation': formatDate(properties['debut_occupation']),
+            'fin_occupation': formatDate(properties['fin_occupation']),
+            'largeur_emprise': properties['largeur_emprise'],
+            'frequence_trafic': properties['frequence_trafic'],
+            'type_trafic': properties['type_trafic'],
+            'travaux_realises': properties['travaux_realises'],
+            'date_travaux': properties['date_travaux'],
+            'entreprise': properties['entreprise'],
+            'points_json': pointsJson,
+            'created_at': formatDate(properties['created_at']),
+            'updated_at': formatDate(properties['updated_at']),
+            'login_id': dataUserId, // ✅ id serveur du créateur (peut être null)
+            'saved_by_user_id': viewerId,
+            'sync_status': 'downloaded',
+            'synced': 0,
+            'date_sync': DateTime.now().toIso8601String(),
+            'downloaded': 1,
+          },
+          // (optionnel) si tu as mis UNIQUE(api_id, saved_by_user_id), tu peux activer replace :
+          // conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+
+        print('✅ Piste ${properties['code_piste']} sauvegardée (api_id: $serverId, local id: $localId)');
       } else {
-        // Mise à jour piste existante
+        // ✅ UPDATE : toujours sur api_id + viewer
         await db.update(
           'pistes',
           {
@@ -883,18 +911,20 @@ ON displayed_pistes(login_id, code_piste);
             'entreprise': properties['entreprise'],
             'points_json': pointsJson,
             'updated_at': DateTime.now().toIso8601String(),
-            'login_id': properties['login_id'],
+            'login_id': dataUserId,
             'sync_status': 'downloaded',
             'synced': 0,
             'date_sync': DateTime.now().toIso8601String(),
             'downloaded': 1,
           },
-          where: 'id = ?',
+          where: 'api_id = ? AND saved_by_user_id = ?',
           whereArgs: [
-            pisteData['id']
+            serverId,
+            viewerId
           ],
         );
-        print('🔄 Piste ${properties['code_piste']} mise à jour (ID: ${pisteData['id']})');
+
+        print('🔄 Piste ${properties['code_piste']} mise à jour (api_id: $serverId)');
       }
     } catch (e) {
       print('❌ Erreur sauvegarde piste: $e');
@@ -1089,7 +1119,7 @@ ON displayed_pistes(login_id, code_piste);
       final viewerId = await DatabaseHelper().resolveLoginId();
       final apiUserId = ApiService.userId;
 
-// ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
+      // ✅ ignorer SEULEMENT si les deux ids existent et sont égaux
       if (apiUserId != null && dataUserId != null && dataUserId == apiUserId) {
         print('🚫 Donnée ignorée - créée par le même utilisateur (login_id: $dataUserId)');
         return;
@@ -1097,53 +1127,63 @@ ON displayed_pistes(login_id, code_piste);
 
       // Extraire les coordonnées du MultiLineString GeoJSON
       final coordinates = geometry['coordinates'][0];
-      final pointsJson = jsonEncode(coordinates
-          .map((coord) => {
-                'longitude': coord[0],
-                'latitude': coord[1]
-              })
-          .toList());
+      final pointsJson = jsonEncode(
+        coordinates
+            .map((coord) => {
+                  'longitude': coord[0],
+                  'latitude': coord[1]
+                })
+            .toList(),
+      );
 
-      // Vérifier si la chaussée existe déjà (par id PostgreSQL)
+      final int apiChausseeId = (chausseeData['id'] as num).toInt(); // id PostgreSQL
+
+      // ✅ Vérifier si la chaussée existe déjà (par api_id + viewer)
       final existing = await db.query(
         'chaussees',
-        where: 'id = ? AND saved_by_user_id = ?',
+        where: 'api_id = ? AND saved_by_user_id = ?',
         whereArgs: [
-          chausseeData['id'],
+          apiChausseeId,
           viewerId
-        ], // ID PostgreSQL
+        ],
+        limit: 1,
       );
 
       if (existing.isEmpty) {
-        // Insertion nouvelle chaussée avec ID PostgreSQL
-        await db.insert('chaussees', {
-          'id': chausseeData['id'], // ← ID PostgreSQL
-          'code_piste': properties['code_piste'],
-          'code_gps': properties['code_gps'],
-          'user_login': properties['login']?.toString() ?? 'Autre utilisateur',
-          'endroit': properties['endroit'],
-          'type_chaussee': properties['type_chaus'],
-          'etat_piste': properties['etat_piste'],
-          'x_debut_chaussee': properties['x_debut_ch'],
-          'y_debut_chaussee': properties['y_debut_ch'],
-          'x_fin_chaussee': properties['x_fin_ch'],
-          'y_fin_chaussee': properties['y_fin_chau'],
-          'points_json': pointsJson,
-          'distance_totale_m': 0.0, // À calculer si nécessaire
-          'nombre_points': coordinates.length,
-          'created_at': properties['created_at'],
-          'updated_at': properties['updated_at'],
-          'sync_status': 'downloaded',
-          'login_id': dataUserId ?? 'Non spécifié',
-          'saved_by_user_id': viewerId,
-          'synced': 0,
-          'date_sync': DateTime.now().toIso8601String(),
-          'downloaded': 1, // ← MARQUÉ COMME TÉLÉCHARGÉ
-          'communes_rurales_id': properties['communes_rurales_id'],
-        });
-        print('✅ Chaussée ${properties['code_piste']} téléchargée (ID: ${chausseeData['id']})');
+        // ✅ Insertion nouvelle chaussée (id sqlite auto) + api_id = id serveur
+        await db.insert(
+          'chaussees',
+          {
+            'api_id': apiChausseeId, //  ID PostgreSQL stocké ici
+            'code_piste': properties['code_piste'],
+            'code_gps': properties['code_gps'],
+            'user_login': properties['login']?.toString() ?? 'Autre utilisateur',
+            'endroit': properties['endroit'],
+            'type_chaussee': properties['type_chaus'],
+            'etat_piste': properties['etat_piste'],
+            'x_debut_chaussee': properties['x_debut_ch'],
+            'y_debut_chaussee': properties['y_debut_ch'],
+            'x_fin_chaussee': properties['x_fin_ch'],
+            'y_fin_chaussee': properties['y_fin_chau'],
+            'points_json': pointsJson,
+            'distance_totale_m': 0.0,
+            'nombre_points': coordinates.length,
+            'created_at': properties['created_at'],
+            'updated_at': properties['updated_at'],
+            'sync_status': 'downloaded',
+            'login_id': dataUserId, // laisse null si null
+            'saved_by_user_id': viewerId,
+            'synced': 0,
+            'date_sync': DateTime.now().toIso8601String(),
+            'downloaded': 1,
+            'communes_rurales_id': properties['communes_rurales_id'],
+          },
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+
+        print('✅ Chaussée ${properties['code_piste']} téléchargée (api_id: $apiChausseeId)');
       } else {
-        // Mise à jour chaussée existante
+        // ✅ Mise à jour (par api_id + viewer)
         await db.update(
           'chaussees',
           {
@@ -1160,15 +1200,21 @@ ON displayed_pistes(login_id, code_piste);
             'points_json': pointsJson,
             'updated_at': properties['updated_at'],
             'sync_status': 'downloaded',
+            'login_id': dataUserId, // optionnel mais cohérent
+            'saved_by_user_id': viewerId,
+            'synced': 0,
+            'date_sync': DateTime.now().toIso8601String(),
             'downloaded': 1,
             'communes_rurales_id': properties['communes_rurales_id'],
           },
-          where: 'id = ?',
+          where: 'api_id = ? AND saved_by_user_id = ?',
           whereArgs: [
-            chausseeData['id']
+            apiChausseeId,
+            viewerId
           ],
         );
-        print('🔄 Chaussée ${properties['code_piste']} mise à jour (ID: ${chausseeData['id']})');
+
+        print('🔄 Chaussée ${properties['code_piste']} mise à jour (api_id: $apiChausseeId)');
       }
     } catch (e) {
       print('❌ Erreur sauvegarde chaussée téléchargée: $e');

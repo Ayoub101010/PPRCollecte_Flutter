@@ -3669,12 +3669,14 @@ class DownloadedPointsService {
                   ),
                 ),
               );
+              print('🧮 [DL-POINTS] $tableName count=${points.length} (viewerId=$loginId)');
             }
           }
         } catch (e) {
           print('❌ Erreur table $tableName: $e');
         }
       }
+      print('🧾 [DL-POINTS] viewerId used for filter = $loginId, apiUserId=${ApiService.userId}');
 
       print('📍 ${markers.length} points téléchargés chargés (cache: ${CustomMarkerIcons.getCacheSize()} icônes)');
       return markers;
