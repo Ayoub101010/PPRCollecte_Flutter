@@ -49,7 +49,6 @@ class _LegendWidgetState extends State<LegendWidget> {
   }
 
   // Compter le nombre d'éléments par type
-  // Compter le nombre d'éléments par type
   int _countItemsByType(String type) {
     if (type == 'point') {
       return widget.allMarkers.length;

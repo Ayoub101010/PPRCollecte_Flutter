@@ -140,7 +140,7 @@ class SpecialStatusWidget extends StatelessWidget {
           color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: const Color(0xFF9C27B0), // Violet pour spécial
+            color: const Color(0xFF9C27B0),
             width: 2,
           ),
           boxShadow: [
