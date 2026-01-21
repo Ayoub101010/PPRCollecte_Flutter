@@ -6,6 +6,7 @@ import 'dart:convert';
 class SyncResult {
   int successCount = 0;
   int failedCount = 0;
+  int skippedCount = 0;
   List<String> errors = [];
 
   @override
@@ -795,6 +796,7 @@ class SyncService {
             processedItems++;
             print('✅ Chaussée sauvegardée: ${properties['code_piste']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Chaussée ignorée - commune_id différent: '
                 '${properties['communes_rurales_id']} vs ${ApiService.communeId}');
           }
@@ -827,6 +829,7 @@ class SyncService {
             processedItems++;
             print('✅ Localité sauvegardée: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Localité ignorée - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -859,6 +862,7 @@ class SyncService {
             processedItems++;
             print('✅ École sauvegardée: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ École ignorée - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -891,6 +895,7 @@ class SyncService {
             processedItems++;
             print('✅ Marché sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Marché ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -923,6 +928,7 @@ class SyncService {
             processedItems++;
             print('✅ Service de santé sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Service de santé ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -955,6 +961,7 @@ class SyncService {
             processedItems++;
             print('✅ Bâtiment administratif sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Bâtiment administratif ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -987,6 +994,7 @@ class SyncService {
             processedItems++;
             print('✅ Infrastructure hydraulique sauvegardée: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Infrastructure hydraulique ignorée - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1019,6 +1027,7 @@ class SyncService {
             processedItems++;
             print('✅ Autre infrastructure sauvegardée: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Autre infrastructure ignorée - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1051,6 +1060,7 @@ class SyncService {
             processedItems++;
             print('✅ Pont sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Pont ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1083,6 +1093,7 @@ class SyncService {
             processedItems++;
             print('✅ Bac sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Bac ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1115,6 +1126,7 @@ class SyncService {
             processedItems++;
             print('✅ Buse sauvegardée: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Buse ignorée - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1147,6 +1159,7 @@ class SyncService {
             processedItems++;
             print('✅ Dalot sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Dalot ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1179,6 +1192,7 @@ class SyncService {
             processedItems++;
             print('✅ Passage submersible sauvegardé: ${properties['nom']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Passage submersible ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1211,6 +1225,7 @@ class SyncService {
             processedItems++;
             print('✅ Point critique sauvegardé');
           } else {
+            result.skippedCount++;
             print('⏭️ Point critique ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1243,6 +1258,7 @@ class SyncService {
             processedItems++;
             print('✅ Point de coupure sauvegardé');
           } else {
+            result.skippedCount++;
             print('⏭️ Point de coupure ignoré - commune_id différent: '
                 '${properties['commune_id']} vs ${ApiService.communeId}');
           }
@@ -1276,6 +1292,7 @@ class SyncService {
             processedItems++;
             print('✅ Piste sauvegardée: ${properties['code_piste']}');
           } else {
+            result.skippedCount++;
             print('⏭️ Piste ignorée - commune_id différent: '
                 '${properties['communes_rurales_id']} vs ${ApiService.communeId}');
           }
