@@ -288,10 +288,10 @@ class _LoginPageState extends State<LoginPage> {
                                 child: const GuineeLoginEmblem(),
                               ),
                               const SizedBox(height: 10),
-                              const Text("GeoNDGR-Collecte", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A))),
+                              const Text("GeoDNGR-Collecte", style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF0F172A))),
                               const SizedBox(height: 14),
                               const Text(
-                                "Connexion à GeoNDGR-Collecte",
+                                "Connexion à GeoDNGR-Collecte",
                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
                               ),
                               const SizedBox(height: 20),

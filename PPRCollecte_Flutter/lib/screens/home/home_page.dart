@@ -1119,7 +1119,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _focusOnTarget(MapFocusTarget target) async {
     // ⏸️ Empêche le recentrage sur l'utilisateur pendant le focus
-    _suspendAutoCenterFor(const Duration(seconds: 3));
+    _suspendAutoCenterFor(const Duration(seconds: 10));
 
     // Créer les éléments de focus
     Polyline? focusPolyline;
@@ -1128,7 +1128,7 @@ class _HomePageState extends State<HomePage> {
     if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
       focusPolyline = Polyline(
         points: target.polyline!,
-        color: Colors.purple,
+        color: Colors.purpleAccent,
         strokeWidth: 6.0,
         pattern: StrokePattern.dashed(segments: [
           12,
@@ -1142,7 +1142,7 @@ class _HomePageState extends State<HomePage> {
         height: 40,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.purple,
+            color: Colors.purpleAccent,
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 2),
           ),
@@ -1160,13 +1160,14 @@ class _HomePageState extends State<HomePage> {
       }
     });
 
-    // Déplacer la caméra
     if (_mapController != null) {
       if (target.kind == 'point' && target.point != null) {
         _mapController!.move(target.point!, 18);
+        _lastCameraPosition = target.point; // ⭐ IMPORTANT: Mettre à jour la dernière position
       } else if (target.kind == 'polyline' && target.polyline != null && target.polyline!.isNotEmpty) {
         final bounds = LatLngBounds.fromPoints(target.polyline!);
         _mapController!.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(64)));
+        _lastCameraPosition = bounds.center; // ⭐ IMPORTANT: Mettre à jour la dernière position
       }
     }
 
@@ -1652,17 +1653,23 @@ class _HomePageState extends State<HomePage> {
   void _onMapCreated(MapController controller) {
     _mapController = controller;
 
-    // ⭐⭐ NOUVELLE LOGIQUE: Toujours déplacer vers la position GPS réelle ⭐⭐
-    if (userPosition != null) {
-      controller.move(userPosition!, 17);
-      _lastCameraPosition = userPosition;
-    }
-
-    // Focus initial si demandé
+    // ⭐⭐ CORRECTION: Si un focus initial est demandé, NE PAS aller vers userPosition ⭐⭐
     if (widget.initialFocus != null) {
-      Future.delayed(const Duration(milliseconds: 150), () {
-        _focusOnTarget(widget.initialFocus!);
+      // Suspendre l'auto-center AVANT le focus
+      _suspendAutoCenterFor(const Duration(seconds: 10));
+
+      // Focus sur la cible demandée (avec un petit délai pour que la carte soit prête)
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          _focusOnTarget(widget.initialFocus!);
+        }
       });
+    } else {
+      // Comportement normal: déplacer vers la position GPS de l'utilisateur
+      if (userPosition != null) {
+        controller.move(userPosition!, 17);
+        _lastCameraPosition = userPosition;
+      }
     }
   }
 
@@ -2439,7 +2446,14 @@ class _HomePageState extends State<HomePage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () {
+                Navigator.pop(ctx);
+                // Recharger toutes les données téléchargées
+                _loadDownloadedPoints();
+                _loadDownloadedPistes();
+                _loadDownloadedChaussees();
+                _loadDownloadedSpecialLines();
+              },
               child: const Text('OK'),
             ),
           ],
@@ -3113,7 +3127,7 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                   // === AJOUTEZ ICI === //
-                  /*Positioned(
+                  Positioned(
                     bottom: 200,
                     right: 16,
                     child: Visibility(
@@ -3144,9 +3158,9 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'dev_button',
                       ),
                     ),
-                  ),*/
+                  ),
                   // Ajouter dans la section des boutons de debug
-                  /* Positioned(
+                  Positioned(
                     bottom: 120,
                     right: 16,
                     child: Visibility(
@@ -3177,7 +3191,7 @@ class _HomePageState extends State<HomePage> {
                         heroTag: 'simulate_special_button',
                       ),
                     ),
-                  ),*/
+                  ),
                   // === FIN DE L'AJOUT === //
                   // Contrôles de carte
                   MapControlsWidget(

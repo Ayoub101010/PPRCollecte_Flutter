@@ -9,7 +9,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     
     <application
-        android:label="GeoNDGR-Collecte"
+        android:label="GeoDNGR-Collecte"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

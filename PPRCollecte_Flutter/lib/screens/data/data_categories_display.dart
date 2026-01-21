@@ -435,6 +435,7 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
     }
 
     // ---------- 3) LIGNES SPECIALES : debut/fin ----------
+    // ---------- 3) LIGNES SPECIALES : debut/fin ----------
     LatLng? _pair(dynamic latV, dynamic lngV) {
       final lat = _toDouble(latV);
       final lng = _toDouble(lngV);
@@ -442,8 +443,24 @@ class _DataCategoriesDisplayState extends State<DataCategoriesDisplay> {
       return LatLng(lat, lng);
     }
 
-    final start = _pair(item['lat_debut'], item['lng_debut']) ?? _pair(item['start_lat'], item['start_lng']);
-    final end = _pair(item['lat_fin'], item['lng_fin']) ?? _pair(item['end_lat'], item['end_lng']);
+// ⭐⭐ CORRECTION: Ajouter les paires spécifiques pour Bac et Passage Submersible ⭐⭐
+    final start = _pair(item['lat_debut'], item['lng_debut']) ??
+        _pair(item['start_lat'], item['start_lng'])
+        // Bac (x=longitude, y=latitude)
+        ??
+        _pair(item['y_debut_traversee_bac'], item['x_debut_traversee_bac'])
+        // Passage Submersible (x=longitude, y=latitude)
+        ??
+        _pair(item['y_debut_passage_submersible'], item['x_debut_passage_submersible']);
+
+    final end = _pair(item['lat_fin'], item['lng_fin']) ??
+        _pair(item['end_lat'], item['end_lng'])
+        // Bac
+        ??
+        _pair(item['y_fin_traversee_bac'], item['x_fin_traversee_bac'])
+        // Passage Submersible
+        ??
+        _pair(item['y_fin_passage_submersible'], item['x_fin_passage_submersible']);
 
     if (start != null && end != null)
       return [
