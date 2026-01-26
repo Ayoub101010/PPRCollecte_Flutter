@@ -15,8 +15,8 @@ class CollectionService {
 
   // ✅ CONFIGURATION GPS TÉLÉPHONE
   final Duration _captureInterval = const Duration(seconds: 20);
-  static const double _minimumAccuracy = 15.0; // 15m max pour téléphone
-  static const double _minimumDistance = 3.0; // 3m minimum (anti-dérive)
+  static const double _minimumAccuracy = 30.0; // 15m max pour téléphone
+  static const double _minimumDistance = 1.0; // 3m minimum (anti-dérive)
   static const double _lowDistanceThreshold = 8.0; // Seuil dialogue utilisateur
   static const double _maxSpeed = 50.0; // 50 m/s vitesse max réaliste
 
@@ -87,6 +87,26 @@ class CollectionService {
 
         print('📍 Premier point capturé: ${now.toString().substring(11, 19)}');
         print('⏱️ Prochaine capture dans 20s');
+      } else {
+        // ✅ AJOUT : Log si échec
+        print('⚠️ Premier point non capturé:');
+        print('   - _currentLocation: ${_currentLocation != null ? "OK" : "NULL"}');
+        print('   - collection.isActive: ${collection.isActive}');
+
+        // ✅ AJOUT : Réessayer après 3 secondes
+        Timer(const Duration(seconds: 3), () {
+          if (_currentLocation != null && collection.isActive) {
+            _processLocationForCollection(
+              _currentLocation!,
+              collection,
+              onPointAdded,
+              isFirstPoint: true,
+            );
+            print('📍 Premier point capturé (2ème tentative)');
+          } else {
+            print('❌ Échec définitif capture premier point');
+          }
+        });
       }
     });
   }

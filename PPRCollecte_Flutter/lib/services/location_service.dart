@@ -18,8 +18,7 @@ class LocationService {
     if (permission == PermissionStatus.denied) {
       permission = await _location.requestPermission();
     }
-    if (permission == PermissionStatus.denied ||
-        permission == PermissionStatus.deniedForever) {
+    if (permission == PermissionStatus.denied || permission == PermissionStatus.deniedForever) {
       return false;
     }
 
@@ -27,8 +26,8 @@ class LocationService {
     try {
       await _location.changeSettings(
         accuracy: LocationAccuracy.high,
-        interval: 5000, // ms
-        distanceFilter: 10, // meters
+        interval: 2000, // ms
+        distanceFilter: 0, // meters
       );
     } catch (e) {
       // certaines versions peuvent ne pas supporter changeSettings ; on ignore l'erreur
