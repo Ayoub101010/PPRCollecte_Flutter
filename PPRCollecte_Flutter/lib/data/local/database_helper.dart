@@ -580,6 +580,7 @@ CREATE TABLE IF NOT EXISTS app_session (
         {
           'nom': 'Agent',
           'prenom': 'Test',
+          'apiId': 1,
           'email': 'test@ppr.com',
           'password': '12345678',
           'role': 'enqueteur',
@@ -866,7 +867,19 @@ CREATE TABLE IF NOT EXISTS app_session (
     }
   }
 
-  Future<int> insertUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role, int? apiId}) async {
+  Future<int> insertUser(
+      String prenom,
+      String nom,
+      String email,
+      String password,
+      int? communeRural, // ← Nullable
+      int? prefectureId, // ← Nullable
+      int? regionId, // ← Nullable
+      String? prefectureNom, // ← Nullable
+      String? communeNom, // ← Nullable
+      String? regionNom, // ← Nullable
+      {String? role,
+      int? apiId}) async {
     try {
       print('🔄 Tentative insertion/mise à jour user: $email');
       final db = await database;
@@ -887,14 +900,14 @@ CREATE TABLE IF NOT EXISTS app_session (
         'email': email,
         'password': password,
         'role': role ?? 'enqueteur',
-        'communes_rurales': communeRural,
-        'commune_nom': communeNom,
-        'prefecture_nom': prefectureNom,
-        'prefecture_id': prefectureId,
-        'region_nom': regionNom,
-        'region_id': regionId,
+        'communes_rurales': communeRural ?? 0, // ← Valeur par défaut
+        'commune_nom': communeNom ?? '', // ← Valeur par défaut
+        'prefecture_nom': prefectureNom ?? '', // ← Valeur par défaut
+        'prefecture_id': prefectureId ?? 0, // ← Valeur par défaut
+        'region_nom': regionNom ?? '', // ← Valeur par défaut
+        'region_id': regionId ?? 0, // ← Valeur par défaut
         'date_creation': DateTime.now().toIso8601String(),
-        'apiId': apiId,
+        'apiId': apiId ?? 0, // ← Valeur par défaut
       };
 
       int result;
@@ -948,7 +961,19 @@ CREATE TABLE IF NOT EXISTS app_session (
     }
   }
 
-  Future<int> updateUser(String prenom, String nom, String email, String password, int communeRural, int prefectureId, int regionId, String prefectureNom, String communeNom, String regionNom, {String? role, int? apiId}) async {
+  Future<int> updateUser(
+      String prenom,
+      String nom,
+      String email,
+      String password,
+      int? communeRural, // ← Nullable
+      int? prefectureId, // ← Nullable
+      int? regionId, // ← Nullable
+      String? prefectureNom, // ← Nullable
+      String? communeNom, // ← Nullable
+      String? regionNom, // ← Nullable
+      {String? role,
+      int? apiId}) async {
     try {
       final db = await database;
       final result = await db.update(
@@ -958,14 +983,14 @@ CREATE TABLE IF NOT EXISTS app_session (
           'nom': nom,
           'password': password,
           'role': role ?? 'enqueteur',
-          'communes_rurales': communeRural,
-          'commune_nom': communeNom,
-          'prefecture_nom': prefectureNom,
-          'prefecture_id': prefectureId,
-          'region_nom': regionNom,
-          'region_id': regionId,
+          'communes_rurales': communeRural ?? 0,
+          'commune_nom': communeNom ?? '',
+          'prefecture_nom': prefectureNom ?? '',
+          'prefecture_id': prefectureId ?? 0,
+          'region_nom': regionNom ?? '',
+          'region_id': regionId ?? 0,
           'date_creation': DateTime.now().toIso8601String(),
-          'apiId': apiId,
+          'apiId': apiId ?? 0,
         },
         where: 'email = ?',
         whereArgs: [

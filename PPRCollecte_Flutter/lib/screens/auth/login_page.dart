@@ -122,15 +122,15 @@ class _LoginPageState extends State<LoginPage> {
       await DatabaseHelper().setCurrentUserEmail(email, remember: rememberMe);
 
       final existingUser = await DatabaseHelper().userExists(email);
-      final nom = userData['nom'] ?? '';
-      final prenom = userData['prenom'] ?? '';
-      final fullName = '$prenom $nom';
-      final communeId = userData['communes_rurales'];
-      final prefectureId = userData['prefecture_id'];
-      final regionId = userData['region_id'];
-      final communeNom = userData['commune_nom'];
-      final prefectureNom = userData['prefecture_nom'];
-      final regionNom = userData['region_nom'];
+      final nom = userData['nom']?.toString() ?? '';
+      final prenom = userData['prenom']?.toString() ?? '';
+      final fullName = '$prenom $nom'.trim();
+      final int? communeId = _parseNullableInt(userData['communes_rurales']);
+      final int? prefectureId = _parseNullableInt(userData['prefecture_id']);
+      final int? regionId = _parseNullableInt(userData['region_id']);
+      final String? communeNom = userData['commune_nom']?.toString();
+      final String? prefectureNom = userData['prefecture_nom']?.toString();
+      final String? regionNom = userData['region_nom']?.toString();
       final int? apiId = ApiService.userId;
 
       if (existingUser) {
@@ -196,6 +196,14 @@ class _LoginPageState extends State<LoginPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  int? _parseNullableInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    if (value is double) return value.toInt();
+    return null;
   }
 
   InputDecoration _inputDeco({
